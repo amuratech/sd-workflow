@@ -35,6 +35,7 @@
     <junit-jupiter-testcontainer.version>1.12.4</junit-jupiter-testcontainer.version>
     <test-container-postgresql.version>1.10.6</test-container-postgresql.version>
     <spring-cloud-starter-contract.version>2.2.1.RELEASE</spring-cloud-starter-contract.version>
+    <rabbitmq-test-container.version>1.12.5</rabbitmq-test-container.version>
     <!--</editor-fold>-->
 
     <skip.unit.tests>false</skip.unit.tests>
