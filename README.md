@@ -1,2 +1,3 @@
 # sd-workflow
-Workflow service
+Microservice for workflow in Kylas Sales
+
