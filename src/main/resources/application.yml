@@ -1,0 +1,46 @@
+spring:
+  profiles:
+    active: dev
+  application:
+    name: workflow-service
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        dialect: com.kylas.sales.workflow.sql.PostgreSqlDialect
+  datasource:
+    url: jdbc:postgresql://localhost:5432/workflow
+    username: postgres
+    password: password
+  rabbitmq:
+    host: localhost
+    username: test
+    password: test
+    virtual-host: sling-sales
+  flyway:
+    enabled: false
+  jackson:
+    date-format: com.fasterxml.jackson.databind.util.ISO8601DateFormat
+
+security:
+  jwt:
+    key: test
+
+server:
+  port: 9002
+
+management:
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+  endpoint:
+    metrics:
+      enabled: true
+    prometheus:
+      enabled: true
+  endpoints:
+    web:
+      exposure:
+        include: '*'
