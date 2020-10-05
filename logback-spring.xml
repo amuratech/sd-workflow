@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration scan="true" scanPeriod="60 seconds">
+
+  <!-- PROPERTIES -->
+  <springProfile name="stage">
+    <property name="logFile" value="app"/>
+    <property name="serviceName" value="workflow-service"/>
+
+    <appender name="json" class="ch.qos.logback.core.ConsoleAppender">
+      <layout class="ch.qos.logback.contrib.json.classic.JsonLayout">
+        <jsonFormatter
+          class="ch.qos.logback.contrib.jackson.JacksonJsonFormatter">
+        </jsonFormatter>
+        <timestampFormat>yyyy-MM-dd' 'HH:mm:ss.SSS</timestampFormat>
+        <appendLineSeparator>true</appendLineSeparator>
+      </layout>
+    </appender>
+
+    <logger name="jsonLogger" level="INFO">
+      <appender-ref ref="json"/>
+    </logger>
+
+    <root level="INFO">
+      <appender-ref ref="json"/>
+    </root>
+
+    <logger name="org.springframework" level="INFO"/>
+    <logger name="com.kylas" level="WARN"/>
+    <logger name="io.netty.util" level="ERROR"/>
+  </springProfile>
+
+  <springProfile name="qa">
+    <property name="logFile" value="app"/>
+    <property name="serviceName" value="workflow-service"/>
+
+    <appender name="json" class="ch.qos.logback.core.ConsoleAppender">
+      <layout class="ch.qos.logback.contrib.json.classic.JsonLayout">
+        <jsonFormatter
+          class="ch.qos.logback.contrib.jackson.JacksonJsonFormatter">
+        </jsonFormatter>
+        <timestampFormat>yyyy-MM-dd' 'HH:mm:ss.SSS</timestampFormat>
+        <appendLineSeparator>true</appendLineSeparator>
+      </layout>
+    </appender>
+
+    <logger name="jsonLogger" level="INFO">
+      <appender-ref ref="json"/>
+    </logger>
+
+    <root level="INFO">
+      <appender-ref ref="json"/>
+    </root>
+
+    <logger name="org.springframework" level="INFO"/>
+    <logger name="com.kylas" level="WARN"/>
+    <logger name="io.netty.util" level="ERROR"/>
+  </springProfile>
+
+  <springProfile name="dev">
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+      <encoder>
+        <pattern>
+          %d{yyyy-MM-dd};%d{HH:mm:ss.SSS};%t;%5p;%logger{25};%m%n
+        </pattern>
+        <charset>utf8</charset>
+      </encoder>
+    </appender>
+
+    <root level="WARN">
+      <appender-ref ref="CONSOLE"/>
+    </root>
+		<logger name="org.springframework" level="WARN"/>
+		<logger name="com.kylas" level="DEBUG"/>
+    <logger name="io.netty.util" level="ERROR"/>
+  </springProfile>
+
+  <springProfile name="test">
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+      <encoder>
+        <pattern>
+          %d{yyyy-MM-dd};%d{HH:mm:ss.SSS};%t;%5p;%logger{25};%m%n
+        </pattern>
+        <charset>utf8</charset>
+      </encoder>
+    </appender>
+
+    <root level="WARN">
+      <appender-ref ref="CONSOLE"/>
+    </root>
+    <logger name="org.springframework" level="ERROR"/>
+    <logger name="com.kylas" level="DEBUG"/>
+    <logger name="io.netty.util" level="ERROR"/>
+  </springProfile>
+</configuration>

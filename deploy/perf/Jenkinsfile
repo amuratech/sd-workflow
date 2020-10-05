@@ -1,0 +1,58 @@
+podTemplate(
+    containers: [
+        containerTemplate(name: 'helm', alwaysPullImage: true, image: 'nexus.sling-dev.com:8023/lachlanevenson/k8s-helm:v2.14.3', command: 'cat', ttyEnabled: true),
+        containerTemplate(name: 'curl', alwaysPullImage: true, image: 'nexus.sling-dev.com:8023/sling/jenkins/curl', command: 'cat', ttyEnabled: true)
+    ],
+    imagePullSecrets: ['registry-credentials']) {
+  properties([parameters(
+      [string(name: 'dockerImageTag', defaultValue: 'latest', description: 'Docker image tag to deploy'),
+       string(name: 'branchName', defaultValue: 'dev', description: 'Branch being deployed')])])
+
+  currentBuild.description = "branch ${params.branchName}"
+  node(POD_LABEL) {
+    container('helm') {
+      withCredentials([[$class       : 'FileBinding',
+                        credentialsId: 'sling-perf-kubeconfig',
+                        variable     : 'KUBECONFIG'],
+                       [$class       : 'StringBinding',
+                        credentialsId: 'sd-charts-github-api-token',
+                        variable     : 'API_TOKEN']]) {
+        stage('Initialise Helm') {
+          sh script: "helm init --client-only --kubeconfig=${KUBECONFIG}", label: 'Initialize helm'
+        }
+        stage('Update Helm repository') {
+          sh script: "helm repo add sd-charts 'https://${API_TOKEN}@raw.githubusercontent.com/amuratech/sd-charts/master/'",
+              label: 'Add helm repo'
+          sh script: "helm repo update sd-charts", label: 'Cache Helm charts info'
+          sh script: 'helm repo list', label: 'List available helm repos'
+        }
+        withCredentials([[$class       : 'StringBinding',
+                          credentialsId: 'sling-perf-postgres-password',
+                          variable     : 'POSTGRES_PASSWORD'],
+                         [$class       : 'StringBinding',
+                          credentialsId: 'sling-perf-rabbitmq-password',
+                          variable     : 'RABBITMQ_PASSWORD']]) {
+          stage('Deploy') {
+            echo "Deploying docker release -> nexus.sling-dev.com/8023/sling/sd-workflow:${params.dockerImageTag}"
+            sh script: "helm upgrade --install sd-workflow sd-charts/sd-workflow " +
+                "--set appConfig.postgres.password=${POSTGRES_PASSWORD}," +
+                "image.tag=${params.dockerImageTag}," +
+                "appConfig.rabbitmq.password=${RABBITMQ_PASSWORD}," +
+                "deployment.annotations.buildNumber=${currentBuild.number} " +
+                "--wait",
+                label: 'Install helm release'
+          }
+        }
+      }
+    }
+    container('curl') {
+      stage('Refresh Gateway routes') {
+        sh script: 'curl -X POST \\\n' +
+            '  http://api-perf.sling-dev.com/actuator/gateway/refresh \\\n' +
+            '  -H \'Accept: application/json\' \\\n' +
+            '  -H \'Host: api-perf.sling-dev.com\' \\\n' +
+            '  -H \'cache-control: no-cache\'', label: 'Force refresh routes cache'
+      }
+    }
+  }
+}

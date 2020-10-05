@@ -1,0 +1,94 @@
+podTemplate(
+    containers: [
+        containerTemplate(name: 'helm', alwaysPullImage: true, image: 'nexus.sling-dev.com:8023/lachlanevenson/k8s-helm:v2.14.3', command: 'cat',
+            ttyEnabled: true),
+        containerTemplate(name: 'curl', alwaysPullImage: true, image: 'nexus.sling-dev.com:8023/sling/jenkins/curl', command: 'cat', ttyEnabled: true)
+    ],
+    imagePullSecrets: ['registry-credentials']) {
+  properties([parameters(
+      [string(name: 'dockerImageTag', defaultValue: 'latest', description: 'Docker image tag to deploy'),
+       string(name: 'branchName', defaultValue: 'master', description: 'Branch being deployed')])])
+
+  currentBuild.description = "branch ${params.branchName}-${params.dockerImageTag}"
+  node(POD_LABEL) {
+    container('helm') {
+      withCredentials([[$class       : 'FileBinding',
+                        credentialsId: 'kylas-stage-kubeconfig',
+                        variable     : 'KUBECONFIG'],
+                       [$class       : 'StringBinding',
+                        credentialsId: 'sd-charts-github-api-token',
+                        variable     : 'API_TOKEN']]) {
+        stage('Initialise Helm') {
+          sh script: "helm init --client-only --kubeconfig=${KUBECONFIG}", label: 'Initialize helm'
+        }
+        stage('Update Helm repository') {
+          sh script: "helm repo add sd-charts 'https://${API_TOKEN}@raw.githubusercontent.com/amuratech/sd-charts/master/'",
+              label: 'Add helm repo'
+          sh script: "helm repo update sd-charts", label: 'Cache Helm charts info'
+          sh script: 'helm repo list', label: 'List available helm repos'
+        }
+        withCredentials([[$class       : 'StringBinding',
+                          credentialsId: 'stage-application-namespace',
+                          variable     : 'APP_NAMESPACE'],
+                         [$class       : 'StringBinding',
+                          credentialsId: 'stage-env-postgres-password',
+                          variable     : 'POSTGRES_PASSWORD'],
+                         [$class       : 'StringBinding',
+                          credentialsId: 'stage-env-postgres-username',
+                          variable     : 'POSTGRES_USERNAME'],
+                         [$class       : 'StringBinding',
+                          credentialsId: 'stage-env-rabbitmq-password',
+                          variable     : 'RABBITMQ_PASSWORD'],
+                         [$class       : 'StringBinding',
+                          credentialsId: 'stage-env-rabbitmq-username',
+                          variable     : 'RABBITMQ_USERNAME'],
+                         [$class       : 'StringBinding',
+                          credentialsId: 'stage-postgres-hostname',
+                          variable     : 'POSTGRES_HOST']]) {
+          stage('Deploy') {
+            echo "Deploying docker release -> nexus.sling-dev.com/8023/sling/sd-workflow:${params.dockerImageTag}"
+            sh script: "helm upgrade --install sd-workflow sd-charts/sd-workflow " +
+                "--set " +
+                "appConfig.rabbitmq.password=${RABBITMQ_PASSWORD}," +
+                "appConfig.rabbitmq.username=${RABBITMQ_USERNAME}," +
+                "appConfig.postgres.hostname=${POSTGRES_HOST}," +
+                "appConfig.postgres.username=${POSTGRES_USERNAME}," +
+                "appConfig.postgres.password=${POSTGRES_PASSWORD}," +
+                "image.tag=${params.dockerImageTag}," +
+                "namespace=${APP_NAMESPACE}," +
+                "deployment.annotations.buildNumber=${currentBuild.number} " +
+                "--wait",
+                label: 'Install helm release'
+          }
+        }
+      }
+    }
+    container('curl') {
+      stage('Refresh Gateway routes') {
+        sh script: 'curl -X POST \\\n' +
+            '  https://api-stage.sling-dev.com/actuator/gateway/refresh \\\n' +
+            '  -H \'Accept: application/json\' \\\n' +
+            '  -H \'Host: api-stage.sling-dev.com\' \\\n' +
+            '  -H \'cache-control: no-cache\'', label: 'Force refresh routes cache'
+      }
+    }
+    try {
+      stage('Approval for Deployment') {
+        userInput = input(id: 'confirm', message: 'Do you wish to deploy to PROD environment?',
+            parameters: [[$class: 'BooleanParameterDefinition', defaultValue: false, description: 'This will deploy to PROD environment', name: 'confirm']])
+      }
+      stage('Start Prod Deployment') {
+        build job: './deploy-to-prod',
+            parameters: [[$class: 'StringParameterValue', name: 'dockerImageTag', value: params.dockerImageTag],
+                         [$class: 'StringParameterValue', name: 'triggeredByJob', value: "deploy-to-prod : #${BUILD_NUMBER}"],
+                         [$class: 'StringParameterValue', name: 'branchName', value: "${params.branchName}-${params.dockerImageTag}"]],
+            wait: false
+      }
+    }
+    catch (err) {
+      def user = err.getCauses()[0].getUser()
+      userInput = false
+      echo "Aborted by: [${user}]"
+    }
+  }
+}
