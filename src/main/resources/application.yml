@@ -13,6 +13,11 @@ spring:
     url: jdbc:postgresql://localhost:5432/workflow
     username: postgres
     password: password
+  rabbitmq:
+    host: localhost
+    username: test
+    password: test
+    virtual-host: sling-sales
   flyway:
     enabled: false
   jackson:
@@ -21,3 +26,21 @@ spring:
 security:
   jwt:
     key: test
+
+server:
+  port: 9002
+
+management:
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+  endpoint:
+    metrics:
+      enabled: true
+    prometheus:
+      enabled: true
+  endpoints:
+    web:
+      exposure:
+        include: '*'

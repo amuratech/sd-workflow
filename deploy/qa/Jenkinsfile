@@ -23,7 +23,7 @@ podTemplate(
           sh script: "helm init --client-only --kubeconfig=${KUBECONFIG}", label: 'Initialize helm'
         }
         stage('Update Helm repository') {
-          sh script: "helm repo add sd-charts 'https://${API_TOKEN}@raw.githubusercontent.com/amuratech/sd-charts/master/'",
+          sh script: "helm repo add sd-charts 'https://${API_TOKEN}@raw.githubusercontent.com/amuratech/sd-charts/SD-3785-add-workflow-chart/'",
               label: 'Add helm repo'
           sh script: "helm repo update sd-charts", label: 'Cache Helm charts info'
           sh script: 'helm repo list', label: 'List available helm repos'
