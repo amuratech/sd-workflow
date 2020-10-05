@@ -7,7 +7,7 @@ podTemplate(
     imagePullSecrets: ['registry-credentials']) {
   properties([parameters(
       [string(name: 'dockerImageTag', defaultValue: 'latest', description: 'Docker image tag to deploy'),
-       string(name: 'branchName', defaultValue: 'master', description: 'Branch being deployed')])])
+       string(name: 'branchName', defaultValue: 'main', description: 'Branch being deployed')])])
 
   currentBuild.description = "branch ${params.branchName}-${params.dockerImageTag}"
   node(POD_LABEL) {

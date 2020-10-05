@@ -51,7 +51,7 @@ podTemplate(
         def latestTag = "${imageName}:latest"
         def flywayLatestTag = "${flywayImageName}:latest"
 
-        if (gitBranch.startsWith('PR-') && targetBranch == 'master') {
+        if (gitBranch.startsWith('PR-') && targetBranch == 'main') {
           pullRequestTag = "${imageName}:RC-${env.BUILD_ID}"
           flywayPullRequestTag = "${flywayImageName}:RC-${env.BUILD_ID}"
         }
@@ -70,7 +70,7 @@ podTemplate(
 
               sh script: "docker push ${flywayGitTag}", label: "Push to registry"
             }
-            if (gitBranch == 'master') {
+            if (gitBranch == 'main') {
               def flywayReleaseCandidateTag = "${flywayImageName}:Release-${env.BUILD_ID}"
               sh script: "docker build -f ./flyway-Dockerfile -t ${flywayGitTag} .", label: "Build flyway migrations image with git commit hash"
               sh script: "docker tag ${flywayGitTag} ${flywayReleaseCandidateTag}", label: "Tag image as release candidate"
@@ -91,7 +91,7 @@ podTemplate(
 
               sh script: "docker push ${gitTag}", label: "Push to registry"
             }
-            if (gitBranch == 'master') {
+            if (gitBranch == 'main') {
               def releaseCandidateTag = "${imageName}:Release-${env.BUILD_ID}"
               sh script: "docker build -t ${gitTag} .", label: "Build image with git commit hash"
               sh script: "docker tag ${gitTag} ${releaseCandidateTag}", label: "Tag image as release candidate"
@@ -106,7 +106,7 @@ podTemplate(
       }
       if (gitBranch.startsWith('PR-')) {
         try {
-          if (targetBranch == 'master') {
+          if (targetBranch == 'main') {
             stage('Approval for Deployment') {
               userInput = input(id: 'confirm', message: 'Do you wish to deploy the PR to STAGE environment?',
                   parameters: [[$class: 'BooleanParameterDefinition', defaultValue: false, description: 'This will deploy the current PR in STAGE environment', name: 'confirm']])
@@ -145,7 +145,7 @@ podTemplate(
               wait: false
         }
       }
-      if (gitBranch == 'master') {
+      if (gitBranch == 'main') {
         stage('Start Stage Deployment') {
           build job: '../deploy-to-stage',
               parameters: [[$class: 'StringParameterValue', name: 'dockerImageTag', value: "Release-${env.BUILD_ID}"],
