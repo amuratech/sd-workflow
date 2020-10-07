@@ -1,0 +1,166 @@
+{
+  "leftNav": false,
+  "pageConfig": {
+    "actionConfig": {
+      "search": true,
+      "filter": true,
+      "create": true,
+      "importItems": false,
+      "columnSelector": true
+    },
+    "tableConfig": {
+      "fetchURL": "/search/workflows",
+      "searchService": "search",
+      "recordClickAction": "VIEW",
+      "columns": [
+        {
+          "id": "workflowName",
+          "header": "Workflow name",
+          "isStandard": true,
+          "isFilterable": true,
+          "isSortable": true,
+          "isInternal": false,
+          "fieldType": "TEXT_FIELD",
+          "multiValue": false,
+          "picklist": null,
+          "lookup": null,
+          "values": null
+        },
+        {
+          "id": "entity",
+          "header": "Entity",
+          "isStandard": true,
+          "isFilterable": true,
+          "isSortable": true,
+          "isInternal": false,
+          "fieldType": "TEXT_FIELD",
+          "multiValue": false,
+          "picklist": null,
+          "lookup": null,
+          "values": null
+        },
+        {
+          "id": "createdAt",
+          "header": "Created At",
+          "isStandard": true,
+          "isFilterable": true,
+          "isSortable": true,
+          "isInternal": true,
+          "fieldType": "DATETIME_PICKER",
+          "multiValue": false,
+          "picklist": null,
+          "lookup": null,
+          "values": null
+        },
+        {
+          "id": "createdBy",
+          "header": "Created By",
+          "isStandard": true,
+          "isFilterable": true,
+          "isSortable": false,
+          "isInternal": true,
+          "fieldType": "LOOK_UP",
+          "multiValue": false,
+          "picklist": null,
+          "lookup": {
+            "entity": "USER",
+            "lookupUrl": "/users/lookup?q=name:"
+          },
+          "showDefaultOptions": true,
+          "values": null
+        },
+        {
+          "id": "status",
+          "header": "Status",
+          "isStandard": true,
+          "isFilterable": true,
+          "isSortable": true,
+          "isInternal": true,
+          "fieldType": "PICK_LIST",
+          "multiValue": false,
+          "picklist": [
+            {
+              "displayName": "Active",
+              "name": "active",
+              "systemDefault": true
+            },
+            {
+              "displayName": "InActive",
+              "name": "inActive",
+              "systemDefault": true
+            }
+          ],
+          "lookup": null,
+          "values": null
+        },
+        {
+          "id": "lastTriggeredAt",
+          "header": "Last Triggered At",
+          "isStandard": true,
+          "isFilterable": true,
+          "isSortable": true,
+          "multiValue": false,
+          "isInternal": true,
+          "fieldType": "DATETIME_PICKER",
+          "picklist": null,
+          "lookup": null,
+          "values": null
+        },
+        {
+          "id": "triggerCount",
+          "header": "Trigger Count",
+          "isStandard": true,
+          "isFilterable": true,
+          "isSortable": true,
+          "multiValue": false,
+          "isInternal": true,
+          "fieldType": "NUMBER",
+          "picklist": null,
+          "lookup": null,
+          "values": null
+        },
+        {
+          "id": "updatedBy",
+          "header": "Updated By",
+          "isStandard": true,
+          "isFilterable": true,
+          "isSortable": false,
+          "isInternal": true,
+          "multiValue": false,
+          "fieldType": "LOOK_UP",
+          "picklist": null,
+          "lookup": {
+            "entity": "USER",
+            "lookupUrl": "/users/lookup?q=name:"
+          },
+          "showDefaultOptions": true,
+          "values": null
+        },
+        {
+          "id": "updatedAt",
+          "header": "Updated At",
+          "isStandard": true,
+          "isFilterable": true,
+          "isSortable": true,
+          "multiValue": false,
+          "isInternal": true,
+          "fieldType": "DATETIME_PICKER",
+          "picklist": null,
+          "lookup": null,
+          "values": null
+        }
+      ]
+    }
+  },
+  "defaultConfig": {
+    "fields": [
+      "workflowName",
+      "entity",
+      "createdAt",
+      "createdBy",
+      "status",
+      "lastTriggeredAt",
+      "triggerCount"
+    ]
+  }
+}
