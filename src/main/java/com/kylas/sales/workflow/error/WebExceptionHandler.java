@@ -1,5 +1,6 @@
 package com.kylas.sales.workflow.error;
 
+import com.kylas.sales.workflow.domain.exception.InvalidActionException;
 import java.time.LocalDateTime;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -21,5 +22,22 @@ public class WebExceptionHandler extends ResponseEntityExceptionHandler {
     errorResponse.setErrorCode(ex.getMessage());
 
     return new ResponseEntity<>(errorResponse, HttpStatus.NOT_FOUND);
+  }
+  @ExceptionHandler(value = {DomainException.class})
+  public ResponseEntity<ErrorResponse> handleDomainException(
+      Exception ex, WebRequest request) {
+    var errorResponse = new ErrorResponse();
+    errorResponse.setTimestamp(LocalDateTime.now());
+    errorResponse.setErrorCode(ex.getMessage());
+
+    return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+  }
+  @ExceptionHandler(value = {SecurityException.class})
+  public ResponseEntity<ErrorResponse> handleSecurityException(Exception ex, WebRequest request) {
+    var errorResponse = new ErrorResponse();
+    errorResponse.setTimestamp(LocalDateTime.now());
+    errorResponse.setErrorCode(ex.getMessage());
+
+    return new ResponseEntity<>(errorResponse, HttpStatus.FORBIDDEN);
   }
 }

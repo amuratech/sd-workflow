@@ -1,23 +1,95 @@
 package com.kylas.sales.workflow;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.matching;
+import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
+import static org.junit.jupiter.api.Assertions.fail;
+
 import com.kylas.sales.workflow.config.TestDatabaseInitializer;
+import java.io.IOException;
+import org.apache.commons.io.FileUtils;
+import org.jetbrains.annotations.NotNull;
+import org.json.JSONException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.skyscreamer.jsonassert.JSONAssert;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase.Replace;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.cloud.contract.wiremock.AutoConfigureWireMock;
+import org.springframework.core.env.Environment;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.springframework.web.reactive.function.client.WebClient;
+import reactor.test.StepVerifier;
 
 @ExtendWith(SpringExtension.class)
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 @AutoConfigureTestDatabase(replace = Replace.NONE)
+@AutoConfigureWireMock(port = 9090)
 @ContextConfiguration(initializers = {TestDatabaseInitializer.class})
 public class WorkflowIntegrationTests {
 
-  @Test
-  public void thisShallPass(){
+  @Autowired
+  Environment environment;
+  private final String authenticationToken =
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzZWxsIiwiZGF0YSI6eyJleHBpcmVzSW4iOjQzMTk5LCJleHBpcnkiOjE1NzY0OTM3MTAsInRva2VuVHlwZSI6ImJlYXJlciIsInBlcm1pc3Npb25zIjpbeyJpZCI6NCwibmFtZSI6ImxlYWQiLCJkZXNjcmlwdGlvbiI6ImhhcyBhY2Nlc3MgdG8gbGVhZCByZXNvdXJjZSIsImxpbWl0cyI6LTEsInVuaXRzIjoiY291bnQiLCJhY3Rpb24iOnsicmVhZCI6dHJ1ZSwid3JpdGUiOnRydWUsInVwZGF0ZSI6dHJ1ZSwiZGVsZXRlIjp0cnVlLCJlbWFpbCI6ZmFsc2UsImNhbGwiOmZhbHNlLCJzbXMiOmZhbHNlLCJ0YXNrIjp0cnVlLCJub3RlIjp0cnVlLCJyZWFkQWxsIjp0cnVlLCJ1cGRhdGVBbGwiOnRydWV9fSx7ImlkIjo3LCJuYW1lIjoid29ya2Zsb3ciLCJkZXNjcmlwdGlvbiI6ImhhcyBhY2Nlc3MgdG8gd29ya2Zsb3cgcmVzb3VyY2UiLCJsaW1pdHMiOi0xLCJ1bml0cyI6ImNvdW50IiwiYWN0aW9uIjp7InJlYWQiOnRydWUsIndyaXRlIjp0cnVlLCJ1cGRhdGUiOnRydWUsImRlbGV0ZSI6dHJ1ZSwiZW1haWwiOmZhbHNlLCJjYWxsIjpmYWxzZSwic21zIjpmYWxzZSwidGFzayI6ZmFsc2UsIm5vdGUiOmZhbHNlLCJyZWFkQWxsIjpmYWxzZSwidXBkYXRlQWxsIjpmYWxzZX19XSwidXNlcklkIjoiMTIiLCJ1c2VybmFtZSI6InRvbnlAc3RhcmsuY29tIiwidGVuYW50SWQiOiI1NSJ9fQ.R4R6JvHP9KyJ4lCOfJe6q666d90X0HgNFcaGm6yWYtY";
 
+
+  @Test
+  public void givenWorkflowRequest_shouldCreate() throws IOException {
+    //given
+    stubFor(
+        get("/iam/v1/users/12")
+            .withHeader(HttpHeaders.AUTHORIZATION, matching("Bearer " + authenticationToken))
+            .willReturn(
+                aResponse()
+                    .withHeader("Content-Type", "application/json")
+                    .withStatus(200)
+                    .withBody(
+                        getResourceAsString(
+                            "/contracts/user/responses/user-details-by-id.json"))));
+    var workflowRequest = getResourceAsString("/contracts/workflow/api/create-workflow-request.json");
+    //when
+    var workflowResponse = buildWebClient()
+        .post()
+        .uri("/v1/workflows")
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(workflowRequest)
+        .retrieve()
+        .bodyToMono(String.class);
+    //then
+    var expectedResponse =
+        getResourceAsString("/contracts/workflow/api/create-workflow-response.json");
+    StepVerifier.create(workflowResponse)
+        .assertNext(json -> {
+          try {
+            JSONAssert.assertEquals(expectedResponse, json, false);
+          } catch (JSONException e) {
+            fail(e.getMessage());
+          }
+        }).verifyComplete();
+  }
+  @NotNull
+  private WebClient buildWebClient() {
+    var port = environment.getProperty("local.server.port");
+
+    return WebClient.builder()
+        .baseUrl("http://localhost:" + port)
+        .defaultHeader(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE)
+        .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + authenticationToken)
+        .build();
+  }
+  private String getResourceAsString(String resourcePath) throws IOException {
+    var resource = new ClassPathResource(resourcePath);
+    var file = resource.getFile();
+    return FileUtils.readFileToString(file, "UTF-8");
   }
 }

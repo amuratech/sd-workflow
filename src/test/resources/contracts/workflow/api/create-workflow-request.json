@@ -1,0 +1,24 @@
+{
+  "name": "Workflow 1",
+  "description": "Workflow Description",
+  "entityType": "LEAD",
+  "trigger": {
+    "name": "EVENT",
+    "triggerFrequency": "CREATED",
+    "payload": {
+    }
+  },
+  "condition": {
+    "conditionType": "FOR_ALL",
+    "values": []
+  },
+  "actions": [
+    {
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "city",
+        "value": "Pune"
+      }
+    }
+  ]
+}

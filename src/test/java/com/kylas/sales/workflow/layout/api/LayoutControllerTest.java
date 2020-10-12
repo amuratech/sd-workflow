@@ -5,6 +5,7 @@ import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.kylas.sales.workflow.api.WorkflowService;
 import com.kylas.sales.workflow.layout.api.exception.LayoutNotFoundException;
 import java.io.IOException;
 import org.apache.commons.io.FileUtils;
@@ -27,6 +28,8 @@ class LayoutControllerTest {
   private MockMvc mockMvc;
   @MockBean
   private LayoutService layoutService;
+  @MockBean
+  WorkflowService workflowService;
   @Autowired
   private ResourceLoader resourceLoader;
 

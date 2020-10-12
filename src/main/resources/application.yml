@@ -29,6 +29,7 @@ security:
 
 server:
   port: 9002
+  max-http-header-size: 10KB
 
 management:
   metrics:
@@ -44,3 +45,7 @@ management:
     web:
       exposure:
         include: '*'
+
+client:
+  iam:
+    basePath: http://localhost:8081

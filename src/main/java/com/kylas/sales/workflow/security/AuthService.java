@@ -1,4 +1,4 @@
-package com.kylas.sales.workflow.infra;
+package com.kylas.sales.workflow.security;
 
 import com.kylas.sales.workflow.domain.user.User;
 import com.kylas.sales.workflow.security.jwt.Authentication;
@@ -6,7 +6,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 @Service
-public class UserService {
+public class AuthService {
 
   public User getLoggedInUser() {
     var authentication = (Authentication) SecurityContextHolder.getContext().getAuthentication();
@@ -19,4 +19,5 @@ public class UserService {
     var authentication = (Authentication) SecurityContextHolder.getContext().getAuthentication();
     return authentication.getJwtToken();
   }
+
 }

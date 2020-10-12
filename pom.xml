@@ -31,6 +31,7 @@
 
     <!--<editor-fold desc="Test Dependencies">-->
     <commons-io.version>2.6</commons-io.version>
+    <commons-lang.version>3.9</commons-lang.version>
     <jsonassert.version>1.5.0</jsonassert.version>
     <junit-jupiter-testcontainer.version>1.12.4</junit-jupiter-testcontainer.version>
     <test-container-postgresql.version>1.10.6</test-container-postgresql.version>
@@ -74,7 +75,11 @@
       <artifactId>commons-io</artifactId>
       <version>${commons-io.version}</version>
     </dependency>
-
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-lang3</artifactId>
+      <version>${commons-lang.version}</version>
+    </dependency>
     <!--<editor-fold desc="Monitoring">-->
     <dependency>
       <groupId>io.micrometer</groupId>

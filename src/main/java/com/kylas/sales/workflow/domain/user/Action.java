@@ -15,4 +15,12 @@ public class Action implements Serializable {
   private boolean write;
   private boolean readAll;
   private boolean updateAll;
+
+  public boolean canRead() {
+    return this.read;
+  }
+
+  public boolean canWrite() {
+    return this.write;
+  }
 }
