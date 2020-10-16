@@ -17,6 +17,8 @@ import com.kylas.sales.workflow.domain.workflow.action.WorkflowAction.ActionType
 import com.kylas.sales.workflow.security.AuthService;
 import com.kylas.sales.workflow.stubs.UserStub;
 import com.kylas.sales.workflow.stubs.WorkflowStub;
+import java.util.List;
+import java.util.stream.Collectors;
 import javax.transaction.Transactional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -105,5 +107,24 @@ class WorkflowFacadeTest {
     StepVerifier.create(workflowMono)
         .verifyErrorMatches(throwable -> throwable instanceof InsufficientPrivilegeException);
 
+  }
+
+  @Transactional
+  @Test
+  @Sql("/test-scripts/insert-workflow.sql")
+  public void givenTenantIdAndEntityType_shouldReturn() {
+    //given
+    long tenantId = 99L;
+    User aUser = UserStub.aUser(12, tenantId, false, true, true, true, true)
+        .withName("user 1");
+    given(authService.getLoggedInUser()).willReturn(aUser);
+
+    //when
+    var workflows = workflowFacade.findAllBy(tenantId, EntityType.LEAD);
+    //then
+    assertThat(workflows.size()).isEqualTo(2);
+    List<Long> workflowIds = workflows.stream().map(workflow -> workflow.getId()).collect(Collectors.toList());
+
+    assertThat(workflowIds).containsExactlyInAnyOrder(301L, 302L);
   }
 }

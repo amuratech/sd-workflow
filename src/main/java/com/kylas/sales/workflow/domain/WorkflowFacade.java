@@ -3,11 +3,13 @@ package com.kylas.sales.workflow.domain;
 import com.kylas.sales.workflow.api.request.WorkflowRequest;
 import com.kylas.sales.workflow.domain.service.UserService;
 import com.kylas.sales.workflow.domain.user.UserFacade;
+import com.kylas.sales.workflow.domain.workflow.EntityType;
 import com.kylas.sales.workflow.domain.workflow.Workflow;
 import com.kylas.sales.workflow.domain.workflow.WorkflowCondition;
 import com.kylas.sales.workflow.domain.workflow.WorkflowTrigger;
 import com.kylas.sales.workflow.domain.workflow.action.EditPropertyAction;
 import com.kylas.sales.workflow.security.AuthService;
+import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
@@ -46,5 +48,9 @@ public class WorkflowFacade {
           return workflowRepository.saveAndFlush(aNew);
         });
 
+  }
+
+  public List<Workflow> findAllBy(long tenantId, EntityType entityType) {
+    return workflowRepository.findAllByTenantIdAndEntityType(tenantId, entityType);
   }
 }

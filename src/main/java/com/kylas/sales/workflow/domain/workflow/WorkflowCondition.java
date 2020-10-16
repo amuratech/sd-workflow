@@ -7,6 +7,8 @@ import javax.persistence.Enumerated;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.OneToOne;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -22,6 +24,10 @@ public class WorkflowCondition {
   private Long id;
   @Enumerated(value = EnumType.STRING)
   private ConditionType type;
+
+  @OneToOne
+  @JoinColumn(name = "workflow_id")
+  private Workflow workflow;
 
   private WorkflowCondition(ConditionType type) {
     this.type = type;

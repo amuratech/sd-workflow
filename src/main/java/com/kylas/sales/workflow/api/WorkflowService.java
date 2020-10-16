@@ -3,6 +3,10 @@ package com.kylas.sales.workflow.api;
 import com.kylas.sales.workflow.api.request.WorkflowRequest;
 import com.kylas.sales.workflow.api.response.WorkflowSummary;
 import com.kylas.sales.workflow.domain.WorkflowFacade;
+import com.kylas.sales.workflow.domain.workflow.EntityType;
+import com.kylas.sales.workflow.domain.workflow.Workflow;
+import java.util.Collections;
+import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
@@ -18,5 +22,9 @@ public class WorkflowService {
 
   public Mono<WorkflowSummary> create(WorkflowRequest workflowRequest) {
     return workflowFacade.create(workflowRequest).map(workflow -> new WorkflowSummary(workflow.getId()));
+  }
+
+  public List<Workflow> findAllBy(long tenantId, EntityType entityType) {
+    return workflowFacade.findAllBy(tenantId, entityType);
   }
 }

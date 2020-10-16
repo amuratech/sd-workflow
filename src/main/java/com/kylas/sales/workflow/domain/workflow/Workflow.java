@@ -44,17 +44,19 @@ public class Workflow {
   @Enumerated(value = EnumType.STRING)
   private EntityType entityType;
 
-  @OneToOne(cascade = CascadeType.ALL)
-  @JoinColumn(name = "workflow_trigger_id")
+  @OneToOne(mappedBy = "workflow", cascade = CascadeType.ALL)
   private WorkflowTrigger workflowTrigger;
 
-  @OneToOne(cascade = CascadeType.ALL)
-  @JoinColumn(name = "workflow_condition_id")
+  @OneToOne(mappedBy = "workflow", cascade = CascadeType.ALL)
   private WorkflowCondition workflowCondition;
 
 
-  @OneToMany(cascade = CascadeType.ALL, mappedBy = "workflow", targetEntity = AbstractWorkflowAction.class)
-  private Set<WorkflowAction> workflowActions;
+  @OneToMany(
+      fetch = FetchType.EAGER,
+      cascade = CascadeType.ALL,
+      mappedBy = "workflow",
+      targetEntity = AbstractWorkflowAction.class)
+  private Set<AbstractWorkflowAction> workflowActions;
 
   @ManyToOne(fetch = FetchType.EAGER)
   @JoinColumn(name = "created_by")
@@ -69,13 +71,14 @@ public class Workflow {
   private Date updatedAt;
 
   private Workflow(String name, String description, EntityType entityType, WorkflowTrigger workflowTrigger,
-      Set<WorkflowAction> workflowActions, WorkflowCondition condition, long tenantId,
+      Set<AbstractWorkflowAction> workflowActions, WorkflowCondition condition, long tenantId,
       User createdBy,
       User updatedBy) {
     var now = new Date();
     this.name = name;
     this.description = description;
     this.entityType = entityType;
+    workflowTrigger.setWorkflow(this);
     this.workflowTrigger = workflowTrigger;
     this.tenantId = tenantId;
     this.createdBy = createdBy;
@@ -86,30 +89,31 @@ public class Workflow {
       workflowAction.setWorkflow(this);
       return workflowAction;
     }).collect(Collectors.toSet());
+    condition.setWorkflow(this);
     this.workflowCondition = condition;
   }
 
   public static Workflow createNew(String name, String description, EntityType entityType,
-      WorkflowTrigger trigger, User creator, Set<WorkflowAction> workflowActions,
+      WorkflowTrigger trigger, User creator, Set<AbstractWorkflowAction> workflowActions,
       WorkflowCondition condition) {
     if (!creator.canCreateWorkflow()) {
       log.error("User with id: {} does not have create permission on Workflow", creator.getId());
       throw new InsufficientPrivilegeException();
     }
-    if(entityType == null){
-      log.error("Try to create workflow with entityType {}",entityType);
+    if (entityType == null) {
+      log.error("Try to create workflow with entityType {}", entityType);
       throw new InvalidWorkflowPropertyException();
     }
-    if(trigger == null){
-      log.error("Try to create workflow with trigger {}",trigger);
+    if (trigger == null) {
+      log.error("Try to create workflow with trigger {}", trigger);
       throw new InvalidWorkflowPropertyException();
     }
-    if(workflowActions == null){
-      log.error("Try to create workflow with action {}",workflowActions);
+    if (workflowActions == null) {
+      log.error("Try to create workflow with action {}", workflowActions);
       throw new InvalidWorkflowPropertyException();
     }
-    if(condition == null){
-      log.error("Try to create workflow with condition {}",condition);
+    if (condition == null) {
+      log.error("Try to create workflow with condition {}", condition);
       throw new InvalidWorkflowPropertyException();
     }
     return new Workflow(name, description, entityType, trigger, workflowActions, condition, creator.getTenantId(), creator, creator);

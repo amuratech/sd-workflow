@@ -13,6 +13,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
+import org.hibernate.jdbc.Work;
 
 @Entity
 @Getter
@@ -28,6 +29,9 @@ public class WorkflowTrigger {
   @Enumerated(value = EnumType.STRING)
   private TriggerFrequency triggerFrequency;
 
+  @OneToOne
+  @JoinColumn(name = "workflow_id")
+  private Workflow workflow;
   private WorkflowTrigger(TriggerType triggerType, TriggerFrequency triggerFrequency) {
     this.triggerType = triggerType;
     this.triggerFrequency = triggerFrequency;
