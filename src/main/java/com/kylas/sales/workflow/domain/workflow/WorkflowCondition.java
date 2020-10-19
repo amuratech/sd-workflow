@@ -1,6 +1,5 @@
 package com.kylas.sales.workflow.domain.workflow;
 
-import com.kylas.sales.workflow.api.request.ConditionRequest;
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
@@ -33,7 +32,7 @@ public class WorkflowCondition {
     this.type = type;
   }
 
-  public static WorkflowCondition createNew(ConditionRequest condition) {
+  public static WorkflowCondition createNew(com.kylas.sales.workflow.common.dto.WorkflowCondition condition) {
     return new WorkflowCondition(condition.getConditionType());
   }
 }

@@ -1,6 +1,5 @@
 package com.kylas.sales.workflow.domain.workflow;
 
-import com.kylas.sales.workflow.api.request.TriggerRequest;
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
@@ -13,7 +12,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
-import org.hibernate.jdbc.Work;
 
 @Entity
 @Getter
@@ -37,7 +35,7 @@ public class WorkflowTrigger {
     this.triggerFrequency = triggerFrequency;
   }
 
-  public static WorkflowTrigger createNew(TriggerRequest trigger) {
+  public static WorkflowTrigger createNew(com.kylas.sales.workflow.common.dto.WorkflowTrigger trigger) {
     return new WorkflowTrigger(trigger.getName(),trigger.getTriggerFrequency());
   }
 }

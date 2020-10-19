@@ -81,4 +81,20 @@ public class User {
                 permission.getName().equalsIgnoreCase(WORKFLOW_PERMISSION_NAME)
                     && permission.getAction().canWrite());
   }
+
+  public boolean canQueryHisWorkflow() {
+    return permissions.stream()
+        .anyMatch(
+            permission ->
+                permission.getName().equalsIgnoreCase(WORKFLOW_PERMISSION_NAME)
+                    && permission.getAction().canRead());
+  }
+
+  public boolean canQueryAllWorkflow() {
+    return permissions.stream()
+        .anyMatch(
+            permission ->
+                permission.getName().equalsIgnoreCase(WORKFLOW_PERMISSION_NAME)
+                    && permission.getAction().canReadAll());
+  }
 }

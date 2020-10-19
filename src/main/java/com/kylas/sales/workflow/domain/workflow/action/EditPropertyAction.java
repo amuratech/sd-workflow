@@ -2,7 +2,7 @@ package com.kylas.sales.workflow.domain.workflow.action;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
 
-import com.kylas.sales.workflow.api.request.ActionRequest;
+import com.kylas.sales.workflow.common.dto.WorkflowAction;
 import com.kylas.sales.workflow.domain.exception.InvalidActionException;
 import com.kylas.sales.workflow.domain.processor.Actionable;
 import com.kylas.sales.workflow.domain.processor.exception.WorkflowExecutionException;
@@ -28,7 +28,7 @@ import org.springframework.expression.spel.support.SimpleEvaluationContext;
 @Setter
 @NoArgsConstructor
 @Slf4j
-public class EditPropertyAction extends AbstractWorkflowAction implements WorkflowAction {
+public class EditPropertyAction extends AbstractWorkflowAction implements com.kylas.sales.workflow.domain.workflow.action.WorkflowAction {
 
   private String name;
   private String value;
@@ -38,14 +38,14 @@ public class EditPropertyAction extends AbstractWorkflowAction implements Workfl
     this.value = value;
   }
 
-  public static Set<AbstractWorkflowAction> createNew(Set<ActionRequest> actions) {
+  public static Set<AbstractWorkflowAction> createNew(Set<WorkflowAction> actions) {
     return actions.stream()
-        .filter(actionRequest -> ActionType.EDIT_PROPERTY.equals(actionRequest.getType()))
-        .map(actionRequest -> {
-          if (isBlank(actionRequest.getPayload().getName()) || isBlank(actionRequest.getPayload().getValue())) {
+        .filter(workflowAction -> ActionType.EDIT_PROPERTY.equals(workflowAction.getType()))
+        .map(workflowAction -> {
+          if (isBlank(workflowAction.getPayload().getName()) || isBlank(workflowAction.getPayload().getValue())) {
             throw new InvalidActionException();
           }
-          return new EditPropertyAction(actionRequest.getPayload().getName(), actionRequest.getPayload().getValue());
+          return new EditPropertyAction(workflowAction.getPayload().getName(), workflowAction.getPayload().getValue());
         })
         .collect(Collectors.toCollection(HashSet::new));
   }

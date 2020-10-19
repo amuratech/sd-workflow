@@ -1,4 +1,4 @@
-package com.kylas.sales.workflow.api.request;
+package com.kylas.sales.workflow.common.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.kylas.sales.workflow.domain.workflow.TriggerType;
@@ -11,7 +11,7 @@ import lombok.Setter;
 @Setter
 @JsonIgnoreProperties(ignoreUnknown = true)
 @AllArgsConstructor
-public class TriggerRequest {
+public class WorkflowTrigger {
   private TriggerType name;
   private TriggerFrequency triggerFrequency;
 

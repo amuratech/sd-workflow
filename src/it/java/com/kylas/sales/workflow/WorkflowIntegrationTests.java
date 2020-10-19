@@ -13,19 +13,22 @@ import org.jetbrains.annotations.NotNull;
 import org.json.JSONException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.skyscreamer.jsonassert.Customization;
 import org.skyscreamer.jsonassert.JSONAssert;
+import org.skyscreamer.jsonassert.JSONCompareMode;
+import org.skyscreamer.jsonassert.comparator.CustomComparator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase.Replace;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.cloud.contract.wiremock.AutoConfigureWireMock;
 import org.springframework.core.env.Environment;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.test.StepVerifier;
@@ -77,6 +80,43 @@ public class WorkflowIntegrationTests {
           }
         }).verifyComplete();
   }
+
+  @Test
+  @Sql("/test-scripts/integration/insert-lead-workflow-for-integration-test.sql")
+  public void givenWorkflowId_shouldGetIt() throws IOException {
+    //given
+    stubFor(
+        get("/iam/v1/users/12")
+            .withHeader(HttpHeaders.AUTHORIZATION, matching("Bearer " + authenticationToken))
+            .willReturn(
+                aResponse()
+                    .withHeader("Content-Type", "application/json")
+                    .withStatus(200)
+                    .withBody(
+                        getResourceAsString(
+                            "/contracts/user/responses/user-details-by-id.json"))));
+    //when
+    var workflowResponse = buildWebClient()
+        .get()
+        .uri("/v1/workflows/301")
+        .retrieve()
+        .bodyToMono(String.class);
+    //then
+    var expectedResponse =
+        getResourceAsString("/contracts/workflow/api/integration/workflowId-301-reponse.json");
+    StepVerifier.create(workflowResponse)
+        .assertNext(json -> {
+          try {
+            JSONAssert.assertEquals(expectedResponse, json, new CustomComparator(JSONCompareMode.STRICT,
+                new Customization("createdAt", (o1, o2) -> true),
+                new Customization("updatedAt", (o1, o2) -> true)
+            ));
+          } catch (JSONException e) {
+            fail(e.getMessage());
+          }
+        }).verifyComplete();
+  }
+
   @NotNull
   private WebClient buildWebClient() {
     var port = environment.getProperty("local.server.port");
@@ -87,6 +127,7 @@ public class WorkflowIntegrationTests {
         .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + authenticationToken)
         .build();
   }
+
   private String getResourceAsString(String resourcePath) throws IOException {
     var resource = new ClassPathResource(resourcePath);
     var file = resource.getFile();

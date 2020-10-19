@@ -37,6 +37,7 @@
     <test-container-postgresql.version>1.10.6</test-container-postgresql.version>
     <spring-cloud-starter-contract.version>2.2.1.RELEASE</spring-cloud-starter-contract.version>
     <rabbitmq-test-container.version>1.12.5</rabbitmq-test-container.version>
+    <hibernate-jpamodelgen.version>5.4.10.Final</hibernate-jpamodelgen.version>
     <!--</editor-fold>-->
 
     <skip.unit.tests>false</skip.unit.tests>
@@ -83,6 +84,12 @@
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-lang3</artifactId>
       <version>${commons-lang.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.hibernate</groupId>
+      <artifactId>hibernate-jpamodelgen</artifactId>
+      <version>${hibernate-jpamodelgen.version}</version>
+      <scope>provided</scope>
     </dependency>
     <!--<editor-fold desc="Monitoring">-->
     <dependency>

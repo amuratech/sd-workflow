@@ -1,5 +1,6 @@
 package com.kylas.sales.workflow.domain.workflow;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
 
 import com.kylas.sales.workflow.domain.exception.InsufficientPrivilegeException;
@@ -37,7 +38,7 @@ class WorkflowTest {
     //when
     Workflow aNew = Workflow.createNew("Workflow1", "Workflow1", EntityType.LEAD, triggerMock, userMock, workflowActions, conditionMock);
     //then
-    Assertions.assertThat(aNew).isNotNull();
+    assertThat(aNew).isNotNull();
   }
 
   @Test
@@ -89,4 +90,55 @@ class WorkflowTest {
         .isInstanceOf(InvalidWorkflowPropertyException.class);
   }
 
+  @Test
+  public void givenUserWithReadPermission_shouldGetReadAction() {
+    //given
+    WorkflowTrigger triggerMock = Mockito.mock(WorkflowTrigger.class);
+    User userMock = Mockito.mock(User.class);
+    given(userMock.canCreateWorkflow()).willReturn(true);
+    given(userMock.canQueryHisWorkflow()).willReturn(true);
+    HashSet workflowActions = Mockito.mock(HashSet.class);
+    WorkflowCondition conditionMock = Mockito.mock(WorkflowCondition.class);
+    //when
+    Workflow workflow = Workflow.createNew("Workflow1", "Workflow1", EntityType.LEAD, triggerMock, userMock, workflowActions, conditionMock)
+        .setAllowedActionsForUser(userMock);
+    //then
+    assertThat(workflow.getAllowedActions().canRead()).isTrue();
+  }
+
+  @Test
+  public void givenUserWithReadAllPermission_shouldGetReadAction() {
+    //given
+    WorkflowTrigger triggerMock = Mockito.mock(WorkflowTrigger.class);
+    User userMock = Mockito.mock(User.class);
+    given(userMock.canCreateWorkflow()).willReturn(true);
+    given(userMock.canQueryAllWorkflow()).willReturn(true);
+    HashSet workflowActions = Mockito.mock(HashSet.class);
+    WorkflowCondition conditionMock = Mockito.mock(WorkflowCondition.class);
+    //when
+    Workflow workflow = Workflow.createNew("Workflow1", "Workflow1", EntityType.LEAD, triggerMock, userMock, workflowActions, conditionMock)
+        .setAllowedActionsForUser(userMock);
+    //then
+    assertThat(workflow.getAllowedActions().canRead()).isTrue();
+  }
+
+  @Test
+  public void givenNonCreatorUser_shouldGetAllPermissionToFalse() {
+    //given
+    WorkflowTrigger triggerMock = Mockito.mock(WorkflowTrigger.class);
+    User creatorMock = Mockito.mock(User.class);
+    given(creatorMock.canCreateWorkflow()).willReturn(true);
+
+    User readerMock = Mockito.mock(User.class);
+
+    HashSet workflowActions = Mockito.mock(HashSet.class);
+    WorkflowCondition conditionMock = Mockito.mock(WorkflowCondition.class);
+    //when
+    Workflow workflow = Workflow.createNew("Workflow1", "Workflow1", EntityType.LEAD, triggerMock, creatorMock, workflowActions, conditionMock)
+        .setAllowedActionsForUser(readerMock);
+    //then
+    assertThat(workflow.getAllowedActions().canRead()).isFalse();
+    assertThat(workflow.getAllowedActions().canReadAll()).isFalse();
+    assertThat(workflow.getAllowedActions().canWrite()).isFalse();
+  }
 }

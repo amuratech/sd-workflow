@@ -5,6 +5,7 @@ import static org.mockito.BDDMockito.given;
 
 import com.kylas.sales.workflow.config.TestDatabaseInitializer;
 import com.kylas.sales.workflow.domain.exception.InsufficientPrivilegeException;
+import com.kylas.sales.workflow.domain.exception.WorkflowNotFoundException;
 import com.kylas.sales.workflow.domain.service.UserService;
 import com.kylas.sales.workflow.domain.user.User;
 import com.kylas.sales.workflow.domain.user.UserFacade;
@@ -12,6 +13,7 @@ import com.kylas.sales.workflow.domain.workflow.ConditionType;
 import com.kylas.sales.workflow.domain.workflow.EntityType;
 import com.kylas.sales.workflow.domain.workflow.TriggerFrequency;
 import com.kylas.sales.workflow.domain.workflow.TriggerType;
+import com.kylas.sales.workflow.domain.workflow.Workflow;
 import com.kylas.sales.workflow.domain.workflow.action.EditPropertyAction;
 import com.kylas.sales.workflow.domain.workflow.action.WorkflowAction.ActionType;
 import com.kylas.sales.workflow.security.AuthService;
@@ -20,6 +22,7 @@ import com.kylas.sales.workflow.stubs.WorkflowStub;
 import java.util.List;
 import java.util.stream.Collectors;
 import javax.transaction.Transactional;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -126,5 +129,76 @@ class WorkflowFacadeTest {
     List<Long> workflowIds = workflows.stream().map(workflow -> workflow.getId()).collect(Collectors.toList());
 
     assertThat(workflowIds).containsExactlyInAnyOrder(301L, 302L);
+  }
+
+  @Transactional
+  @Test
+  @Sql("/test-scripts/insert-create-lead-workflow.sql")
+  public void givenWorkflowId_shouldGetIt() {
+    //given
+    long tenantId = 99L;
+    long userId = 12L;
+    User aUser = UserStub.aUser(userId, tenantId, false, true, true, false, false)
+        .withName("user 1");
+    given(authService.getLoggedInUser()).willReturn(aUser);
+    long workflowId = 301;
+    //when
+    var workflow = workflowFacade.get(workflowId);
+    //then
+    assertThat(workflow.getId()).isEqualTo(workflowId);
+    assertThat(workflow.getAllowedActions().canRead()).isEqualTo(true);
+  }
+
+  @Transactional
+  @Test
+  @Sql("/test-scripts/insert-create-lead-workflow.sql")
+  public void givenNonExistingWorkflowId_tryToGet_shouldThrow() {
+    //given
+    long tenantId = 99L;
+    long userId = 12L;
+    User aUser = UserStub.aUser(userId, tenantId, false, true, true, false, false)
+        .withName("user 1");
+    given(authService.getLoggedInUser()).willReturn(aUser);
+    long workflowId = 999;
+    //when
+    Assertions.assertThatThrownBy(() -> workflowFacade.get(workflowId))
+        .isInstanceOf(WorkflowNotFoundException.class)
+        .hasMessage("01701005");
+  }
+
+  @Transactional
+  @Test
+  @Sql("/test-scripts/insert-create-lead-workflow.sql")
+  public void givenUserDoesNotHaveReadAndReadAllPermission_tryToGetWorkflow_shouldThrow() {
+    //given
+    long tenantId = 99L;
+    long userId = 12L;
+    User aUser = UserStub.aUser(userId, tenantId, false, false, false, false, false)
+        .withName("user 1");
+    given(authService.getLoggedInUser()).willReturn(aUser);
+    long workflowId = 301;
+    //when
+    //then
+    Assertions.assertThatThrownBy(() -> workflowFacade.get(workflowId))
+        .isInstanceOf(InsufficientPrivilegeException.class)
+        .hasMessage("01702001");
+  }
+
+  @Transactional
+  @Test
+  @Sql("/test-scripts/insert-lead-workflow-for-multiple-users.sql")
+  public void givenUserHavingReadAllPermission_tryToGetOthersWorkflow_shouldGet() {
+    //given
+    long tenantId = 99L;
+    long userId = 12L;
+    User aUser = UserStub.aUser(userId, tenantId, false, true, true, false, false)
+        .withName("user 1");
+    given(authService.getLoggedInUser()).willReturn(aUser);
+    long workflowIdForUser13 = 302;
+    //when
+    Workflow workflow = workflowFacade.get(workflowIdForUser13);
+    //then
+    assertThat(workflow.getId()).isEqualTo(workflowIdForUser13);
+    assertThat(workflow.getAllowedActions().canRead()).isEqualTo(true);
   }
 }

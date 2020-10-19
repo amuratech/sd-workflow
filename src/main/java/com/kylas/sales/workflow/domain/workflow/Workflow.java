@@ -2,9 +2,9 @@ package com.kylas.sales.workflow.domain.workflow;
 
 import com.kylas.sales.workflow.domain.exception.InsufficientPrivilegeException;
 import com.kylas.sales.workflow.domain.exception.InvalidWorkflowPropertyException;
+import com.kylas.sales.workflow.domain.user.Action;
 import com.kylas.sales.workflow.domain.user.User;
 import com.kylas.sales.workflow.domain.workflow.action.AbstractWorkflowAction;
-import com.kylas.sales.workflow.domain.workflow.action.WorkflowAction;
 import java.util.Date;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -20,6 +20,7 @@ import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.OneToMany;
 import javax.persistence.OneToOne;
+import javax.persistence.Transient;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.Size;
 import lombok.Getter;
@@ -70,6 +71,10 @@ public class Workflow {
   private Date createdAt;
   private Date updatedAt;
 
+  @Transient
+  private Action allowedActions;
+
+
   private Workflow(String name, String description, EntityType entityType, WorkflowTrigger workflowTrigger,
       Set<AbstractWorkflowAction> workflowActions, WorkflowCondition condition, long tenantId,
       User createdBy,
@@ -118,4 +123,30 @@ public class Workflow {
     }
     return new Workflow(name, description, entityType, trigger, workflowActions, condition, creator.getTenantId(), creator, creator);
   }
+
+  public Workflow setAllowedActionsForUser(User loggedInUser) {
+    this.allowedActions = whatActionsCanUserTake(loggedInUser);
+    return this;
+  }
+
+  private Action whatActionsCanUserTake(User user) {
+    var action = new Action();
+    if (!belongsToSameTenant(user)) {
+      return action;
+    }
+    if (user.canQueryAllWorkflow()
+        || (user.canQueryHisWorkflow() && isCreator(user))) {
+      action.setRead(true);
+    }
+    return action;
+  }
+
+  private boolean belongsToSameTenant(User user) {
+    return user.getTenantId() == this.tenantId;
+  }
+
+  private boolean isCreator(User user) {
+    return this.createdBy.getId() == user.getId();
+  }
+
 }

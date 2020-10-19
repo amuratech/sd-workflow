@@ -3,15 +3,14 @@ package com.kylas.sales.workflow.domain.workflow.action;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.kylas.sales.workflow.api.request.ActionRequest;
-import com.kylas.sales.workflow.api.request.EditPropertyRequest;
+import com.kylas.sales.workflow.common.dto.WorkflowAction;
+import com.kylas.sales.workflow.common.dto.WorkflowEditProperty;
 import com.kylas.sales.workflow.domain.exception.InvalidActionException;
 import com.kylas.sales.workflow.domain.processor.exception.WorkflowExecutionException;
 import com.kylas.sales.workflow.domain.processor.lead.Lead;
 import com.kylas.sales.workflow.domain.workflow.action.WorkflowAction.ActionType;
 import java.util.HashSet;
 import java.util.Set;
-import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 class EditPropertyActionTest {
@@ -19,11 +18,11 @@ class EditPropertyActionTest {
   @Test
   public void givenEditPropertyAction_shouldCreate() {
     //given
-    var editPropertyAction = new ActionRequest(ActionType.EDIT_PROPERTY, new EditPropertyRequest("firstName", "Tony"));
-    Set<ActionRequest> actionRequests = new HashSet<>();
-    actionRequests.add(editPropertyAction);
+    var editPropertyAction = new WorkflowAction(ActionType.EDIT_PROPERTY, new WorkflowEditProperty("firstName", "Tony"));
+    Set<WorkflowAction> workflowActions = new HashSet<>();
+    workflowActions.add(editPropertyAction);
     //when
-    Set<AbstractWorkflowAction> actions = EditPropertyAction.createNew(actionRequests);
+    Set<AbstractWorkflowAction> actions = EditPropertyAction.createNew(workflowActions);
     //then
     assertThat(actions.size()).isEqualTo(1);
     EditPropertyAction action = (EditPropertyAction) actions.iterator().next();
@@ -34,24 +33,24 @@ class EditPropertyActionTest {
   @Test
   public void givenActionWithoutName_shouldThrow() {
     //given
-    var editPropertyAction = new ActionRequest(ActionType.EDIT_PROPERTY, new EditPropertyRequest("", "Tony"));
-    Set<ActionRequest> actionRequests = new HashSet<>();
-    actionRequests.add(editPropertyAction);
+    var editPropertyAction = new WorkflowAction(ActionType.EDIT_PROPERTY, new WorkflowEditProperty("", "Tony"));
+    Set<WorkflowAction> workflowActions = new HashSet<>();
+    workflowActions.add(editPropertyAction);
     //when
     //then
-    assertThatThrownBy(() -> EditPropertyAction.createNew(actionRequests))
+    assertThatThrownBy(() -> EditPropertyAction.createNew(workflowActions))
         .isInstanceOf(InvalidActionException.class);
   }
 
   @Test
   public void givenActionWithoutValue_shouldThrow() {
     //given
-    var editPropertyAction = new ActionRequest(ActionType.EDIT_PROPERTY, new EditPropertyRequest("firstName", ""));
-    Set<ActionRequest> actionRequests = new HashSet<>();
-    actionRequests.add(editPropertyAction);
+    var editPropertyAction = new WorkflowAction(ActionType.EDIT_PROPERTY, new WorkflowEditProperty("firstName", ""));
+    Set<WorkflowAction> workflowActions = new HashSet<>();
+    workflowActions.add(editPropertyAction);
     //when
     //then
-    assertThatThrownBy(() -> EditPropertyAction.createNew(actionRequests))
+    assertThatThrownBy(() -> EditPropertyAction.createNew(workflowActions))
         .isInstanceOf(InvalidActionException.class);
   }
 
@@ -61,10 +60,10 @@ class EditPropertyActionTest {
     Lead lead = new Lead();
     lead.setFirstName("Steve");
     lead.setLastName("Stark");
-    var editPropertyAction = new ActionRequest(ActionType.EDIT_PROPERTY, new EditPropertyRequest("firstName", "Tony"));
-    Set<ActionRequest> actionRequests = new HashSet<>();
-    actionRequests.add(editPropertyAction);
-    AbstractWorkflowAction workflowAction = EditPropertyAction.createNew(actionRequests).iterator().next();
+    var editPropertyAction = new WorkflowAction(ActionType.EDIT_PROPERTY, new WorkflowEditProperty("firstName", "Tony"));
+    Set<WorkflowAction> workflowActions = new HashSet<>();
+    workflowActions.add(editPropertyAction);
+    AbstractWorkflowAction workflowAction = EditPropertyAction.createNew(workflowActions).iterator().next();
     //when
     Lead processedLead = (Lead) workflowAction.process(lead);
     //then
@@ -79,10 +78,10 @@ class EditPropertyActionTest {
     Lead lead = new Lead();
     lead.setFirstName("Steve");
     lead.setLastName("Stark");
-    var editPropertyAction = new ActionRequest(ActionType.EDIT_PROPERTY, new EditPropertyRequest("myFirstName", "Tony"));
-    Set<ActionRequest> actionRequests = new HashSet<>();
-    actionRequests.add(editPropertyAction);
-    AbstractWorkflowAction workflowAction = EditPropertyAction.createNew(actionRequests).iterator().next();
+    var editPropertyAction = new WorkflowAction(ActionType.EDIT_PROPERTY, new WorkflowEditProperty("myFirstName", "Tony"));
+    Set<WorkflowAction> workflowActions = new HashSet<>();
+    workflowActions.add(editPropertyAction);
+    AbstractWorkflowAction workflowAction = EditPropertyAction.createNew(workflowActions).iterator().next();
     //when
     assertThatThrownBy(() -> workflowAction.process(lead))
         .isInstanceOf(WorkflowExecutionException.class)

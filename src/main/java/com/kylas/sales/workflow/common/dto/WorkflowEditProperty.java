@@ -1,4 +1,4 @@
-package com.kylas.sales.workflow.api.request;
+package com.kylas.sales.workflow.common.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.AllArgsConstructor;
@@ -8,7 +8,7 @@ import lombok.Setter;
 @Getter
 @JsonIgnoreProperties(ignoreUnknown = true)
 @AllArgsConstructor
-public class EditPropertyRequest {
+public class WorkflowEditProperty {
 
   private String name;
   private String value;

@@ -6,22 +6,30 @@ import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.BDDMockito.given;
 
 import com.kylas.sales.workflow.api.request.WorkflowRequest;
+import com.kylas.sales.workflow.api.response.WorkflowDetail;
 import com.kylas.sales.workflow.api.response.WorkflowSummary;
+import com.kylas.sales.workflow.common.dto.User;
 import com.kylas.sales.workflow.config.TestDatabaseInitializer;
 import com.kylas.sales.workflow.domain.exception.InsufficientPrivilegeException;
 import com.kylas.sales.workflow.domain.exception.InvalidActionException;
+import com.kylas.sales.workflow.domain.exception.WorkflowNotFoundException;
 import com.kylas.sales.workflow.domain.workflow.ConditionType;
 import com.kylas.sales.workflow.domain.workflow.EntityType;
 import com.kylas.sales.workflow.domain.workflow.TriggerFrequency;
 import com.kylas.sales.workflow.domain.workflow.TriggerType;
 import com.kylas.sales.workflow.domain.workflow.action.WorkflowAction.ActionType;
+import com.kylas.sales.workflow.stubs.WorkflowStub;
 import java.io.File;
 import java.io.IOException;
+import java.util.Date;
 import org.apache.commons.io.FileUtils;
 import org.json.JSONException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.skyscreamer.jsonassert.Customization;
 import org.skyscreamer.jsonassert.JSONAssert;
+import org.skyscreamer.jsonassert.JSONCompareMode;
+import org.skyscreamer.jsonassert.comparator.CustomComparator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase.Replace;
@@ -157,6 +165,65 @@ class WorkflowControllerTest {
           }
         }).verifyComplete();
 
+  }
+
+  @Test
+  public void givenWorkflowId_shouldGetIt() {
+    //given
+    long workflowId = 101L;
+
+    User createdBy = new User(101L, "Tony Start");
+    var updatedBy = new User(102L, "Steve Roger");
+
+    WorkflowDetail workflowDetail = WorkflowStub
+        .workflowDetail(workflowId, "Edit Lead Property", "Edit Lead Property", EntityType.LEAD, TriggerType.EVENT, TriggerFrequency.CREATED,
+            ConditionType.FOR_ALL, ActionType.EDIT_PROPERTY, "lastName", "Stark", true, true, createdBy, updatedBy, new Date());
+    given(workflowService.get(workflowId)).willReturn(workflowDetail);
+    //when
+    var workflowResponse = buildWebClient()
+        .get()
+        .uri("/v1/workflows/" + workflowId)
+        .retrieve()
+        .bodyToMono(String.class);
+    //then
+    var expectedResponse =
+        getResourceAsString("classpath:contracts/workflow/api/get-workflow-response.json");
+    StepVerifier.create(workflowResponse)
+        .assertNext(json -> {
+          try {
+            JSONAssert.assertEquals(expectedResponse, json, new CustomComparator(JSONCompareMode.STRICT,
+                new Customization("createdAt", (o1, o2) -> true),
+                new Customization("updatedAt", (o1, o2) -> true)
+            ));
+          } catch (JSONException e) {
+            fail(e.getMessage());
+          }
+        }).verifyComplete();
+  }
+
+  @Test
+  public void givenNonExitWorkflowId_shouldThrow() {
+    //given
+    long workflowId = 101L;
+    given(workflowService.get(workflowId)).willThrow(new WorkflowNotFoundException());
+    //when
+    var workflowResponse = buildWebClient()
+        .get()
+        .uri("/v1/workflows/" + workflowId)
+        .exchange()
+        .block()
+        .bodyToMono(String.class);
+    //then
+    var expectedResponse =
+        getResourceAsString("classpath:contracts/workflow/api/get-workflow-response.json");
+    StepVerifier.create(workflowResponse)
+        .assertNext(json -> {
+          try {
+            JSONAssert.assertEquals("{\"code\":\"01701005\"}", json, false);
+          } catch (JSONException e) {
+            fail(e.getMessage());
+          }
+        }).verifyComplete();
   }
 
   private String getResourceAsString(String resourcePath) {

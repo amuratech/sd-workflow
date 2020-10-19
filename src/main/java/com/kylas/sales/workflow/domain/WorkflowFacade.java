@@ -1,7 +1,15 @@
 package com.kylas.sales.workflow.domain;
 
+import static com.kylas.sales.workflow.domain.WorkflowSpecification.belongToTenant;
+import static com.kylas.sales.workflow.domain.WorkflowSpecification.belongToUser;
+import static com.kylas.sales.workflow.domain.WorkflowSpecification.withEntityType;
+import static com.kylas.sales.workflow.domain.WorkflowSpecification.withId;
+
 import com.kylas.sales.workflow.api.request.WorkflowRequest;
+import com.kylas.sales.workflow.domain.exception.InsufficientPrivilegeException;
+import com.kylas.sales.workflow.domain.exception.WorkflowNotFoundException;
 import com.kylas.sales.workflow.domain.service.UserService;
+import com.kylas.sales.workflow.domain.user.User;
 import com.kylas.sales.workflow.domain.user.UserFacade;
 import com.kylas.sales.workflow.domain.workflow.EntityType;
 import com.kylas.sales.workflow.domain.workflow.Workflow;
@@ -10,11 +18,14 @@ import com.kylas.sales.workflow.domain.workflow.WorkflowTrigger;
 import com.kylas.sales.workflow.domain.workflow.action.EditPropertyAction;
 import com.kylas.sales.workflow.security.AuthService;
 import java.util.List;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
 @Service
+@Slf4j
 public class WorkflowFacade {
 
   private final WorkflowRepository workflowRepository;
@@ -51,6 +62,29 @@ public class WorkflowFacade {
   }
 
   public List<Workflow> findAllBy(long tenantId, EntityType entityType) {
-    return workflowRepository.findAllByTenantIdAndEntityType(tenantId, entityType);
+    return workflowRepository.findAll(belongToTenant(tenantId).and(withEntityType(entityType)));
+  }
+
+  public Workflow get(long workflowId) {
+    User loggedInUser = authService.getLoggedInUser();
+
+    Specification<Workflow> readSpecification = getSpecificationByReadPrivileges(loggedInUser)
+        .and(withId(workflowId));
+    return workflowRepository.findOne(readSpecification)
+        .map(workflow -> workflow.setAllowedActionsForUser(loggedInUser))
+        .orElseThrow(WorkflowNotFoundException::new);
+  }
+
+  private Specification<Workflow> getSpecificationByReadPrivileges(User user) {
+    if (!user.canQueryHisWorkflow() && !user.canQueryAllWorkflow()) {
+      log.error("TenantId {} and UserId {} does not have read privilege on workflow", user.getTenantId(),
+          user.getId());
+      throw new InsufficientPrivilegeException();
+    }
+    Specification<Workflow> withTenant = belongToTenant(user.getTenantId());
+    if (user.canQueryAllWorkflow()) {
+      return withTenant;
+    }
+    return withTenant.and(belongToUser(user.getId()));
   }
 }

@@ -1,4 +1,4 @@
-package com.kylas.sales.workflow.api.request;
+package com.kylas.sales.workflow.common.dto;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -8,11 +8,11 @@ import lombok.Getter;
 
 @Getter
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class ConditionRequest {
+public class WorkflowCondition {
   private ConditionType conditionType;
 
   @JsonCreator
-  public ConditionRequest(@JsonProperty("conditionType") ConditionType conditionType) {
+  public WorkflowCondition(@JsonProperty("conditionType") ConditionType conditionType) {
     this.conditionType = conditionType;
   }
 }
