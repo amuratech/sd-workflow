@@ -1,5 +1,6 @@
 package com.kylas.sales.workflow.api;
 
+import static java.util.Arrays.asList;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
@@ -17,11 +18,15 @@ import com.kylas.sales.workflow.domain.workflow.ConditionType;
 import com.kylas.sales.workflow.domain.workflow.EntityType;
 import com.kylas.sales.workflow.domain.workflow.TriggerFrequency;
 import com.kylas.sales.workflow.domain.workflow.TriggerType;
+import com.kylas.sales.workflow.domain.workflow.Workflow;
 import com.kylas.sales.workflow.domain.workflow.action.WorkflowAction.ActionType;
+import com.kylas.sales.workflow.matchers.PageableMatcher;
 import com.kylas.sales.workflow.stubs.WorkflowStub;
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import org.apache.commons.io.FileUtils;
 import org.json.JSONException;
 import org.junit.jupiter.api.Test;
@@ -39,8 +44,12 @@ import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.core.env.Environment;
 import org.springframework.core.io.ResourceLoader;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
@@ -214,8 +223,6 @@ class WorkflowControllerTest {
         .block()
         .bodyToMono(String.class);
     //then
-    var expectedResponse =
-        getResourceAsString("classpath:contracts/workflow/api/get-workflow-response.json");
     StepVerifier.create(workflowResponse)
         .assertNext(json -> {
           try {
@@ -224,6 +231,52 @@ class WorkflowControllerTest {
             fail(e.getMessage());
           }
         }).verifyComplete();
+  }
+
+  @Test
+  public void givenListRequest_shouldGetPageableListingPage() {
+    //given
+
+    User createdBy = new User(101L, "Tony Start");
+    var updatedBy = new User(102L, "Steve Roger");
+
+    WorkflowDetail workflowDetail1 = WorkflowStub
+        .workflowDetail(101, "Workflow 1", "Workflow 1", EntityType.LEAD, TriggerType.EVENT, TriggerFrequency.CREATED,
+            ConditionType.FOR_ALL, ActionType.EDIT_PROPERTY, "lastName", "Stark", true, true, createdBy, updatedBy, new Date());
+
+    WorkflowDetail workflowDetail2 = WorkflowStub
+        .workflowDetail(102, "Workflow 2", "Workflow 2", EntityType.LEAD, TriggerType.EVENT, TriggerFrequency.CREATED,
+            ConditionType.FOR_ALL, ActionType.EDIT_PROPERTY, "firstName", "Tony", true, true, createdBy, updatedBy, new Date());
+    given(
+        workflowService.list(
+            argThat(new PageableMatcher(0, 10, Sort.unsorted()))))
+        .willReturn(
+            Mono.just(new PageImpl<>(asList(workflowDetail1, workflowDetail2), PageRequest.of(0, 10), 12)));
+    //when
+    var workflowResponse = buildWebClient()
+        .post()
+        .uri("/v1/workflows/list?page=0&size=10")
+        .contentType(MediaType.APPLICATION_JSON)
+        .retrieve()
+        .bodyToMono(String.class);
+    //then
+    var expectedResponse =
+        getResourceAsString("classpath:contracts/workflow/api/list-workflows.json");
+    StepVerifier.create(workflowResponse)
+        .assertNext(json -> {
+          try {
+            JSONAssert.assertEquals(expectedResponse, json, new CustomComparator(JSONCompareMode.STRICT,
+                new Customization("content[0].createdAt", (o1, o2) -> true),
+                new Customization("content[0].updatedAt", (o1, o2) -> true),
+                new Customization("content[1].createdAt", (o1, o2) -> true),
+                new Customization("content[1].updatedAt", (o1, o2) -> true)
+            ));
+          } catch (JSONException e) {
+            fail(e.getMessage());
+          }
+        })
+        .expectComplete()
+        .verify();
   }
 
   private String getResourceAsString(String resourcePath) {

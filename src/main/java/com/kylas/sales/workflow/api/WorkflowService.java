@@ -16,6 +16,9 @@ import com.kylas.sales.workflow.domain.workflow.action.WorkflowAction.ActionType
 import java.util.List;
 import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
@@ -56,5 +59,14 @@ public class WorkflowService {
     return new WorkflowDetail(workflow.getId(), workflow.getName(), workflow.getDescription(), workflow.getEntityType(), workflowTrigger,
         workflowCondition,
         actions, createdBy, updatedBy, workflow.getCreatedAt(), workflow.getUpdatedAt(), workflow.getAllowedActions());
+  }
+
+  public Mono<Page<WorkflowDetail>> list(Pageable pageable) {
+    Page<Workflow> list = workflowFacade.list(pageable);
+    List<WorkflowDetail> workflowDetails = list.getContent()
+        .stream()
+        .map(workflow -> toWorkflowDetail(workflow))
+        .collect(Collectors.toList());
+    return Mono.just(new PageImpl<>(workflowDetails, list.getPageable(), list.getTotalElements()));
   }
 }

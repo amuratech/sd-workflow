@@ -30,6 +30,8 @@ import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabas
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase.Replace;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
@@ -200,5 +202,23 @@ class WorkflowFacadeTest {
     //then
     assertThat(workflow.getId()).isEqualTo(workflowIdForUser13);
     assertThat(workflow.getAllowedActions().canRead()).isEqualTo(true);
+  }
+
+  @Transactional
+  @Test
+  @Sql("/test-scripts/insert-lead-workflow-for-multiple-users.sql")
+  public void shouldGetAllWorkflowAsPageableResponse() {
+    //given
+    long tenantId = 99L;
+    long userId = 12L;
+    User aUser = UserStub.aUser(userId, tenantId, false, true, true, false, false)
+        .withName("user 1");
+    given(authService.getLoggedInUser()).willReturn(aUser);
+
+    PageRequest pageable = PageRequest.of(0, 10);
+    //when
+    Page<Workflow> pageResponse = workflowFacade.list(pageable);
+    //then
+    assertThat(pageResponse.getTotalElements()).isEqualTo(2);
   }
 }

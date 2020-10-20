@@ -20,6 +20,8 @@ import com.kylas.sales.workflow.security.AuthService;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
@@ -81,10 +83,21 @@ public class WorkflowFacade {
           user.getId());
       throw new InsufficientPrivilegeException();
     }
-    Specification<Workflow> withTenant = belongToTenant(user.getTenantId());
     if (user.canQueryAllWorkflow()) {
-      return withTenant;
+      return belongToTenant(user.getTenantId());
     }
-    return withTenant.and(belongToUser(user.getId()));
+
+    return belongToTenant(user.getTenantId()).and(belongToUser(user.getId()));
+  }
+
+  public Page<Workflow> list(Pageable pageable) {
+    User loggedInUser = authService.getLoggedInUser();
+
+    Specification<Workflow> readSpecification = getSpecificationByReadPrivileges(loggedInUser);
+    Page<Workflow> workflowList = workflowRepository.findAll(readSpecification, pageable);
+        workflowList.getContent()
+        .stream()
+        .forEach(workflow -> workflow.setAllowedActionsForUser(loggedInUser));
+    return workflowList;
   }
 }

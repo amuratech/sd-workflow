@@ -1,8 +1,11 @@
 package com.kylas.sales.workflow.api;
 
 import com.kylas.sales.workflow.api.request.WorkflowRequest;
-import java.net.URI;
+import com.kylas.sales.workflow.api.response.WorkflowDetail;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -39,6 +42,11 @@ public class WorkflowController {
   @GetMapping(value = "/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity getWorkflow(@PathVariable("id") long workflowId) {
     return ResponseEntity.ok(workflowService.get(workflowId));
+  }
+
+  @PostMapping(value = "/list", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+  public Mono<Page<WorkflowDetail>> getAllWorkflow(@PageableDefault(page = 0, size = 10) Pageable pageable) {
+    return workflowService.list(pageable);
   }
 
 

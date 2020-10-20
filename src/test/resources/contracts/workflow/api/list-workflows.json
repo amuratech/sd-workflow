@@ -1,0 +1,107 @@
+{
+  "content": [
+    {
+      "id": 101,
+      "name": "Workflow 1",
+      "description": "Workflow 1",
+      "entityType": "LEAD",
+      "trigger": {
+        "name": "EVENT",
+        "triggerFrequency": "CREATED"
+      },
+      "condition": {
+        "conditionType": "FOR_ALL"
+      },
+      "actions": [
+        {
+          "type": "EDIT_PROPERTY",
+          "payload": {
+            "name": "lastName",
+            "value": "Stark"
+          }
+        }
+      ],
+      "createdBy": {
+        "id": 101,
+        "name": "Tony Start"
+      },
+      "updatedBy": {
+        "id": 102,
+        "name": "Steve Roger"
+      },
+      "createdAt": "2020-10-19T12:56:19.904+0000",
+      "updatedAt": "2020-10-19T12:56:19.904+0000",
+      "recordActions": {
+        "read": true,
+        "update": false,
+        "write": true,
+        "readAll": false,
+        "updateAll": false
+      }
+    },
+    {
+      "id": 102,
+      "name": "Workflow 2",
+      "description": "Workflow 2",
+      "entityType": "LEAD",
+      "trigger": {
+        "name": "EVENT",
+        "triggerFrequency": "CREATED"
+      },
+      "condition": {
+        "conditionType": "FOR_ALL"
+      },
+      "actions": [
+        {
+          "type": "EDIT_PROPERTY",
+          "payload": {
+            "name": "firstName",
+            "value": "Tony"
+          }
+        }
+      ],
+      "createdBy": {
+        "id": 101,
+        "name": "Tony Start"
+      },
+      "updatedBy": {
+        "id": 102,
+        "name": "Steve Roger"
+      },
+      "createdAt": "2020-10-19T12:56:19.904+0000",
+      "updatedAt": "2020-10-19T12:56:19.904+0000",
+      "recordActions": {
+        "read": true,
+        "update": false,
+        "write": true,
+        "readAll": false,
+        "updateAll": false
+      }
+    }
+  ],
+  "pageable": {
+    "sort": {
+      "sorted": false,
+      "unsorted": true,
+      "empty": true
+    },
+    "offset": 0,
+    "pageNumber": 0,
+    "pageSize": 10,
+    "paged": true,
+    "unpaged": false
+  },
+  "totalPages": 2,
+  "totalElements": 12,
+  "last": false,
+  "first": true,
+  "sort": {
+    "sorted": false,
+    "unsorted": true,
+    "empty": true
+  },
+  "size": 10,
+  "number": 0,
+  "numberOfElements": 2,
+  "empty": false
+}
