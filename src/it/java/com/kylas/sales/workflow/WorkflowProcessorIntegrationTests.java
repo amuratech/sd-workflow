@@ -3,13 +3,12 @@ package com.kylas.sales.workflow;
 import static org.springframework.test.context.support.TestPropertySourceUtils.addInlinedPropertiesToEnvironment;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.kylas.sales.workflow.WorkflowProcessorIntegrationTest.TestMqSetup;
+import com.kylas.sales.workflow.WorkflowProcessorIntegrationTests.TestMqSetup;
 import com.kylas.sales.workflow.config.TestDatabaseInitializer;
 import com.kylas.sales.workflow.mq.event.LeadCreatedEvent;
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import javax.transaction.Transactional;
 import org.apache.commons.io.FileUtils;
 import org.json.JSONException;
 import org.junit.jupiter.api.Test;
@@ -44,7 +43,8 @@ import org.testcontainers.containers.RabbitMQContainer;
 @AutoConfigureTestDatabase(replace = Replace.NONE)
 @AutoConfigureWireMock(port = 9090)
 @ContextConfiguration(initializers = {TestMqSetup.class, TestDatabaseInitializer.class})
-public class WorkflowProcessorIntegrationTest {
+@Sql("/test-scripts/insert-create-lead-workflow.sql")
+public class WorkflowProcessorIntegrationTests {
 
   static final String SALES_EXCHANGE = "ex.sales";
   static final String WORKFLOW_EXCHANGE = "ex.workflow";
@@ -64,23 +64,23 @@ public class WorkflowProcessorIntegrationTest {
   @Autowired
   private ObjectMapper objectMapper;
 
-  //  @Transactional
-  @Sql("/test-scripts/insert-create-lead-workflow.sql")
+
   @Test
   public void givenLeadCreateEvent_shouldUpdatePropertyAndPublishCommand() throws IOException, InterruptedException, JSONException {
     //given
     String resourceAsString = getResourceAsString("/contracts/mq/events/lead-created-event.json");
     LeadCreatedEvent leadCreatedEvent = objectMapper.readValue(resourceAsString, LeadCreatedEvent.class);
-    initializeRabbitMqListener();
+    initializeRabbitMqListener(LEAD_UPDATE_COMMAND_QUEUE, SALES_LEAD_UPDATE_QUEUE);
     //when
     rabbitTemplate.convertAndSend(SALES_EXCHANGE, LeadCreatedEvent.getEventName(),
         leadCreatedEvent);
     //then
     mockMqListener.latch.await(3, TimeUnit.SECONDS);
-    System.out.println(mockMqListener.actualMessage);
     JSONAssert
-        .assertEquals(getResourceAsString("/contracts/mq/command/lead-update-command.json"), mockMqListener.actualMessage, JSONCompareMode.STRICT);
+        .assertEquals(getResourceAsString("/contracts/mq/command/lead-update-patch-command.json"), mockMqListener.actualMessage,
+            JSONCompareMode.STRICT);
   }
+
 
   static class MockMqListener {
 
@@ -98,19 +98,19 @@ public class WorkflowProcessorIntegrationTest {
     return FileUtils.readFileToString(file, "UTF-8");
   }
 
-  private void initializeRabbitMqListener() {
+  private void initializeRabbitMqListener(String command, String consumerQueue) {
 
     rabbitAdmin.declareBinding(
-        BindingBuilder.bind(new Queue(SALES_LEAD_UPDATE_QUEUE))
+        BindingBuilder.bind(new Queue(consumerQueue))
             .to(new TopicExchange(WORKFLOW_EXCHANGE))
-            .with(LEAD_UPDATE_COMMAND_QUEUE));
+            .with(command));
 
     MessageListenerAdapter listenerAdapter =
         new MessageListenerAdapter(mockMqListener, "receiveMessage");
 
     SimpleMessageListenerContainer container = new SimpleMessageListenerContainer();
     container.setConnectionFactory(connectionFactory);
-    container.setQueueNames(SALES_LEAD_UPDATE_QUEUE);
+    container.setQueueNames(consumerQueue);
     container.setMessageListener(listenerAdapter);
     container.start();
   }

@@ -1,8 +1,6 @@
 {
   "entity": {
-    "id": 999,
-    "firstName": "Tony 301",
-    "lastName": "Stark"
+    "firstName": "Tony 301"
   },
   "metadata": {
     "tenantId": 99,

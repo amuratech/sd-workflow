@@ -42,19 +42,26 @@ class WorkflowProcessorTest {
   private WorkflowProcessor workflowProcessor;
 
   @Test
-  public void givenLeadEvent_shouldPublishCommand() {
+  public void givenLeadEvent_shouldPublishPatchCommand() {
     //given
     long tenantId = 101;
     long workflowId = 99L;
 
     var lead = new Lead();
+    lead.setId(55L);
     lead.setFirstName("Tony");
     lead.setLastName("Stark");
     var metadata = mock(Metadata.class);
     var updatedMetadata = mock(Metadata.class);
     given(metadata.getTenantId()).willReturn(tenantId);
     given(metadata.getEntityType()).willReturn(LEAD);
+
+    var updatedMetadataWithEntityId = mock(Metadata.class);
+    given(updatedMetadataWithEntityId.getTenantId()).willReturn(tenantId);
+    given(updatedMetadataWithEntityId.getEntityType()).willReturn(LEAD);
+
     given(metadata.with(workflowId)).willReturn(updatedMetadata);
+    given(updatedMetadata.withEntityId(55L)).willReturn(updatedMetadataWithEntityId);
     given(metadata.getEntityAction()).willReturn(EntityAction.CREATED);
 
     var leadCreatedEvent = new LeadCreatedEvent(lead, null, metadata);
@@ -66,7 +73,7 @@ class WorkflowProcessorTest {
     given(workflowAction.getName()).willReturn("firstName");
     given(workflowAction.getValue()).willReturn("Steve");
     Actionable actionableMock = mock(Actionable.class);
-    given(workflowAction.process(lead)).willReturn(actionableMock);
+    given(workflowAction.process(any(Lead.class))).willReturn(actionableMock);
     Set<AbstractWorkflowAction> actions = new HashSet<>();
     actions.add(workflowAction);
 
@@ -96,11 +103,19 @@ class WorkflowProcessorTest {
     var lead = new Lead();
     lead.setFirstName("Tony");
     lead.setLastName("Stark");
+    lead.setId(55L);
     var metadata = mock(Metadata.class);
     var updatedMetadata = mock(Metadata.class);
     given(metadata.getTenantId()).willReturn(tenantId);
     given(metadata.getEntityType()).willReturn(LEAD);
+
+    var updatedMetadataWithEntityId = mock(Metadata.class);
+    given(updatedMetadataWithEntityId.getTenantId()).willReturn(tenantId);
+    given(updatedMetadataWithEntityId.getEntityType()).willReturn(LEAD);
+
     given(metadata.with(workflowId)).willReturn(updatedMetadata);
+    given(updatedMetadata.withEntityId(55L)).willReturn(updatedMetadataWithEntityId);
+
     given(metadata.getEntityAction()).willReturn(EntityAction.CREATED);
 
     var leadCreatedEvent = new LeadCreatedEvent(lead, null, metadata);
@@ -114,7 +129,7 @@ class WorkflowProcessorTest {
     given(updateFirstNameAction.getName()).willReturn("firstName");
     given(updateFirstNameAction.getValue()).willReturn("Steve");
     Actionable actionableMock = mock(Actionable.class);
-    given(updateFirstNameAction.process(lead)).willReturn(actionableMock);
+    given(updateFirstNameAction.process(any(Lead.class))).willReturn(actionableMock);
     actions.add(updateFirstNameAction);
 
     EditPropertyAction failedAction = mock(EditPropertyAction.class);
@@ -140,4 +155,6 @@ class WorkflowProcessorTest {
     verify(failedAction, times(1)).process(any(Lead.class));
     verify(leadUpdatedCommandPublisher, times(1)).execute(any(Metadata.class), any(Actionable.class));
   }
+
+
 }

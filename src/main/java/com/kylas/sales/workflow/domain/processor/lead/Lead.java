@@ -3,6 +3,8 @@ package com.kylas.sales.workflow.domain.processor.lead;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonIgnoreType;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.kylas.sales.workflow.domain.processor.Actionable;
 import java.io.Serializable;
@@ -15,6 +17,7 @@ import lombok.Setter;
 @Getter
 @JsonIgnoreProperties(ignoreUnknown = true)
 @Setter
+@JsonInclude(Include.NON_NULL)
 public class Lead implements Serializable, Actionable {
 
   private Long id;

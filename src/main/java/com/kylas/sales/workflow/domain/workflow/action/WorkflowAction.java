@@ -6,8 +6,6 @@ public interface WorkflowAction {
 
   void setWorkflow(Workflow workflow);
 
-//  Actionable process(Lead entity);
-
   enum ActionType {
     EDIT_PROPERTY
   }

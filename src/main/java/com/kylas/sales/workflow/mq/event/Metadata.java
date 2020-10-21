@@ -18,7 +18,7 @@ public class Metadata {
   private EntityAction entityAction;
   private String workflowId;
   private Set<String> executedWorkflows;
-
+  private long entityId;
   @JsonCreator
   public Metadata(@JsonProperty("tenantId") long tenantId,
       @JsonProperty("userId") long userId,
@@ -40,6 +40,11 @@ public class Metadata {
       workflows.add(workflowId);
     }
     return new Metadata(this.tenantId, this.userId, this.entityType, getWorkflowId(id), workflows, this.entityAction);
+  }
+  public Metadata withEntityId(long entityId){
+    Metadata metadata = new Metadata(this.tenantId, this.userId, this.entityType, workflowId, executedWorkflows, this.entityAction);
+    metadata.entityId = entityId;
+    return metadata;
   }
 
   private String getWorkflowId(long workflowId) {

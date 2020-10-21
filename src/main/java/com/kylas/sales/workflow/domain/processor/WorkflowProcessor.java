@@ -38,13 +38,14 @@ public class WorkflowProcessor {
         .filter(workflow -> workflow.getWorkflowTrigger().getTriggerFrequency().equals(CREATED))
         .forEach(workflow -> {
           Lead entity = event.getEntity();
-          Metadata metadata = event.getMetadata().with(workflow.getId());
+          Metadata metadata = event.getMetadata().with(workflow.getId()).withEntityId(entity.getId());
           Set<AbstractWorkflowAction> workflowActions = workflow.getWorkflowActions();
           log.info("Workflow execution start for workflowId {} and prev metadata {}", workflow.getId(), event.getMetadata());
           workflowActions.stream()
               .forEach(workflowAction -> {
                 try {
-                  Actionable actionable = workflowAction.process(entity);
+                  Lead lead = new Lead();
+                  Actionable actionable = workflowAction.process(lead);
                   log.info("Publishing command to execute actionId {}, with new metadata {} ", workflowAction.getId(), metadata);
                   leadUpdatedCommandPublisher.execute(metadata, actionable);
                 } catch (WorkflowExecutionException e) {

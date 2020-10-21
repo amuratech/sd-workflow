@@ -1,3 +1,10 @@
+DELETE FROM edit_property_action;
+DELETE FROM abstract_workflow_action;
+DELETE FROM workflow_condition;
+DELETE FROM workflow_trigger;
+DELETE FROM workflow;
+DELETE FROM users;
+
 INSERT INTO users(id, tenant_id, name)
 VALUES (12, 55, 'Steve');
 
