@@ -85,7 +85,7 @@ class WorkflowProcessorTest {
 
     List<Workflow> workflows = Arrays.asList(workflowMock);
 
-    given(workflowService.findAllBy(tenantId, LEAD)).willReturn(workflows);
+    given(workflowService.findActiveBy(tenantId, LEAD)).willReturn(workflows);
     doNothing().when(leadUpdatedCommandPublisher).execute(any(Metadata.class), any(Lead.class));
     //when
     workflowProcessor.process(leadCreatedEvent);
@@ -147,7 +147,7 @@ class WorkflowProcessorTest {
 
     List<Workflow> workflows = Arrays.asList(workflowMock);
 
-    given(workflowService.findAllBy(tenantId, LEAD)).willReturn(workflows);
+    given(workflowService.findActiveBy(tenantId, LEAD)).willReturn(workflows);
     doNothing().when(leadUpdatedCommandPublisher).execute(any(Metadata.class), any(Lead.class));
     //when
     workflowProcessor.process(leadCreatedEvent);

@@ -1,5 +1,6 @@
 package com.kylas.sales.workflow.domain;
 
+import static com.kylas.sales.workflow.domain.WorkflowSpecification.active;
 import static com.kylas.sales.workflow.domain.WorkflowSpecification.belongToTenant;
 import static com.kylas.sales.workflow.domain.WorkflowSpecification.belongToUser;
 import static com.kylas.sales.workflow.domain.WorkflowSpecification.withEntityType;
@@ -67,8 +68,10 @@ public class WorkflowFacade {
 
   }
 
-  public List<Workflow> findAllBy(long tenantId, EntityType entityType) {
-    return workflowRepository.findAll(belongToTenant(tenantId).and(withEntityType(entityType)));
+  public List<Workflow> findActiveBy(long tenantId, EntityType entityType) {
+    var entitySpecification = withEntityType(entityType);
+    var specification = belongToTenant(tenantId).and(entitySpecification.and(active()));
+    return workflowRepository.findAll(specification);
   }
 
   public Workflow get(long workflowId) {
@@ -108,5 +111,33 @@ public class WorkflowFacade {
   @Transactional
   public void updateExecutedEvent(Workflow workflow) {
     workflowExecutedEventRepository.updateEventDetails(workflow.getWorkflowExecutedEvent().getId());
+  }
+
+  public Workflow deactivate(long workflowId) {
+    var user = authService.getLoggedInUser();
+    return workflowRepository
+        .findOne(getSpecificationByUpdatePrivileges(user).and(withId(workflowId)))
+        .map(workflow -> workflowRepository.saveAndFlush(workflow.withActive(false)))
+        .orElseThrow(WorkflowNotFoundException::new);
+  }
+
+  public Workflow activate(long workflowId) {
+    var user = authService.getLoggedInUser();
+    return workflowRepository
+        .findOne(getSpecificationByUpdatePrivileges(user).and(withId(workflowId)))
+        .map(workflow -> workflowRepository.saveAndFlush(workflow.withActive(true)))
+        .orElseThrow(WorkflowNotFoundException::new);
+  }
+
+  private Specification<Workflow> getSpecificationByUpdatePrivileges(User user) {
+    if (!user.canUpdateHisWorkflow() && !user.canUpdateAllWorkflow()) {
+      log.error("TenantId {} and UserId {} does not have update privilege on workflow", user.getTenantId(),
+          user.getId());
+      throw new InsufficientPrivilegeException();
+    }
+    if (user.canUpdateAllWorkflow()) {
+      return belongToTenant(user.getTenantId());
+    }
+    return belongToTenant(user.getTenantId()).and(belongToUser(user.getId()));
   }
 }

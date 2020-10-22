@@ -18,15 +18,12 @@ import com.kylas.sales.workflow.domain.workflow.ConditionType;
 import com.kylas.sales.workflow.domain.workflow.EntityType;
 import com.kylas.sales.workflow.domain.workflow.TriggerFrequency;
 import com.kylas.sales.workflow.domain.workflow.TriggerType;
-import com.kylas.sales.workflow.domain.workflow.Workflow;
 import com.kylas.sales.workflow.domain.workflow.action.WorkflowAction.ActionType;
 import com.kylas.sales.workflow.matchers.PageableMatcher;
 import com.kylas.sales.workflow.stubs.WorkflowStub;
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Date;
-import java.util.List;
 import org.apache.commons.io.FileUtils;
 import org.json.JSONException;
 import org.junit.jupiter.api.Test;
@@ -49,7 +46,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
-import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
@@ -185,7 +181,7 @@ class WorkflowControllerTest {
     var updatedBy = new User(102L, "Steve Roger");
 
     WorkflowDetail workflowDetail = WorkflowStub
-        .workflowDetail(workflowId, "Edit Lead Property", "Edit Lead Property", EntityType.LEAD, TriggerType.EVENT, TriggerFrequency.CREATED,
+        .workflowDetail(workflowId, "Edit Lead Property", "Edit Lead Property", EntityType.LEAD, true, TriggerType.EVENT, TriggerFrequency.CREATED,
             ConditionType.FOR_ALL, ActionType.EDIT_PROPERTY, "lastName", "Stark", true, true, createdBy, updatedBy, new Date());
     given(workflowService.get(workflowId)).willReturn(workflowDetail);
     //when
@@ -204,6 +200,68 @@ class WorkflowControllerTest {
                 new Customization("createdAt", (o1, o2) -> true),
                 new Customization("updatedAt", (o1, o2) -> true)
             ));
+          } catch (JSONException e) {
+            fail(e.getMessage());
+          }
+        }).verifyComplete();
+  }
+
+  @Test
+  public void givenWorkflowId_shouldActivateIt() {
+    //given
+    long workflowId = 101L;
+    User createdBy = new User(101L, "Tony Start");
+    var updatedBy = new User(102L, "Steve Roger");
+
+    WorkflowDetail workflowDetail = WorkflowStub
+        .workflowDetail(workflowId, "Edit Lead Property", "Edit Lead Property", EntityType.LEAD, true, TriggerType.EVENT, TriggerFrequency.CREATED,
+            ConditionType.FOR_ALL, ActionType.EDIT_PROPERTY, "lastName", "Stark", true, true, createdBy, updatedBy, new Date());
+    given(workflowService.activate(workflowId)).willReturn(workflowDetail);
+    //when
+    var workflowResponse =
+        buildWebClient()
+            .post()
+            .uri("/v1/workflows/101/activate")
+            .contentType(MediaType.APPLICATION_JSON)
+            .retrieve().bodyToMono(String.class);
+    //then
+    var expectedResponse =
+        getResourceAsString("classpath:contracts/workflow/api/activate-workflow-response.json");
+    StepVerifier.create(workflowResponse)
+        .assertNext(json -> {
+          try {
+            JSONAssert.assertEquals(expectedResponse, json, JSONCompareMode.LENIENT);
+          } catch (JSONException e) {
+            fail(e.getMessage());
+          }
+        }).verifyComplete();
+  }
+
+  @Test
+  public void givenWorkflowId_shouldDeactivateIt() {
+    //given
+    long workflowId = 101L;
+    User createdBy = new User(101L, "Tony Start");
+    var updatedBy = new User(102L, "Steve Roger");
+
+    WorkflowDetail workflowDetail = WorkflowStub
+        .workflowDetail(workflowId, "Edit Lead Property", "Edit Lead Property", EntityType.LEAD, false, TriggerType.EVENT, TriggerFrequency.CREATED,
+            ConditionType.FOR_ALL, ActionType.EDIT_PROPERTY, "lastName", "Stark", true, true, createdBy, updatedBy, new Date());
+    given(workflowService.deactivate(workflowId)).willReturn(workflowDetail);
+    //when
+    var workflowResponse =
+        buildWebClient()
+            .post()
+            .uri("/v1/workflows/101/deactivate")
+            .contentType(MediaType.APPLICATION_JSON)
+            .retrieve().bodyToMono(String.class);
+    //then
+    var expectedResponse =
+        getResourceAsString("classpath:contracts/workflow/api/deactivate-workflow-response.json");
+    StepVerifier.create(workflowResponse)
+        .assertNext(json -> {
+          try {
+            JSONAssert.assertEquals(expectedResponse, json, JSONCompareMode.LENIENT);
           } catch (JSONException e) {
             fail(e.getMessage());
           }
@@ -241,11 +299,11 @@ class WorkflowControllerTest {
     var updatedBy = new User(102L, "Steve Roger");
 
     WorkflowDetail workflowDetail1 = WorkflowStub
-        .workflowDetail(101, "Workflow 1", "Workflow 1", EntityType.LEAD, TriggerType.EVENT, TriggerFrequency.CREATED,
+        .workflowDetail(101, "Workflow 1", "Workflow 1", EntityType.LEAD, true, TriggerType.EVENT, TriggerFrequency.CREATED,
             ConditionType.FOR_ALL, ActionType.EDIT_PROPERTY, "lastName", "Stark", true, true, createdBy, updatedBy, new Date());
 
     WorkflowDetail workflowDetail2 = WorkflowStub
-        .workflowDetail(102, "Workflow 2", "Workflow 2", EntityType.LEAD, TriggerType.EVENT, TriggerFrequency.CREATED,
+        .workflowDetail(102, "Workflow 2", "Workflow 2", EntityType.LEAD, true, TriggerType.EVENT, TriggerFrequency.CREATED,
             ConditionType.FOR_ALL, ActionType.EDIT_PROPERTY, "firstName", "Tony", true, true, createdBy, updatedBy, new Date());
     given(
         workflowService.list(

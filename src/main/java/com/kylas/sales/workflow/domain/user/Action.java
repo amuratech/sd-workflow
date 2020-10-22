@@ -37,4 +37,12 @@ public class Action implements Serializable {
   public boolean canReadAll() {
     return readAll;
   }
+
+  public boolean canUpdate() {
+    return this.update;
+  }
+
+  public boolean canUpdateAll() {
+    return this.updateAll;
+  }
 }

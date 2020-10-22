@@ -31,4 +31,5 @@ public class WorkflowDetail {
   private final Long triggerCount;
   @JsonProperty("recordActions")
   private final Action allowedActions;
+  private final boolean active;
 }

@@ -15,10 +15,16 @@ public class WorkflowSpecification {
   static Specification<Workflow> belongToUser(long userId) {
     return (root, criteria, builder) -> builder.equal(root.get(Workflow_.createdBy).get(User_.id), userId);
   }
+
   static Specification<Workflow> withId(long workflowId) {
     return (root, criteria, builder) -> builder.equal(root.get(Workflow_.id), workflowId);
   }
+
   static Specification<Workflow> withEntityType(EntityType entityType) {
     return (root, criteria, builder) -> builder.equal(root.get(Workflow_.entityType), entityType);
+  }
+
+  static Specification<Workflow> active() {
+    return (root, criteria, builder) -> builder.equal(root.get(Workflow_.active), true);
   }
 }

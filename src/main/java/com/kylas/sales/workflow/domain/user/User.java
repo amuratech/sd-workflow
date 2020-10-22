@@ -97,4 +97,20 @@ public class User {
                 permission.getName().equalsIgnoreCase(WORKFLOW_PERMISSION_NAME)
                     && permission.getAction().canReadAll());
   }
+
+  public boolean canUpdateHisWorkflow() {
+    return permissions.stream()
+        .anyMatch(
+            permission ->
+                permission.getName().equalsIgnoreCase(WORKFLOW_PERMISSION_NAME)
+                    && permission.getAction().canUpdate());
+  }
+
+  public boolean canUpdateAllWorkflow() {
+    return permissions.stream()
+        .anyMatch(
+            permission ->
+                permission.getName().equalsIgnoreCase(WORKFLOW_PERMISSION_NAME)
+                    && permission.getAction().canUpdateAll());
+  }
 }

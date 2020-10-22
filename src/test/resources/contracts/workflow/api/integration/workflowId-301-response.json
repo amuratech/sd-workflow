@@ -3,6 +3,7 @@
   "name": "Workflow 1",
   "description": "Workflow 1",
   "entityType": "LEAD",
+  "active": true,
   "trigger": {
     "name": "EVENT",
     "triggerFrequency": "CREATED"
