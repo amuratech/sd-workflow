@@ -6,6 +6,7 @@ spring:
   jpa:
     hibernate:
       ddl-auto: validate
+    show-sql: false
     properties:
       hibernate:
         dialect: com.kylas.sales.workflow.sql.PostgreSqlDialect

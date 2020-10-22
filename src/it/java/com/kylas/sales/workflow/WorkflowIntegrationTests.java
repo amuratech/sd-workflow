@@ -103,11 +103,12 @@ public class WorkflowIntegrationTests {
         .bodyToMono(String.class);
     //then
     var expectedResponse =
-        getResourceAsString("/contracts/workflow/api/integration/workflowId-301-reponse.json");
+        getResourceAsString("/contracts/workflow/api/integration/workflowId-301-response.json");
     StepVerifier.create(workflowResponse)
         .assertNext(json -> {
           try {
             JSONAssert.assertEquals(expectedResponse, json, new CustomComparator(JSONCompareMode.STRICT,
+                new Customization("lastTriggeredAt", (o1, o2) -> true),
                 new Customization("createdAt", (o1, o2) -> true),
                 new Customization("updatedAt", (o1, o2) -> true)
             ));

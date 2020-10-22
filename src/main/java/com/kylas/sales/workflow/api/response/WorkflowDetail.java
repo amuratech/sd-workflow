@@ -27,6 +27,8 @@ public class WorkflowDetail {
   private final User updatedBy;
   private final Date createdAt;
   private final Date updatedAt;
+  private final Date lastTriggeredAt;
+  private final Long triggerCount;
   @JsonProperty("recordActions")
   private final Action allowedActions;
 }

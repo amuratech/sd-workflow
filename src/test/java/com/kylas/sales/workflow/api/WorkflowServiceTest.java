@@ -2,9 +2,11 @@ package com.kylas.sales.workflow.api;
 
 import static com.kylas.sales.workflow.domain.workflow.EntityType.LEAD;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 
 import com.kylas.sales.workflow.api.request.WorkflowRequest;
 import com.kylas.sales.workflow.api.response.WorkflowDetail;
@@ -31,6 +33,7 @@ import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.BDDMockito;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
@@ -175,5 +178,30 @@ class WorkflowServiceTest {
           assertThat(workflowDetail.getAllowedActions().canRead()).isTrue();
 
         }).verifyComplete();
+  }
+
+  @Test
+  public void givenWorkflow_shouldUpdateExecutedEvent(){
+    //given
+    User aUser = UserStub.aUser(11L, 99L, true, true, true, false, false)
+        .withName("user 1");
+    WorkflowTrigger trigger = WorkflowTrigger
+        .createNew(new com.kylas.sales.workflow.common.dto.WorkflowTrigger(TriggerType.EVENT, TriggerFrequency.CREATED));
+    WorkflowCondition condition = WorkflowCondition.createNew(new com.kylas.sales.workflow.common.dto.WorkflowCondition(ConditionType.FOR_ALL));
+    Set<AbstractWorkflowAction> actions = new HashSet<>();
+    EditPropertyAction editPropertyAction = new EditPropertyAction();
+    UUID id = UUID.randomUUID();
+    editPropertyAction.setId(id);
+    editPropertyAction.setName("firstName");
+    editPropertyAction.setValue("tony");
+    actions.add(editPropertyAction);
+
+    Workflow workflow = Workflow.createNew("Workflow 1", "Workflow 1", LEAD, trigger, aUser, actions, condition);
+    BDDMockito.doNothing().when(workflowFacade).updateExecutedEvent(workflow);
+    //when
+    workflowService.updateExecutedEventDetails(workflow);
+    //then
+    Mockito.verify(workflowFacade, times(1)).updateExecutedEvent(any(Workflow.class));
+
   }
 }

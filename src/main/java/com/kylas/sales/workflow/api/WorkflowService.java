@@ -56,9 +56,11 @@ public class WorkflowService {
         .collect(Collectors.toSet());
     var createdBy = new User(workflow.getCreatedBy().getId(), workflow.getCreatedBy().getName());
     var updatedBy = new User(workflow.getUpdatedBy().getId(), workflow.getUpdatedBy().getName());
+
     return new WorkflowDetail(workflow.getId(), workflow.getName(), workflow.getDescription(), workflow.getEntityType(), workflowTrigger,
         workflowCondition,
-        actions, createdBy, updatedBy, workflow.getCreatedAt(), workflow.getUpdatedAt(), workflow.getAllowedActions());
+        actions, createdBy, updatedBy, workflow.getCreatedAt(), workflow.getUpdatedAt(), workflow.getWorkflowExecutedEvent().getLastTriggeredAt(),
+        workflow.getWorkflowExecutedEvent().getTriggerCount(), workflow.getAllowedActions());
   }
 
   public Mono<Page<WorkflowDetail>> list(Pageable pageable) {
@@ -68,5 +70,9 @@ public class WorkflowService {
         .map(workflow -> toWorkflowDetail(workflow))
         .collect(Collectors.toList());
     return Mono.just(new PageImpl<>(workflowDetails, list.getPageable(), list.getTotalElements()));
+  }
+
+  public void updateExecutedEventDetails(Workflow workflow) {
+    workflowFacade.updateExecutedEvent(workflow);
   }
 }

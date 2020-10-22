@@ -1,15 +1,22 @@
 package com.kylas.sales.workflow;
 
+import static org.mockito.BDDMockito.given;
 import static org.springframework.test.context.support.TestPropertySourceUtils.addInlinedPropertiesToEnvironment;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kylas.sales.workflow.WorkflowProcessorIntegrationTests.TestMqSetup;
 import com.kylas.sales.workflow.config.TestDatabaseInitializer;
+import com.kylas.sales.workflow.domain.WorkflowFacade;
+import com.kylas.sales.workflow.domain.user.User;
+import com.kylas.sales.workflow.domain.workflow.Workflow;
 import com.kylas.sales.workflow.mq.event.LeadCreatedEvent;
+import com.kylas.sales.workflow.security.AuthService;
+import com.kylas.sales.workflow.stubs.UserStub;
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.io.FileUtils;
+import org.assertj.core.api.Assertions;
 import org.json.JSONException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -29,6 +36,7 @@ import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabas
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.cloud.contract.wiremock.AutoConfigureWireMock;
 import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.ConfigurableApplicationContext;
@@ -43,7 +51,7 @@ import org.testcontainers.containers.RabbitMQContainer;
 @AutoConfigureTestDatabase(replace = Replace.NONE)
 @AutoConfigureWireMock(port = 9090)
 @ContextConfiguration(initializers = {TestMqSetup.class, TestDatabaseInitializer.class})
-@Sql("/test-scripts/insert-create-lead-workflow.sql")
+
 public class WorkflowProcessorIntegrationTests {
 
   static final String SALES_EXCHANGE = "ex.sales";
@@ -63,11 +71,19 @@ public class WorkflowProcessorIntegrationTests {
   private RabbitTemplate rabbitTemplate;
   @Autowired
   private ObjectMapper objectMapper;
-
+  @Autowired
+  WorkflowFacade workflowFacade;
+  @MockBean
+  AuthService authService;
 
   @Test
+  @Sql("/test-scripts/insert-create-lead-workflow.sql")
   public void givenLeadCreateEvent_shouldUpdatePropertyAndPublishCommand() throws IOException, InterruptedException, JSONException {
     //given
+    User aUser = UserStub.aUser(12L, 99L, true, true, true, true, true)
+        .withName("user 1");
+    given(authService.getLoggedInUser()).willReturn(aUser);
+
     String resourceAsString = getResourceAsString("/contracts/mq/events/lead-created-event.json");
     LeadCreatedEvent leadCreatedEvent = objectMapper.readValue(resourceAsString, LeadCreatedEvent.class);
     initializeRabbitMqListener(LEAD_UPDATE_COMMAND_QUEUE, SALES_LEAD_UPDATE_QUEUE);
@@ -79,8 +95,38 @@ public class WorkflowProcessorIntegrationTests {
     JSONAssert
         .assertEquals(getResourceAsString("/contracts/mq/command/lead-update-patch-command.json"), mockMqListener.actualMessage,
             JSONCompareMode.STRICT);
+
+    Workflow workflow = workflowFacade.get(301);
+    Assertions.assertThat(workflow.getWorkflowExecutedEvent().getLastTriggeredAt()).isNotNull();
+    Assertions.assertThat(workflow.getWorkflowExecutedEvent().getTriggerCount()).isEqualTo(152);
   }
 
+
+  @Test
+  @Sql("/test-scripts/insert-workflow.sql")
+  public void givenLeadCreateEvent_shouldExecuteTwoWorkflowAndUpdateExecutedEvents() throws IOException, InterruptedException, JSONException {
+    //given
+    User aUser = UserStub.aUser(12L, 99L, true, true, true, true, true)
+        .withName("user 1");
+    given(authService.getLoggedInUser()).willReturn(aUser);
+
+    String resourceAsString = getResourceAsString("/contracts/mq/events/lead-created-event.json");
+    LeadCreatedEvent leadCreatedEvent = objectMapper.readValue(resourceAsString, LeadCreatedEvent.class);
+    //when
+    rabbitTemplate.convertAndSend(SALES_EXCHANGE, LeadCreatedEvent.getEventName(),
+        leadCreatedEvent);
+    //then
+    mockMqListener.latch.await(3, TimeUnit.SECONDS);
+
+
+    Workflow workflow301 = workflowFacade.get(301);
+    Assertions.assertThat(workflow301.getWorkflowExecutedEvent().getLastTriggeredAt()).isNotNull();
+    Assertions.assertThat(workflow301.getWorkflowExecutedEvent().getTriggerCount()).isEqualTo(152);
+
+    Workflow workflow302 = workflowFacade.get(302);
+    Assertions.assertThat(workflow302.getWorkflowExecutedEvent().getLastTriggeredAt()).isNotNull();
+    Assertions.assertThat(workflow302.getWorkflowExecutedEvent().getTriggerCount()).isEqualTo(16);
+  }
 
   static class MockMqListener {
 

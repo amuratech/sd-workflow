@@ -18,6 +18,7 @@ import com.kylas.sales.workflow.domain.workflow.WorkflowTrigger;
 import com.kylas.sales.workflow.domain.workflow.action.EditPropertyAction;
 import com.kylas.sales.workflow.security.AuthService;
 import java.util.List;
+import javax.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -31,14 +32,17 @@ import reactor.core.publisher.Mono;
 public class WorkflowFacade {
 
   private final WorkflowRepository workflowRepository;
+  private final WorkflowExecutedEventRepository workflowExecutedEventRepository;
   private final AuthService authService;
   private final UserService userService;
   private final UserFacade userFacade;
 
   @Autowired
-  public WorkflowFacade(WorkflowRepository workflowRepository, AuthService authService,
+  public WorkflowFacade(WorkflowRepository workflowRepository,
+      WorkflowExecutedEventRepository workflowExecutedEventRepository, AuthService authService,
       UserService userService, UserFacade userFacade) {
     this.workflowRepository = workflowRepository;
+    this.workflowExecutedEventRepository = workflowExecutedEventRepository;
     this.authService = authService;
     this.userService = userService;
     this.userFacade = userFacade;
@@ -95,9 +99,14 @@ public class WorkflowFacade {
 
     Specification<Workflow> readSpecification = getSpecificationByReadPrivileges(loggedInUser);
     Page<Workflow> workflowList = workflowRepository.findAll(readSpecification, pageable);
-        workflowList.getContent()
+    workflowList.getContent()
         .stream()
         .forEach(workflow -> workflow.setAllowedActionsForUser(loggedInUser));
     return workflowList;
+  }
+
+  @Transactional
+  public void updateExecutedEvent(Workflow workflow) {
+    workflowExecutedEventRepository.updateEventDetails(workflow.getWorkflowExecutedEvent().getId());
   }
 }

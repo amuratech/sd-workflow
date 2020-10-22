@@ -48,6 +48,7 @@ public class WorkflowProcessor {
                   Actionable actionable = workflowAction.process(lead);
                   log.info("Publishing command to execute actionId {}, with new metadata {} ", workflowAction.getId(), metadata);
                   leadUpdatedCommandPublisher.execute(metadata, actionable);
+                  workflowService.updateExecutedEventDetails(workflow);
                 } catch (WorkflowExecutionException e) {
                   log.error(e.getMessage());
                 } catch (Exception e) {

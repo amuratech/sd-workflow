@@ -29,8 +29,10 @@
         "id": 102,
         "name": "Steve Roger"
       },
-      "createdAt": "2020-10-19T12:56:19.904+0000",
-      "updatedAt": "2020-10-19T12:56:19.904+0000",
+      "createdAt": "2020-10-21T10:53:58.249+0000",
+      "updatedAt": "2020-10-21T10:53:58.249+0000",
+      "lastTriggeredAt": null,
+      "triggerCount": 0,
       "recordActions": {
         "read": true,
         "update": false,
@@ -68,8 +70,10 @@
         "id": 102,
         "name": "Steve Roger"
       },
-      "createdAt": "2020-10-19T12:56:19.904+0000",
-      "updatedAt": "2020-10-19T12:56:19.904+0000",
+      "createdAt": "2020-10-21T10:53:58.250+0000",
+      "updatedAt": "2020-10-21T10:53:58.250+0000",
+      "lastTriggeredAt": null,
+      "triggerCount": 0,
       "recordActions": {
         "read": true,
         "update": false,
@@ -85,14 +89,14 @@
       "unsorted": true,
       "empty": true
     },
-    "offset": 0,
     "pageNumber": 0,
     "pageSize": 10,
+    "offset": 0,
     "paged": true,
     "unpaged": false
   },
-  "totalPages": 2,
   "totalElements": 12,
+  "totalPages": 2,
   "last": false,
   "first": true,
   "sort": {
@@ -100,8 +104,8 @@
     "unsorted": true,
     "empty": true
   },
-  "size": 10,
   "number": 0,
   "numberOfElements": 2,
+  "size": 10,
   "empty": false
 }

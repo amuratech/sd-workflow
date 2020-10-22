@@ -59,7 +59,7 @@ public class WorkflowStub {
     allowedActions.setRead(canRead);
     allowedActions.setWrite(canCreate);
     return new WorkflowDetail(id, name, description, entityType, workflowTrigger, condition, actions, createdBy, updatedBy, createdAndUpdatedAt,
-        createdAndUpdatedAt, allowedActions);
+        createdAndUpdatedAt, null, 0L,allowedActions);
   }
 
 }

@@ -92,6 +92,7 @@ class WorkflowProcessorTest {
     //then
     verify(workflowAction, times(1)).process(any(Lead.class));
     verify(leadUpdatedCommandPublisher, times(1)).execute(any(Metadata.class), any(Actionable.class));
+    verify(workflowService, times(1)).updateExecutedEventDetails(any(Workflow.class));
   }
 
   @Test

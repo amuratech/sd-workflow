@@ -51,6 +51,8 @@ public class Workflow {
   @OneToOne(mappedBy = "workflow", cascade = CascadeType.ALL)
   private WorkflowCondition workflowCondition;
 
+  @OneToOne(mappedBy = "workflow", cascade = CascadeType.ALL)
+  private WorkflowExecutedEvent workflowExecutedEvent;
 
   @OneToMany(
       fetch = FetchType.EAGER,
@@ -95,6 +97,7 @@ public class Workflow {
       return workflowAction;
     }).collect(Collectors.toSet());
     condition.setWorkflow(this);
+    this.workflowExecutedEvent = WorkflowExecutedEvent.createNew(this);
     this.workflowCondition = condition;
   }
 

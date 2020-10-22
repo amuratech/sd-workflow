@@ -19,6 +19,7 @@ import com.kylas.sales.workflow.domain.workflow.action.WorkflowAction.ActionType
 import com.kylas.sales.workflow.security.AuthService;
 import com.kylas.sales.workflow.stubs.UserStub;
 import com.kylas.sales.workflow.stubs.WorkflowStub;
+import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 import javax.transaction.Transactional;
@@ -85,6 +86,10 @@ class WorkflowFacadeTest {
           assertThat(workflowAction.getValue()).isEqualTo("Stark");
 
           assertThat(workflow.getWorkflowCondition().getType()).isEqualTo(ConditionType.FOR_ALL);
+
+          assertThat(workflow.getWorkflowExecutedEvent().getLastTriggeredAt()).isNull();
+          assertThat(workflow.getWorkflowExecutedEvent().getId()).isEqualTo(1);
+          assertThat(workflow.getWorkflowExecutedEvent().getTriggerCount()).isEqualTo(0);
           return true;
         })
         .verifyComplete();
@@ -220,5 +225,24 @@ class WorkflowFacadeTest {
     Page<Workflow> pageResponse = workflowFacade.list(pageable);
     //then
     assertThat(pageResponse.getTotalElements()).isEqualTo(2);
+  }
+
+  @Transactional
+  @Test
+  @Sql("/test-scripts/insert-workflow.sql")
+  public void givenWorkflow_tryToUpdateWorkflowExecutedEvent_shouldUpdate() {
+    //given
+    var expectedLastTriggeredAt = new Date();
+    long tenantId = 99L;
+    User aUser = UserStub.aUser(12, tenantId, false, true, true, true, true)
+        .withName("user 1");
+    given(authService.getLoggedInUser()).willReturn(aUser);
+    Workflow persistedWorkflow = workflowFacade.get(301);
+    //when
+    workflowFacade.updateExecutedEvent(persistedWorkflow);
+    //then
+    Workflow updatedWorkflowExecutedEvent = workflowFacade.get(301);
+    assertThat(updatedWorkflowExecutedEvent.getWorkflowExecutedEvent().getLastTriggeredAt()).isNotNull();
+    assertThat(updatedWorkflowExecutedEvent.getWorkflowExecutedEvent().getTriggerCount()).isEqualTo(152);
   }
 }
