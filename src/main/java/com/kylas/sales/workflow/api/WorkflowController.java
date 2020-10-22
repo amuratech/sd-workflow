@@ -50,12 +50,12 @@ public class WorkflowController {
     return workflowService.list(pageable);
   }
 
-  @PostMapping(value = "/{id}/deactivate", consumes = APPLICATION_JSON_VALUE, produces = APPLICATION_JSON_VALUE)
+  @PostMapping(value = "/{id}/deactivate", produces = APPLICATION_JSON_VALUE)
   public ResponseEntity<WorkflowDetail> deactivate(@PathVariable("id") long workflowId) {
     return ResponseEntity.ok(workflowService.deactivate(workflowId));
   }
 
-  @PostMapping(value = "/{id}/activate", consumes = APPLICATION_JSON_VALUE, produces = APPLICATION_JSON_VALUE)
+  @PostMapping(value = "/{id}/activate", produces = APPLICATION_JSON_VALUE)
   public ResponseEntity<WorkflowDetail> activate(@PathVariable("id") long workflowId) {
     return ResponseEntity.ok(workflowService.activate(workflowId));
   }

@@ -222,7 +222,6 @@ class WorkflowControllerTest {
         buildWebClient()
             .post()
             .uri("/v1/workflows/101/activate")
-            .contentType(MediaType.APPLICATION_JSON)
             .retrieve().bodyToMono(String.class);
     //then
     var expectedResponse =
@@ -253,7 +252,6 @@ class WorkflowControllerTest {
         buildWebClient()
             .post()
             .uri("/v1/workflows/101/deactivate")
-            .contentType(MediaType.APPLICATION_JSON)
             .retrieve().bodyToMono(String.class);
     //then
     var expectedResponse =
