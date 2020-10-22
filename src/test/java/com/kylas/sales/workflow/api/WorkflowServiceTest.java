@@ -19,6 +19,7 @@ import com.kylas.sales.workflow.domain.workflow.TriggerFrequency;
 import com.kylas.sales.workflow.domain.workflow.TriggerType;
 import com.kylas.sales.workflow.domain.workflow.Workflow;
 import com.kylas.sales.workflow.domain.workflow.WorkflowCondition;
+import com.kylas.sales.workflow.domain.workflow.WorkflowExecutedEvent;
 import com.kylas.sales.workflow.domain.workflow.WorkflowTrigger;
 import com.kylas.sales.workflow.domain.workflow.action.AbstractWorkflowAction;
 import com.kylas.sales.workflow.domain.workflow.action.EditPropertyAction;
@@ -28,10 +29,12 @@ import com.kylas.sales.workflow.stubs.UserStub;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.BDDMockito;
@@ -125,17 +128,7 @@ class WorkflowServiceTest {
   public void givenWorkflowId_shouldActivateWorkflow() {
     //given
     long workflowId = 1000L;
-    Workflow workflow = new Workflow();
-    workflow.setId(1000L);
-    workflow.setActive(true);
-    workflow.setName("Workflow on bills");
-    workflow.setWorkflowTrigger(
-        WorkflowTrigger.createNew(new com.kylas.sales.workflow.common.dto.WorkflowTrigger(TriggerType.EVENT, TriggerFrequency.CREATED)));
-    workflow.setWorkflowCondition(WorkflowCondition.createNew(new com.kylas.sales.workflow.common.dto.WorkflowCondition(ConditionType.FOR_ALL)));
-    workflow.setWorkflowActions(Collections.emptySet());
-    workflow.setCreatedBy(new User(4000L, 1000L, Collections.emptySet()));
-    workflow.setUpdatedBy(new User(4000L, 1000L, Collections.emptySet()));
-    workflow.setWorkflowCondition(new WorkflowCondition());
+    Workflow workflow = aWorkflowActivationStub(true);
     given(workflowFacade.activate(workflowId)).willReturn(workflow);
     //when
     WorkflowDetail activatedWorkflow = workflowService.activate(workflowId);
@@ -145,22 +138,31 @@ class WorkflowServiceTest {
     assertThat(activatedWorkflow.getName()).isEqualTo("Workflow on bills");
   }
 
-  @Test
-  public void givenWorkflowId_shouldDeactivateWorkflow() {
-    //given
-    long workflowId = 1000L;
+  @NotNull
+  private Workflow aWorkflowActivationStub(boolean active) {
     Workflow workflow = new Workflow();
     workflow.setId(1000L);
-    workflow.setActive(false);
+    workflow.setActive(active);
     workflow.setName("Workflow on bills");
     workflow.setWorkflowTrigger(
         WorkflowTrigger.createNew(new com.kylas.sales.workflow.common.dto.WorkflowTrigger(TriggerType.EVENT, TriggerFrequency.CREATED)));
-    workflow.setWorkflowCondition(
-        WorkflowCondition.createNew(new com.kylas.sales.workflow.common.dto.WorkflowCondition(ConditionType.FOR_ALL)));
+    workflow.setWorkflowCondition(WorkflowCondition.createNew(new com.kylas.sales.workflow.common.dto.WorkflowCondition(ConditionType.FOR_ALL)));
     workflow.setWorkflowActions(Collections.emptySet());
     workflow.setCreatedBy(new User(4000L, 1000L, Collections.emptySet()));
     workflow.setUpdatedBy(new User(4000L, 1000L, Collections.emptySet()));
     workflow.setWorkflowCondition(new WorkflowCondition());
+    var workflowExecutedEvent = new WorkflowExecutedEvent();
+    workflowExecutedEvent.setLastTriggeredAt(new Date());
+    workflowExecutedEvent.setTriggerCount(30L);
+    workflow.setWorkflowExecutedEvent(workflowExecutedEvent);
+    return workflow;
+  }
+
+  @Test
+  public void givenWorkflowId_shouldDeactivateWorkflow() {
+    //given
+    long workflowId = 1000L;
+    Workflow workflow = aWorkflowActivationStub(false);
     given(workflowFacade.deactivate(workflowId)).willReturn(workflow);
     //when
     WorkflowDetail activatedWorkflow = workflowService.deactivate(workflowId);
