@@ -1,5 +1,7 @@
 package com.kylas.sales.workflow.api;
 
+import static java.util.Objects.nonNull;
+
 import com.kylas.sales.workflow.api.request.WorkflowRequest;
 import com.kylas.sales.workflow.api.response.WorkflowDetail;
 import com.kylas.sales.workflow.api.response.WorkflowSummary;
@@ -11,6 +13,7 @@ import com.kylas.sales.workflow.common.dto.WorkflowTrigger;
 import com.kylas.sales.workflow.domain.WorkflowFacade;
 import com.kylas.sales.workflow.domain.workflow.EntityType;
 import com.kylas.sales.workflow.domain.workflow.Workflow;
+import com.kylas.sales.workflow.domain.workflow.WorkflowExecutedEvent;
 import com.kylas.sales.workflow.domain.workflow.action.EditPropertyAction;
 import com.kylas.sales.workflow.domain.workflow.action.WorkflowAction.ActionType;
 import java.util.List;
@@ -56,11 +59,13 @@ public class WorkflowService {
         .collect(Collectors.toSet());
     var createdBy = new User(workflow.getCreatedBy().getId(), workflow.getCreatedBy().getName());
     var updatedBy = new User(workflow.getUpdatedBy().getId(), workflow.getUpdatedBy().getName());
+    var executedEvent = nonNull(workflow.getWorkflowExecutedEvent())
+        ? workflow.getWorkflowExecutedEvent()
+        : WorkflowExecutedEvent.createNew(workflow);
     return new WorkflowDetail(
         workflow.getId(), workflow.getName(), workflow.getDescription(), workflow.getEntityType(), workflowTrigger,
         workflowCondition, actions, createdBy, updatedBy, workflow.getCreatedAt(), workflow.getUpdatedAt(),
-       workflow.getWorkflowExecutedEvent().getLastTriggeredAt(),
-        workflow.getWorkflowExecutedEvent().getTriggerCount(), workflow.getAllowedActions(), workflow.isActive());
+        executedEvent.getLastTriggeredAt(), executedEvent.getTriggerCount(), workflow.getAllowedActions(), workflow.isActive());
   }
 
   public Mono<Page<WorkflowDetail>> list(Pageable pageable) {
