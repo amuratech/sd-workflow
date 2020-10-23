@@ -173,6 +173,7 @@ class WorkflowFacadeTest {
     Workflow workflow = workflowFacade.activate(workflowId);
     //then
     assertThat(workflow.isActive()).isTrue();
+    assertThat(workflow.getUpdatedAt()).isAfter("2019-01-01");
     assertThat(workflow.getId()).isEqualTo(301L);
   }
 
@@ -205,6 +206,7 @@ class WorkflowFacadeTest {
     Workflow workflow = workflowFacade.deactivate(workflowId);
     //then
     assertThat(workflow.isActive()).isFalse();
+    assertThat(workflow.getUpdatedAt()).isAfter("2019-01-01");
     assertThat(workflow.getId()).isEqualTo(302L);
   }
 

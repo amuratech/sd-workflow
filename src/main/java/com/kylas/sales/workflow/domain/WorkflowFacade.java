@@ -117,7 +117,7 @@ public class WorkflowFacade {
     var user = authService.getLoggedInUser();
     return workflowRepository
         .findOne(getSpecificationByUpdatePrivileges(user).and(withId(workflowId)))
-        .map(workflow -> workflowRepository.saveAndFlush(workflow.withActive(false)))
+        .map(workflow -> workflowRepository.saveAndFlush(workflow.deactivate()))
         .orElseThrow(WorkflowNotFoundException::new);
   }
 
@@ -125,7 +125,7 @@ public class WorkflowFacade {
     var user = authService.getLoggedInUser();
     return workflowRepository
         .findOne(getSpecificationByUpdatePrivileges(user).and(withId(workflowId)))
-        .map(workflow -> workflowRepository.saveAndFlush(workflow.withActive(true)))
+        .map(workflow -> workflowRepository.saveAndFlush(workflow.activate()))
         .orElseThrow(WorkflowNotFoundException::new);
   }
 

@@ -173,7 +173,7 @@ public class Workflow {
     return this.createdBy.getId() == user.getId();
   }
 
-  public Workflow withActive(boolean active) {
+  public Workflow activate() {
     return new Workflow(
         this.id,
         this.name,
@@ -182,12 +182,30 @@ public class Workflow {
         this.workflowTrigger,
         this.workflowCondition,
         this.workflowActions,
-        active,
+        true,
         this.createdBy,
         this.updatedBy,
         this.tenantId,
         this.createdAt,
-        this.updatedAt,
+        new Date(),
+        this.allowedActions);
+  }
+
+  public Workflow deactivate() {
+    return new Workflow(
+        this.id,
+        this.name,
+        this.description,
+        this.entityType,
+        this.workflowTrigger,
+        this.workflowCondition,
+        this.workflowActions,
+        false,
+        this.createdBy,
+        this.updatedBy,
+        this.tenantId,
+        this.createdAt,
+        new Date(),
         this.allowedActions);
   }
 }

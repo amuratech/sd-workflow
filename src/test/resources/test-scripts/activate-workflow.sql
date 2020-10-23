@@ -9,9 +9,9 @@ INSERT INTO workflow
 tenant_id, created_by, created_at, updated_by, updated_at )
 OVERRIDING SYSTEM VALUE VALUES
 (301, 'Workflow 1', 'Workflow 1', 'LEAD', false,
-99, 12, now(), 12, now()),
+99, 12, '2019-01-01', 12, '2019-01-01'),
 (302, 'Workflow 2', 'Workflow 2', 'LEAD', true,
-99, 12, now(), 12, now());
+99, 12, '2019-01-01', 12, '2019-01-01');
 
 INSERT INTO workflow_trigger (id, trigger_type, trigger_frequency, workflow_id)
 OVERRIDING SYSTEM VALUE VALUES
