@@ -27,10 +27,6 @@
     "id": 102,
     "name": "Steve Roger"
   },
-  "createdAt": "2020-10-21T10:57:27.004+0000",
-  "updatedAt": "2020-10-21T10:57:27.004+0000",
-  "lastTriggeredAt": null,
-  "triggerCount": 0,
   "recordActions": {
     "read": true,
     "update": false,
@@ -38,5 +34,5 @@
     "readAll": false,
     "updateAll": false
   },
-  "active": true
+  "active": false
 }

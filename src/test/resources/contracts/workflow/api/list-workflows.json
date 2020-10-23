@@ -39,7 +39,8 @@
         "write": true,
         "readAll": false,
         "updateAll": false
-      }
+      },
+      "active": true
     },
     {
       "id": 102,
@@ -80,7 +81,8 @@
         "write": true,
         "readAll": false,
         "updateAll": false
-      }
+      },
+      "active": true
     }
   ],
   "pageable": {

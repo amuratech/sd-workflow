@@ -1,12 +1,13 @@
 package com.kylas.sales.workflow.api;
 
+import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
+
 import com.kylas.sales.workflow.api.request.WorkflowRequest;
 import com.kylas.sales.workflow.api.response.WorkflowDetail;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -28,7 +29,7 @@ public class WorkflowController {
     this.workflowService = workflowService;
   }
 
-  @PostMapping(value = "", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+  @PostMapping(value = "", consumes = APPLICATION_JSON_VALUE, produces = APPLICATION_JSON_VALUE)
   public Mono<ResponseEntity> createWorkflow(@RequestBody WorkflowRequest workflowRequest) {
     return workflowService.create(workflowRequest)
         .map(workflowSummary -> {
@@ -39,15 +40,24 @@ public class WorkflowController {
         });
   }
 
-  @GetMapping(value = "/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
+  @GetMapping(value = "/{id}", produces = APPLICATION_JSON_VALUE)
   public ResponseEntity getWorkflow(@PathVariable("id") long workflowId) {
     return ResponseEntity.ok(workflowService.get(workflowId));
   }
 
-  @PostMapping(value = "/list", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+  @PostMapping(value = "/list", consumes = APPLICATION_JSON_VALUE, produces = APPLICATION_JSON_VALUE)
   public Mono<Page<WorkflowDetail>> getAllWorkflow(@PageableDefault(page = 0, size = 10) Pageable pageable) {
     return workflowService.list(pageable);
   }
 
+  @PostMapping(value = "/{id}/deactivate", produces = APPLICATION_JSON_VALUE)
+  public ResponseEntity<WorkflowDetail> deactivate(@PathVariable("id") long workflowId) {
+    return ResponseEntity.ok(workflowService.deactivate(workflowId));
+  }
+
+  @PostMapping(value = "/{id}/activate", produces = APPLICATION_JSON_VALUE)
+  public ResponseEntity<WorkflowDetail> activate(@PathVariable("id") long workflowId) {
+    return ResponseEntity.ok(workflowService.activate(workflowId));
+  }
 
 }

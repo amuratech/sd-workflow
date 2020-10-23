@@ -1,6 +1,8 @@
 package com.kylas.sales.workflow.domain;
 
+import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.mockito.BDDMockito.given;
 
 import com.kylas.sales.workflow.config.TestDatabaseInitializer;
@@ -21,7 +23,6 @@ import com.kylas.sales.workflow.stubs.UserStub;
 import com.kylas.sales.workflow.stubs.WorkflowStub;
 import java.util.Date;
 import java.util.List;
-import java.util.stream.Collectors;
 import javax.transaction.Transactional;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -130,12 +131,97 @@ class WorkflowFacadeTest {
     given(authService.getLoggedInUser()).willReturn(aUser);
 
     //when
-    var workflows = workflowFacade.findAllBy(tenantId, EntityType.LEAD);
+    var workflows = workflowFacade.findActiveBy(tenantId, EntityType.LEAD);
     //then
     assertThat(workflows.size()).isEqualTo(2);
-    List<Long> workflowIds = workflows.stream().map(workflow -> workflow.getId()).collect(Collectors.toList());
+    List<Long> workflowIds = workflows.stream().map(workflow -> workflow.getId()).collect(toList());
 
     assertThat(workflowIds).containsExactlyInAnyOrder(301L, 302L);
+  }
+
+  @Transactional
+  @Test
+  @Sql("/test-scripts/activate-workflow.sql")
+  public void givenTenantIdAndEntityType_shouldReturnActiveOnly() {
+    //given
+    long tenantId = 99L;
+    User aUser =
+        UserStub.aUser(12, tenantId, false, true, true, true, true).withName("user 1");
+    given(authService.getLoggedInUser()).willReturn(aUser);
+
+    //when
+    var workflows = workflowFacade.findActiveBy(tenantId, EntityType.LEAD);
+
+    //then
+    assertThat(workflows).hasSize(1);
+    assertThat(workflows.stream().map(Workflow::getId).collect(toList()))
+        .containsExactlyInAnyOrder(302L);
+  }
+
+  @Transactional
+  @Test
+  @Sql("/test-scripts/activate-workflow.sql")
+  public void givenWorkflowId_shouldActivate() {
+    //given
+    long workflowId = 301;
+    long tenantId = 99L;
+    User aUser = UserStub.aUser(12, tenantId, false, true, true, true, true)
+        .withName("user 1");
+    given(authService.getLoggedInUser()).willReturn(aUser);
+
+    //when
+    Workflow workflow = workflowFacade.activate(workflowId);
+    //then
+    assertThat(workflow.isActive()).isTrue();
+    assertThat(workflow.getUpdatedAt()).isAfter("2019-01-01");
+    assertThat(workflow.getId()).isEqualTo(301L);
+  }
+
+  @Test
+  public void activatingWorkflow_withoutUpdatePermissions_shouldThrow() {
+    //given
+    long workflowId = 301;
+    long tenantId = 99L;
+    User aUser = UserStub.aUser(12, tenantId, false, true, true, false, false)
+        .withName("user 1");
+    given(authService.getLoggedInUser()).willReturn(aUser);
+    //then
+    assertThatExceptionOfType(InsufficientPrivilegeException.class)
+        .isThrownBy(() -> workflowFacade.activate(workflowId))
+        .withMessage("01702001");
+  }
+
+  @Transactional
+  @Test
+  @Sql("/test-scripts/activate-workflow.sql")
+  public void givenWorkflowId_shouldDeactivate() {
+    //given
+    long workflowId = 302;
+    long tenantId = 99L;
+    User aUser = UserStub.aUser(12, tenantId, false, true, true, true, true)
+        .withName("user 1");
+    given(authService.getLoggedInUser()).willReturn(aUser);
+
+    //when
+    Workflow workflow = workflowFacade.deactivate(workflowId);
+    //then
+    assertThat(workflow.isActive()).isFalse();
+    assertThat(workflow.getUpdatedAt()).isAfter("2019-01-01");
+    assertThat(workflow.getId()).isEqualTo(302L);
+  }
+
+  @Test
+  public void deactivatingWorkflow_withoutUpdatePermissions_shouldThrow() {
+    //given
+    long workflowId = 301;
+    long tenantId = 99L;
+    User aUser = UserStub.aUser(12, tenantId, false, true, true, false, false)
+        .withName("user 1");
+    given(authService.getLoggedInUser()).willReturn(aUser);
+    //then
+    assertThatExceptionOfType(InsufficientPrivilegeException.class)
+        .isThrownBy(() -> workflowFacade.deactivate(workflowId))
+        .withMessage("01702001");
   }
 
   @Transactional

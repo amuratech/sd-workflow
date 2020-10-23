@@ -61,6 +61,8 @@ public class Workflow {
       targetEntity = AbstractWorkflowAction.class)
   private Set<AbstractWorkflowAction> workflowActions;
 
+  private boolean active;
+
   @ManyToOne(fetch = FetchType.EAGER)
   @JoinColumn(name = "created_by")
   private User createdBy;
@@ -76,6 +78,25 @@ public class Workflow {
   @Transient
   private Action allowedActions;
 
+  private Workflow(Long id, @NotBlank @Size(min = 3, max = 255) String name, String description,
+      EntityType entityType, WorkflowTrigger workflowTrigger, WorkflowCondition workflowCondition,
+      Set<AbstractWorkflowAction> workflowActions, boolean active, User createdBy, User updatedBy, Long tenantId, Date createdAt,
+      Date updatedAt, Action allowedActions) {
+    this.id = id;
+    this.name = name;
+    this.description = description;
+    this.entityType = entityType;
+    this.workflowTrigger = workflowTrigger;
+    this.workflowCondition = workflowCondition;
+    this.workflowActions = workflowActions;
+    this.active = active;
+    this.createdBy = createdBy;
+    this.updatedBy = updatedBy;
+    this.tenantId = tenantId;
+    this.createdAt = createdAt;
+    this.updatedAt = updatedAt;
+    this.allowedActions = allowedActions;
+  }
 
   private Workflow(String name, String description, EntityType entityType, WorkflowTrigger workflowTrigger,
       Set<AbstractWorkflowAction> workflowActions, WorkflowCondition condition, long tenantId,
@@ -152,4 +173,39 @@ public class Workflow {
     return this.createdBy.getId() == user.getId();
   }
 
+  public Workflow activate() {
+    return new Workflow(
+        this.id,
+        this.name,
+        this.description,
+        this.entityType,
+        this.workflowTrigger,
+        this.workflowCondition,
+        this.workflowActions,
+        true,
+        this.createdBy,
+        this.updatedBy,
+        this.tenantId,
+        this.createdAt,
+        new Date(),
+        this.allowedActions);
+  }
+
+  public Workflow deactivate() {
+    return new Workflow(
+        this.id,
+        this.name,
+        this.description,
+        this.entityType,
+        this.workflowTrigger,
+        this.workflowCondition,
+        this.workflowActions,
+        false,
+        this.createdBy,
+        this.updatedBy,
+        this.tenantId,
+        this.createdAt,
+        new Date(),
+        this.allowedActions);
+  }
 }

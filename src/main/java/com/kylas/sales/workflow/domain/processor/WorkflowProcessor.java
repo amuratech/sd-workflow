@@ -32,7 +32,7 @@ public class WorkflowProcessor {
   public void process(LeadCreatedEvent event) {
 
     log.info("Lead created event received with metadata {}", event.getMetadata());
-    workflowService.findAllBy(event.getMetadata().getTenantId(), event.getMetadata().getEntityType())
+    workflowService.findActiveBy(event.getMetadata().getTenantId(), event.getMetadata().getEntityType())
         .stream()
         .filter(workflow -> event.getMetadata().getEntityAction().equals(EntityAction.CREATED))
         .filter(workflow -> workflow.getWorkflowTrigger().getTriggerFrequency().equals(CREATED))
