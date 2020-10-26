@@ -14,7 +14,7 @@
       "recordClickAction": "VIEW",
       "columns": [
         {
-          "id": "workflowName",
+          "id": "name",
           "header": "Workflow name",
           "isStandard": true,
           "isFilterable": true,
@@ -27,7 +27,7 @@
           "values": null
         },
         {
-          "id": "entity",
+          "id": "entityType",
           "header": "Entity",
           "isStandard": true,
           "isFilterable": true,
