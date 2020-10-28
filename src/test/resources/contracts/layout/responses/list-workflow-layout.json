@@ -154,8 +154,8 @@
   },
   "defaultConfig": {
     "fields": [
-      "workflowName",
-      "entity",
+      "name",
+      "entityType",
       "createdAt",
       "createdBy",
       "status",
