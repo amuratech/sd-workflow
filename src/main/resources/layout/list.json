@@ -33,7 +33,7 @@
           "isFilterable": true,
           "isSortable": true,
           "isInternal": false,
-          "fieldType": "TEXT_FIELD",
+          "fieldType": "ENTITY",
           "multiValue": false,
           "picklist": null,
           "lookup": null,

@@ -21,7 +21,8 @@ public enum FieldType {
   AUTO_INCREMENT("A system-generated sequence number that uses a display format you define.The number is automatically incremented for each new record"),
   TOGGLE("Allows users to select True(checked) or False(unchecked) value"),
   MONEY("Allows users to select a currency type and value"),
-  FORECASTING_TYPE("Allows users to select a pipeline stage forecasting Types");
+  FORECASTING_TYPE("Allows users to select a pipeline stage forecasting Types"),
+  ENTITY("Indicate entity from the system");
   private final String description;
 
   private FieldType(String description) {
