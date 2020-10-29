@@ -120,6 +120,7 @@ public class Workflow {
     condition.setWorkflow(this);
     this.workflowExecutedEvent = WorkflowExecutedEvent.createNew(this);
     this.workflowCondition = condition;
+    this.active = true;
   }
 
   public static Workflow createNew(String name, String description, EntityType entityType,

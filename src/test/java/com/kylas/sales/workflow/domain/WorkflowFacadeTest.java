@@ -91,6 +91,8 @@ class WorkflowFacadeTest {
           assertThat(workflow.getWorkflowExecutedEvent().getLastTriggeredAt()).isNull();
           assertThat(workflow.getWorkflowExecutedEvent().getId()).isEqualTo(1);
           assertThat(workflow.getWorkflowExecutedEvent().getTriggerCount()).isEqualTo(0);
+
+          assertThat(workflow.isActive()).isTrue();
           return true;
         })
         .verifyComplete();
