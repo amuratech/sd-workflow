@@ -120,7 +120,6 @@ class WorkflowTest {
         .setAllowedActionsForUser(userMock);
     //then
     assertThat(workflow.getAllowedActions().canRead()).isTrue();
-    assertThat(workflow.getAllowedActions().canReadAll()).isTrue();
   }
 
   @Test
@@ -136,7 +135,7 @@ class WorkflowTest {
     Workflow workflow = Workflow.createNew("Workflow1", "Workflow1", EntityType.LEAD, triggerMock, userMock, workflowActions, conditionMock)
         .setAllowedActionsForUser(userMock);
     //then
-    assertThat(workflow.getAllowedActions().canUpdateAll()).isTrue();
+    assertThat(workflow.getAllowedActions().canUpdate()).isTrue();
   }
 
   @Test
