@@ -107,7 +107,7 @@ class WorkflowTest {
   }
 
   @Test
-  public void givenUserWithReadAllPermission_shouldGetReadAction() {
+  public void givenUserWithReadAllPermission_shouldGetReadAndReadAllAction() {
     //given
     WorkflowTrigger triggerMock = Mockito.mock(WorkflowTrigger.class);
     User userMock = Mockito.mock(User.class);
@@ -120,6 +120,38 @@ class WorkflowTest {
         .setAllowedActionsForUser(userMock);
     //then
     assertThat(workflow.getAllowedActions().canRead()).isTrue();
+  }
+
+  @Test
+  public void givenUserWithUpdateAllPermission_shouldGetUpdateAndUpdateAllAction() {
+    //given
+    var triggerMock = Mockito.mock(WorkflowTrigger.class);
+    var userMock = Mockito.mock(User.class);
+    given(userMock.canCreateWorkflow()).willReturn(true);
+    given(userMock.canUpdateAllWorkflow()).willReturn(true);
+    var workflowActions = Mockito.mock(HashSet.class);
+    var conditionMock = Mockito.mock(WorkflowCondition.class);
+    //when
+    Workflow workflow = Workflow.createNew("Workflow1", "Workflow1", EntityType.LEAD, triggerMock, userMock, workflowActions, conditionMock)
+        .setAllowedActionsForUser(userMock);
+    //then
+    assertThat(workflow.getAllowedActions().canUpdate()).isTrue();
+  }
+
+  @Test
+  public void givenUserWithUpdatePermission_shouldGetUpdateAction() {
+    //given
+    var triggerMock = Mockito.mock(WorkflowTrigger.class);
+    var userMock = Mockito.mock(User.class);
+    given(userMock.canCreateWorkflow()).willReturn(true);
+    given(userMock.canUpdateHisWorkflow()).willReturn(true);
+    var workflowActions = Mockito.mock(HashSet.class);
+    var conditionMock = Mockito.mock(WorkflowCondition.class);
+    //when
+    Workflow workflow = Workflow.createNew("Workflow1", "Workflow1", EntityType.LEAD, triggerMock, userMock, workflowActions, conditionMock)
+        .setAllowedActionsForUser(userMock);
+    //then
+    assertThat(workflow.getAllowedActions().canUpdate()).isTrue();
   }
 
   @Test

@@ -159,9 +159,14 @@ public class Workflow {
     if (!belongsToSameTenant(user)) {
       return action;
     }
-    if (user.canQueryAllWorkflow()
-        || (user.canQueryHisWorkflow() && isCreator(user))) {
+    if (user.canQueryAllWorkflow() || user.canQueryHisWorkflow() && isCreator(user)) {
       action.setRead(true);
+    }
+    if (user.canUpdateAllWorkflow() || user.canUpdateHisWorkflow() && isCreator(user)) {
+      action.setUpdate(true);
+    }
+    if (user.canCreateWorkflow()) {
+      action.setWrite(true);
     }
     return action;
   }
