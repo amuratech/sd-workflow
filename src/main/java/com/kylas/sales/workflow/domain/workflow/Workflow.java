@@ -162,15 +162,13 @@ public class Workflow {
     if (user.canQueryAllWorkflow()) {
       action.setReadAll(true);
       action.setRead(true);
-    }
-    if (user.canQueryHisWorkflow() && isCreator(user)) {
+    } else if (user.canQueryHisWorkflow() && isCreator(user)) {
       action.setRead(true);
     }
     if (user.canUpdateAllWorkflow()) {
       action.setUpdateAll(true);
       action.setUpdate(true);
-    }
-    if (user.canUpdateHisWorkflow() && isCreator(user)) {
+    } else if (user.canUpdateHisWorkflow() && isCreator(user)) {
       action.setUpdate(true);
     }
     if (user.canCreateWorkflow()) {

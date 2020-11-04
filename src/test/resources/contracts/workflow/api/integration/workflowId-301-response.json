@@ -34,8 +34,8 @@
   "triggerCount": 151,
   "recordActions": {
     "read": true,
-    "update": false,
-    "write": false,
+    "update": true,
+    "write": true,
     "readAll": false,
     "updateAll": false
   }
