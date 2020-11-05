@@ -62,7 +62,7 @@ public class WorkflowFacade {
               workflowRequest.getName(),
               workflowRequest.getDescription(),
               workflowRequest.getEntityType(),
-              trigger, user, editPropertyActions, condition);
+              trigger, user, editPropertyActions, condition, workflowRequest.isActive());
           return workflowRepository.saveAndFlush(aNew);
         });
 
