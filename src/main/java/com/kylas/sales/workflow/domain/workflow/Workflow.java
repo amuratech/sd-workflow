@@ -100,8 +100,7 @@ public class Workflow {
 
   private Workflow(String name, String description, EntityType entityType, WorkflowTrigger workflowTrigger,
       Set<AbstractWorkflowAction> workflowActions, WorkflowCondition condition, long tenantId,
-      User createdBy,
-      User updatedBy) {
+      User createdBy, User updatedBy, boolean active) {
     var now = new Date();
     this.name = name;
     this.description = description;
@@ -120,12 +119,12 @@ public class Workflow {
     condition.setWorkflow(this);
     this.workflowExecutedEvent = WorkflowExecutedEvent.createNew(this);
     this.workflowCondition = condition;
-    this.active = true;
+    this.active = active;
   }
 
   public static Workflow createNew(String name, String description, EntityType entityType,
       WorkflowTrigger trigger, User creator, Set<AbstractWorkflowAction> workflowActions,
-      WorkflowCondition condition) {
+      WorkflowCondition condition, boolean active) {
     if (!creator.canCreateWorkflow()) {
       log.error("User with id: {} does not have create permission on Workflow", creator.getId());
       throw new InsufficientPrivilegeException();
@@ -146,7 +145,7 @@ public class Workflow {
       log.error("Try to create workflow with condition {}", condition);
       throw new InvalidWorkflowPropertyException();
     }
-    return new Workflow(name, description, entityType, trigger, workflowActions, condition, creator.getTenantId(), creator, creator);
+    return new Workflow(name, description, entityType, trigger, workflowActions, condition, creator.getTenantId(), creator, creator, active);
   }
 
   public Workflow setAllowedActionsForUser(User loggedInUser) {

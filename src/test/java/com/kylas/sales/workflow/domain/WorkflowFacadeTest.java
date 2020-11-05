@@ -70,13 +70,15 @@ class WorkflowFacadeTest {
                 aUser));
     var workflowRequest = WorkflowStub
         .anEditPropertyWorkflowRequest("Edit Lead Property", "Edit Lead Property", EntityType.LEAD, TriggerType.EVENT, TriggerFrequency.CREATED,
-            ConditionType.FOR_ALL, ActionType.EDIT_PROPERTY, "lastName", "Stark");
+            ConditionType.FOR_ALL, ActionType.EDIT_PROPERTY, "lastName", "Stark", true);
     //when
     var workflowMono = workflowFacade.create(workflowRequest);
     //then
     StepVerifier.create(workflowMono)
         .expectNextMatches(workflow -> {
-          assertThat(workflow.getId()).isEqualTo(1L);
+          assertThat(workflow.getId())
+              .isNotNull()
+              .isGreaterThan(0L);
 
           assertThat(workflow.getWorkflowTrigger().getTriggerFrequency()).isEqualTo(TriggerFrequency.CREATED);
           assertThat(workflow.getWorkflowTrigger().getTriggerType()).isEqualTo(TriggerType.EVENT);
@@ -89,10 +91,40 @@ class WorkflowFacadeTest {
           assertThat(workflow.getWorkflowCondition().getType()).isEqualTo(ConditionType.FOR_ALL);
 
           assertThat(workflow.getWorkflowExecutedEvent().getLastTriggeredAt()).isNull();
-          assertThat(workflow.getWorkflowExecutedEvent().getId()).isEqualTo(1);
+          assertThat(workflow.getWorkflowExecutedEvent().getId()).isGreaterThan(0);
           assertThat(workflow.getWorkflowExecutedEvent().getTriggerCount()).isEqualTo(0);
 
           assertThat(workflow.isActive()).isTrue();
+          return true;
+        })
+        .verifyComplete();
+  }
+
+  @Transactional
+  @Test
+  @Sql("/test-scripts/insert-users.sql")
+  public void givenDeactivatedWorkflowRequest_shouldCreateIt() {
+    //given
+    User aUser = UserStub.aUser(11L, 99L, true, true, true, true, true)
+        .withName("user 1");
+    given(authService.getLoggedInUser()).willReturn(aUser);
+
+    given(userService.getUserDetails(11L, authService.getAuthenticationToken()))
+        .willReturn(
+            Mono.just(
+                aUser));
+    var workflowRequest = WorkflowStub
+        .anEditPropertyWorkflowRequest("Edit Lead Property", "Edit Lead Property", EntityType.LEAD, TriggerType.EVENT, TriggerFrequency.CREATED,
+            ConditionType.FOR_ALL, ActionType.EDIT_PROPERTY, "lastName", "Stark", false);
+    //when
+    var workflowMono = workflowFacade.create(workflowRequest);
+    //then
+    StepVerifier.create(workflowMono)
+        .expectNextMatches(workflow -> {
+          assertThat(workflow.getId())
+              .isNotNull()
+              .isGreaterThan(0L);
+          assertThat(workflow.isActive()).isFalse();
           return true;
         })
         .verifyComplete();
@@ -113,7 +145,7 @@ class WorkflowFacadeTest {
                 aUser));
     var workflowRequest = WorkflowStub
         .anEditPropertyWorkflowRequest("Edit Lead Property", "Edit Lead Property", EntityType.LEAD, TriggerType.EVENT, TriggerFrequency.CREATED,
-            ConditionType.FOR_ALL, ActionType.EDIT_PROPERTY, "lastName", "Stark");
+            ConditionType.FOR_ALL, ActionType.EDIT_PROPERTY, "lastName", "Stark", true);
     //when
     var workflowMono = workflowFacade.create(workflowRequest);
     //then

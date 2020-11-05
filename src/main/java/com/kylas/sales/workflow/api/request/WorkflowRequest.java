@@ -20,10 +20,16 @@ import lombok.Setter;
 @NoArgsConstructor
 public class WorkflowRequest {
 
-  @NotNull private String name;
+  @NotNull
+  private String name;
   private String description;
-  @NotNull private EntityType entityType;
-  @NotNull private WorkflowTrigger trigger;
-  @NotNull private WorkflowCondition condition;
-  @NotEmpty private Set<WorkflowAction> actions;
+  @NotNull
+  private EntityType entityType;
+  @NotNull
+  private WorkflowTrigger trigger;
+  @NotNull
+  private WorkflowCondition condition;
+  @NotEmpty
+  private Set<WorkflowAction> actions;
+  private boolean active = true;
 }

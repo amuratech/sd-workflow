@@ -27,14 +27,15 @@ public class WorkflowStub {
       ConditionType conditionType,
       ActionType actionType,
       String propertyName,
-      String propertyValue
+      String propertyValue,
+      boolean active
   ) {
     var triggerRequest = new WorkflowTrigger(triggerType, triggerFrequency);
     var conditionRequest = new WorkflowCondition(conditionType);
     var actionRequest = new WorkflowAction(actionType, new WorkflowEditProperty(propertyName, propertyValue));
     var actionRequests = new HashSet<WorkflowAction>();
     actionRequests.add(actionRequest);
-    return new WorkflowRequest(name, description, entityType, triggerRequest, conditionRequest, actionRequests);
+    return new WorkflowRequest(name, description, entityType, triggerRequest, conditionRequest, actionRequests, active);
   }
 
   public static WorkflowDetail workflowDetail(

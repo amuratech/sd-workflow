@@ -23,7 +23,7 @@ class WorkflowTest {
     WorkflowCondition conditionMock = Mockito.mock(WorkflowCondition.class);
     //when & then
     Assertions.assertThatThrownBy(
-        () -> Workflow.createNew("Workflow1", "Workflow1", EntityType.LEAD, triggerMock, userMock, workflowActions, conditionMock))
+        () -> Workflow.createNew("Workflow1", "Workflow1", EntityType.LEAD, triggerMock, userMock, workflowActions, conditionMock, true))
         .isInstanceOf(InsufficientPrivilegeException.class);
   }
 
@@ -36,7 +36,7 @@ class WorkflowTest {
     HashSet workflowActions = Mockito.mock(HashSet.class);
     WorkflowCondition conditionMock = Mockito.mock(WorkflowCondition.class);
     //when
-    Workflow aNew = Workflow.createNew("Workflow1", "Workflow1", EntityType.LEAD, triggerMock, userMock, workflowActions, conditionMock);
+    Workflow aNew = Workflow.createNew("Workflow1", "Workflow1", EntityType.LEAD, triggerMock, userMock, workflowActions, conditionMock, true);
     //then
     assertThat(aNew).isNotNull();
   }
@@ -50,7 +50,8 @@ class WorkflowTest {
     HashSet workflowActions = Mockito.mock(HashSet.class);
     WorkflowCondition conditionMock = Mockito.mock(WorkflowCondition.class);
     //when & then
-    Assertions.assertThatThrownBy(() -> Workflow.createNew("Workflow1", "Workflow1", null, triggerMock, userMock, workflowActions, conditionMock))
+    Assertions.assertThatThrownBy(() -> Workflow.createNew("Workflow1", "Workflow1", null, triggerMock, userMock, workflowActions, conditionMock,
+        true))
         .isInstanceOf(InvalidWorkflowPropertyException.class);
   }
 
@@ -62,7 +63,8 @@ class WorkflowTest {
     HashSet workflowActions = Mockito.mock(HashSet.class);
     WorkflowCondition conditionMock = Mockito.mock(WorkflowCondition.class);
     //when & then
-    Assertions.assertThatThrownBy(() -> Workflow.createNew("Workflow1", "Workflow1", EntityType.LEAD, null, userMock, workflowActions, conditionMock))
+    Assertions.assertThatThrownBy(() -> Workflow.createNew("Workflow1", "Workflow1", EntityType.LEAD, null, userMock, workflowActions, conditionMock,
+        true))
         .isInstanceOf(InvalidWorkflowPropertyException.class);
   }
 
@@ -74,7 +76,8 @@ class WorkflowTest {
     given(userMock.canCreateWorkflow()).willReturn(true);
     WorkflowCondition conditionMock = Mockito.mock(WorkflowCondition.class);
     //when & then
-    Assertions.assertThatThrownBy(() -> Workflow.createNew("Workflow1", "Workflow1", EntityType.LEAD, triggerMock, userMock, null, conditionMock))
+    Assertions.assertThatThrownBy(() -> Workflow.createNew("Workflow1", "Workflow1", EntityType.LEAD, triggerMock, userMock, null, conditionMock,
+        true))
         .isInstanceOf(InvalidWorkflowPropertyException.class);
   }
 
@@ -86,7 +89,8 @@ class WorkflowTest {
     given(userMock.canCreateWorkflow()).willReturn(true);
     HashSet workflowActions = Mockito.mock(HashSet.class);
     //when & then
-    Assertions.assertThatThrownBy(() -> Workflow.createNew("Workflow1", "Workflow1", EntityType.LEAD, triggerMock, userMock, workflowActions, null))
+    Assertions.assertThatThrownBy(() -> Workflow.createNew("Workflow1", "Workflow1", EntityType.LEAD, triggerMock, userMock, workflowActions, null,
+        true))
         .isInstanceOf(InvalidWorkflowPropertyException.class);
   }
 
@@ -100,7 +104,7 @@ class WorkflowTest {
     HashSet workflowActions = Mockito.mock(HashSet.class);
     WorkflowCondition conditionMock = Mockito.mock(WorkflowCondition.class);
     //when
-    Workflow workflow = Workflow.createNew("Workflow1", "Workflow1", EntityType.LEAD, triggerMock, userMock, workflowActions, conditionMock)
+    Workflow workflow = Workflow.createNew("Workflow1", "Workflow1", EntityType.LEAD, triggerMock, userMock, workflowActions, conditionMock, true)
         .setAllowedActionsForUser(userMock);
     //then
     assertThat(workflow.getAllowedActions().canRead()).isTrue();
@@ -116,7 +120,7 @@ class WorkflowTest {
     HashSet workflowActions = Mockito.mock(HashSet.class);
     WorkflowCondition conditionMock = Mockito.mock(WorkflowCondition.class);
     //when
-    Workflow workflow = Workflow.createNew("Workflow1", "Workflow1", EntityType.LEAD, triggerMock, userMock, workflowActions, conditionMock)
+    Workflow workflow = Workflow.createNew("Workflow1", "Workflow1", EntityType.LEAD, triggerMock, userMock, workflowActions, conditionMock, true)
         .setAllowedActionsForUser(userMock);
     //then
     assertThat(workflow.getAllowedActions().canRead()).isTrue();
@@ -132,7 +136,7 @@ class WorkflowTest {
     var workflowActions = Mockito.mock(HashSet.class);
     var conditionMock = Mockito.mock(WorkflowCondition.class);
     //when
-    Workflow workflow = Workflow.createNew("Workflow1", "Workflow1", EntityType.LEAD, triggerMock, userMock, workflowActions, conditionMock)
+    Workflow workflow = Workflow.createNew("Workflow1", "Workflow1", EntityType.LEAD, triggerMock, userMock, workflowActions, conditionMock, true)
         .setAllowedActionsForUser(userMock);
     //then
     assertThat(workflow.getAllowedActions().canUpdate()).isTrue();
@@ -148,7 +152,7 @@ class WorkflowTest {
     var workflowActions = Mockito.mock(HashSet.class);
     var conditionMock = Mockito.mock(WorkflowCondition.class);
     //when
-    Workflow workflow = Workflow.createNew("Workflow1", "Workflow1", EntityType.LEAD, triggerMock, userMock, workflowActions, conditionMock)
+    Workflow workflow = Workflow.createNew("Workflow1", "Workflow1", EntityType.LEAD, triggerMock, userMock, workflowActions, conditionMock, true)
         .setAllowedActionsForUser(userMock);
     //then
     assertThat(workflow.getAllowedActions().canUpdate()).isTrue();
@@ -166,7 +170,7 @@ class WorkflowTest {
     HashSet workflowActions = Mockito.mock(HashSet.class);
     WorkflowCondition conditionMock = Mockito.mock(WorkflowCondition.class);
     //when
-    Workflow workflow = Workflow.createNew("Workflow1", "Workflow1", EntityType.LEAD, triggerMock, creatorMock, workflowActions, conditionMock)
+    Workflow workflow = Workflow.createNew("Workflow1", "Workflow1", EntityType.LEAD, triggerMock, creatorMock, workflowActions, conditionMock, true)
         .setAllowedActionsForUser(readerMock);
     //then
     assertThat(workflow.getAllowedActions().canRead()).isFalse();

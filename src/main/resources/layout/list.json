@@ -76,20 +76,9 @@
           "isFilterable": true,
           "isSortable": true,
           "isInternal": true,
-          "fieldType": "PICK_LIST",
+          "fieldType": "TOGGLE",
           "multiValue": false,
-          "picklist": [
-            {
-              "displayName": "Active",
-              "name": "active",
-              "systemDefault": true
-            },
-            {
-              "displayName": "InActive",
-              "name": "inActive",
-              "systemDefault": true
-            }
-          ],
+          "picklist": null,
           "lookup": null,
           "values": null
         },

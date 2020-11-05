@@ -102,7 +102,7 @@ class WorkflowServiceTest {
     editPropertyAction.setValue("tony");
     actions.add(editPropertyAction);
 
-    Workflow workflow = Workflow.createNew("Workflow 1", "Workflow 1", LEAD, trigger, aUser, actions, condition);
+    Workflow workflow = Workflow.createNew("Workflow 1", "Workflow 1", LEAD, trigger, aUser, actions, condition, true);
     Workflow workflowSpy = Mockito.spy(workflow);
     given(workflowSpy.getId()).willReturn(workflowId);
     given(workflowFacade.get(workflowId)).willReturn(workflowSpy);
@@ -188,7 +188,7 @@ class WorkflowServiceTest {
     editPropertyAction.setValue("tony");
     actions.add(editPropertyAction);
 
-    Workflow workflow = Workflow.createNew("Workflow 1", "Workflow 1", LEAD, trigger, aUser, actions, condition);
+    Workflow workflow = Workflow.createNew("Workflow 1", "Workflow 1", LEAD, trigger, aUser, actions, condition, true);
     workflow.setAllowedActionsForUser(aUser);
     Workflow workflowSpy = Mockito.spy(workflow);
     given(workflowSpy.getId()).willReturn(100L);
@@ -248,7 +248,7 @@ class WorkflowServiceTest {
     editPropertyAction.setValue("tony");
     actions.add(editPropertyAction);
 
-    Workflow workflow = Workflow.createNew("Workflow 1", "Workflow 1", LEAD, trigger, aUser, actions, condition);
+    Workflow workflow = Workflow.createNew("Workflow 1", "Workflow 1", LEAD, trigger, aUser, actions, condition, true);
     BDDMockito.doNothing().when(workflowFacade).updateExecutedEvent(workflow);
     //when
     workflowService.updateExecutedEventDetails(workflow);

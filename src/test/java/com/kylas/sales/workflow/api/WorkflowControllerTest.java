@@ -96,6 +96,44 @@ class WorkflowControllerTest {
             && workflowRequest.getActions().iterator().next().getType().equals(ActionType.EDIT_PROPERTY)
             && workflowRequest.getActions().iterator().next().getPayload().getName().equalsIgnoreCase("city")
             && workflowRequest.getActions().iterator().next().getPayload().getValue().equalsIgnoreCase("Pune")
+            && workflowRequest.isActive()
+    ))).willReturn(Mono.just(new WorkflowSummary(1L)));
+    //when
+    var workflowResponse = buildWebClient()
+        .post()
+        .uri("/v1/workflows")
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(requestPayload)
+        .retrieve()
+        .bodyToMono(String.class);
+    //then
+    var expectedResponse =
+        getResourceAsString("classpath:contracts/workflow/api/create-workflow-response.json");
+    StepVerifier.create(workflowResponse)
+        .assertNext(json -> {
+          try {
+            JSONAssert.assertEquals(expectedResponse, json, false);
+          } catch (JSONException e) {
+            fail(e.getMessage());
+          }
+        }).verifyComplete();
+  }
+
+  @Test
+  public void givenDeactivatedWorkflow_shouldCreateIt() {
+    //given
+    var requestPayload = getResourceAsString("classpath:contracts/workflow/api/create-deactivated-workflow-request.json");
+    given(workflowService.create(argThat(workflowRequest ->
+        workflowRequest.getName().equalsIgnoreCase("Workflow 1")
+            && workflowRequest.getDescription().equalsIgnoreCase("Workflow Description")
+            && workflowRequest.getEntityType().equals(EntityType.LEAD)
+            && workflowRequest.getTrigger().getName().equals(TriggerType.EVENT)
+            && workflowRequest.getTrigger().getTriggerFrequency().equals(TriggerFrequency.CREATED)
+            && workflowRequest.getCondition().getConditionType().equals(ConditionType.FOR_ALL)
+            && workflowRequest.getActions().iterator().next().getType().equals(ActionType.EDIT_PROPERTY)
+            && workflowRequest.getActions().iterator().next().getPayload().getName().equalsIgnoreCase("city")
+            && workflowRequest.getActions().iterator().next().getPayload().getValue().equalsIgnoreCase("Pune")
+            && !workflowRequest.isActive()
     ))).willReturn(Mono.just(new WorkflowSummary(1L)));
     //when
     var workflowResponse = buildWebClient()
