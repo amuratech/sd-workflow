@@ -7,6 +7,7 @@ import static com.kylas.sales.workflow.domain.WorkflowSpecification.withEntityTy
 import static com.kylas.sales.workflow.domain.WorkflowSpecification.withId;
 
 import com.kylas.sales.workflow.api.request.WorkflowRequest;
+import com.kylas.sales.workflow.common.dto.WorkflowAction;
 import com.kylas.sales.workflow.domain.exception.InsufficientPrivilegeException;
 import com.kylas.sales.workflow.domain.exception.WorkflowNotFoundException;
 import com.kylas.sales.workflow.domain.service.UserService;
@@ -16,9 +17,13 @@ import com.kylas.sales.workflow.domain.workflow.EntityType;
 import com.kylas.sales.workflow.domain.workflow.Workflow;
 import com.kylas.sales.workflow.domain.workflow.WorkflowCondition;
 import com.kylas.sales.workflow.domain.workflow.WorkflowTrigger;
+import com.kylas.sales.workflow.domain.workflow.action.AbstractWorkflowAction;
 import com.kylas.sales.workflow.domain.workflow.action.EditPropertyAction;
 import com.kylas.sales.workflow.security.AuthService;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 import javax.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -82,6 +87,39 @@ public class WorkflowFacade {
     return workflowRepository.findOne(readSpecification)
         .map(workflow -> workflow.setAllowedActionsForUser(loggedInUser))
         .orElseThrow(WorkflowNotFoundException::new);
+  }
+
+  public Mono<Workflow> update(long workflowId, WorkflowRequest request) {
+    var loggedInUser = authService.getLoggedInUser();
+    var authenticationToken = authService.getAuthenticationToken();
+    return userService.getUserDetails(loggedInUser.getId(), authenticationToken)
+        .map(user -> userFacade.getExistingOrCreateNewUser(user, loggedInUser.getTenantId()))
+        .map(user ->
+            workflowRepository
+                .findOne(getSpecificationByUpdatePrivileges(loggedInUser).and(withId(workflowId)))
+                .map(workflow -> {
+                  var condition = workflow.getWorkflowCondition().update(request.getCondition());
+                  var trigger = workflow.getWorkflowTrigger().update(request.getTrigger());
+                  var actions = getOrCreateFrom(request.getActions(), workflow.getWorkflowActions());
+                  var workflowToUpdate =
+                      workflow.update(request.getName(), request.getDescription(), request.getEntityType(),
+                          condition, trigger, actions, loggedInUser);
+                  var updatedWorkflow = workflowRepository.saveAndFlush(workflowToUpdate);
+                  updatedWorkflow.setAllowedActionsForUser(loggedInUser);
+                  return updatedWorkflow;
+                })
+                .orElseThrow(WorkflowNotFoundException::new));
+  }
+
+  private Set<AbstractWorkflowAction> getOrCreateFrom(
+      Set<WorkflowAction> requestedActions, Set<AbstractWorkflowAction> existingActions) {
+    return requestedActions.stream()
+        .map(requestedAction ->
+            existingActions.stream()
+                .filter(existingAction -> existingAction.getId().equals(requestedAction.getId()))
+                .findFirst()
+                .orElseGet(() -> EditPropertyAction.createNew(requestedAction)))
+        .collect(Collectors.toCollection(HashSet::new));
   }
 
   private Specification<Workflow> getSpecificationByReadPrivileges(User user) {

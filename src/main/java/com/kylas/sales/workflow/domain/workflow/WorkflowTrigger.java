@@ -30,12 +30,25 @@ public class WorkflowTrigger {
   @OneToOne
   @JoinColumn(name = "workflow_id")
   private Workflow workflow;
+
   private WorkflowTrigger(TriggerType triggerType, TriggerFrequency triggerFrequency) {
     this.triggerType = triggerType;
     this.triggerFrequency = triggerFrequency;
   }
 
+  private WorkflowTrigger(Long id, TriggerType triggerType, TriggerFrequency triggerFrequency,
+      Workflow workflow) {
+    this.id = id;
+    this.triggerType = triggerType;
+    this.triggerFrequency = triggerFrequency;
+    this.workflow = workflow;
+  }
+
   public static WorkflowTrigger createNew(com.kylas.sales.workflow.common.dto.WorkflowTrigger trigger) {
-    return new WorkflowTrigger(trigger.getName(),trigger.getTriggerFrequency());
+    return new WorkflowTrigger(trigger.getName(), trigger.getTriggerFrequency());
+  }
+
+  public WorkflowTrigger update(com.kylas.sales.workflow.common.dto.WorkflowTrigger trigger) {
+    return new WorkflowTrigger(this.id, trigger.getName(), trigger.getTriggerFrequency(), this.workflow);
   }
 }

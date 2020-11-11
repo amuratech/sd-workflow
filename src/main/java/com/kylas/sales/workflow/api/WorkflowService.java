@@ -36,7 +36,9 @@ public class WorkflowService {
   }
 
   public Mono<WorkflowSummary> create(WorkflowRequest workflowRequest) {
-    return workflowFacade.create(workflowRequest).map(workflow -> new WorkflowSummary(workflow.getId()));
+    return workflowFacade
+        .create(workflowRequest)
+        .map(workflow -> new WorkflowSummary(workflow.getId()));
   }
 
   public List<Workflow> findActiveBy(long tenantId, EntityType entityType) {
@@ -47,6 +49,12 @@ public class WorkflowService {
     return toWorkflowDetail(workflowFacade.get(workflowId));
   }
 
+  public Mono<WorkflowDetail> update(long workflowId, WorkflowRequest workflowRequest) {
+    return workflowFacade
+        .update(workflowId, workflowRequest)
+        .map(this::toWorkflowDetail);
+  }
+
   private WorkflowDetail toWorkflowDetail(Workflow workflow) {
     var workflowTrigger = new WorkflowTrigger(workflow.getWorkflowTrigger().getTriggerType(), workflow.getWorkflowTrigger().getTriggerFrequency());
     var workflowCondition = new WorkflowCondition(workflow.getWorkflowCondition().getType());
@@ -54,7 +62,7 @@ public class WorkflowService {
     var actions = workflow.getWorkflowActions()
         .stream()
         .map(abstractWorkflowAction -> (EditPropertyAction) abstractWorkflowAction)
-        .map(editPropertyAction -> new WorkflowAction(
+        .map(editPropertyAction -> new WorkflowAction(editPropertyAction.getId(),
             ActionType.EDIT_PROPERTY, new WorkflowEditProperty(editPropertyAction.getName(), editPropertyAction.getValue())))
         .collect(Collectors.toSet());
     var createdBy = new User(workflow.getCreatedBy().getId(), workflow.getCreatedBy().getName());

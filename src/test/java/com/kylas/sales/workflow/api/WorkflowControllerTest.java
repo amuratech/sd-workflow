@@ -4,12 +4,17 @@ import static java.util.Arrays.asList;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 
 import com.kylas.sales.workflow.api.request.WorkflowRequest;
 import com.kylas.sales.workflow.api.response.WorkflowDetail;
 import com.kylas.sales.workflow.api.response.WorkflowSummary;
 import com.kylas.sales.workflow.common.dto.User;
+import com.kylas.sales.workflow.common.dto.WorkflowAction;
+import com.kylas.sales.workflow.common.dto.WorkflowCondition;
+import com.kylas.sales.workflow.common.dto.WorkflowEditProperty;
+import com.kylas.sales.workflow.common.dto.WorkflowTrigger;
 import com.kylas.sales.workflow.config.TestDatabaseInitializer;
 import com.kylas.sales.workflow.domain.exception.InsufficientPrivilegeException;
 import com.kylas.sales.workflow.domain.exception.InvalidActionException;
@@ -24,6 +29,8 @@ import com.kylas.sales.workflow.stubs.WorkflowStub;
 import java.io.File;
 import java.io.IOException;
 import java.util.Date;
+import java.util.Set;
+import java.util.UUID;
 import org.apache.commons.io.FileUtils;
 import org.json.JSONException;
 import org.junit.jupiter.api.Test;
@@ -109,6 +116,50 @@ class WorkflowControllerTest {
     //then
     var expectedResponse =
         getResourceAsString("classpath:contracts/workflow/api/create-workflow-response.json");
+    StepVerifier.create(workflowResponse)
+        .assertNext(json -> {
+          try {
+            JSONAssert.assertEquals(expectedResponse, json, false);
+          } catch (JSONException e) {
+            fail(e.getMessage());
+          }
+        }).verifyComplete();
+  }
+
+  @Test
+  public void givenWorkflowUpdate_shouldUpdateIt() {
+    //given
+    var requestPayload = getResourceAsString("classpath:contracts/workflow/api/update-workflow-request.json");
+    WorkflowTrigger trigger = new WorkflowTrigger(TriggerType.EVENT, TriggerFrequency.CREATED);
+    WorkflowCondition condition = new WorkflowCondition(ConditionType.FOR_ALL);
+    Set<WorkflowAction> actions = Set.of(new WorkflowAction(ActionType.EDIT_PROPERTY, new WorkflowEditProperty("city", "Pune")));
+    User user = new User(5000L, "Tony Stark");
+    WorkflowDetail workflowDetail = new WorkflowDetail(1L, "Workflow 1", "Workflow Description", EntityType.LEAD, trigger, condition, actions, user,
+        user, null, null, null, 0L, null, true);
+    given(workflowService.update(eq(1L), argThat(workflowRequest ->
+        workflowRequest.getName().equalsIgnoreCase("Workflow 1")
+            && workflowRequest.getDescription().equalsIgnoreCase("Workflow Description")
+            && workflowRequest.getEntityType().equals(EntityType.LEAD)
+            && workflowRequest.getTrigger().getName().equals(TriggerType.EVENT)
+            && workflowRequest.getTrigger().getTriggerFrequency().equals(TriggerFrequency.CREATED)
+            && workflowRequest.getCondition().getConditionType().equals(ConditionType.FOR_ALL)
+            && workflowRequest.getActions().iterator().next().getType().equals(ActionType.EDIT_PROPERTY)
+            && workflowRequest.getActions().iterator().next().getId().equals(UUID.fromString("08518b20-23f9-11eb-adc1-0242ac120002"))
+            && workflowRequest.getActions().iterator().next().getPayload().getName().equalsIgnoreCase("city")
+            && workflowRequest.getActions().iterator().next().getPayload().getValue().equalsIgnoreCase("Pune")
+            && workflowRequest.isActive()
+    ))).willReturn(Mono.just(workflowDetail));
+    //when
+    var workflowResponse = buildWebClient()
+        .put()
+        .uri("/v1/workflows/1")
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(requestPayload)
+        .retrieve()
+        .bodyToMono(String.class);
+    //then
+    var expectedResponse =
+        getResourceAsString("classpath:contracts/workflow/api/update-workflow-response.json");
     StepVerifier.create(workflowResponse)
         .assertNext(json -> {
           try {
@@ -236,7 +287,8 @@ class WorkflowControllerTest {
           try {
             JSONAssert.assertEquals(expectedResponse, json, new CustomComparator(JSONCompareMode.STRICT,
                 new Customization("createdAt", (o1, o2) -> true),
-                new Customization("updatedAt", (o1, o2) -> true)
+                new Customization("updatedAt", (o1, o2) -> true),
+                new Customization("actions[0].id", (o1, o2) -> true)
             ));
           } catch (JSONException e) {
             fail(e.getMessage());
@@ -362,8 +414,10 @@ class WorkflowControllerTest {
             JSONAssert.assertEquals(expectedResponse, json, new CustomComparator(JSONCompareMode.STRICT,
                 new Customization("content[0].createdAt", (o1, o2) -> true),
                 new Customization("content[0].updatedAt", (o1, o2) -> true),
+                new Customization("content[0].actions[0].id", (o1, o2) -> true),
                 new Customization("content[1].createdAt", (o1, o2) -> true),
-                new Customization("content[1].updatedAt", (o1, o2) -> true)
+                new Customization("content[1].updatedAt", (o1, o2) -> true),
+                new Customization("content[1].actions[0].id", (o1, o2) -> true)
             ));
           } catch (JSONException e) {
             fail(e.getMessage());

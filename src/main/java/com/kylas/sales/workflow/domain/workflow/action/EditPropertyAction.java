@@ -41,13 +41,15 @@ public class EditPropertyAction extends AbstractWorkflowAction implements com.ky
   public static Set<AbstractWorkflowAction> createNew(Set<WorkflowAction> actions) {
     return actions.stream()
         .filter(workflowAction -> ActionType.EDIT_PROPERTY.equals(workflowAction.getType()))
-        .map(workflowAction -> {
-          if (isBlank(workflowAction.getPayload().getName()) || isBlank(workflowAction.getPayload().getValue())) {
-            throw new InvalidActionException();
-          }
-          return new EditPropertyAction(workflowAction.getPayload().getName(), workflowAction.getPayload().getValue());
-        })
+        .map(EditPropertyAction::createNew)
         .collect(Collectors.toCollection(HashSet::new));
+  }
+
+  public static AbstractWorkflowAction createNew(WorkflowAction workflowAction) {
+    if (isBlank(workflowAction.getPayload().getName()) || isBlank(workflowAction.getPayload().getValue())) {
+      throw new InvalidActionException();
+    }
+    return new EditPropertyAction(workflowAction.getPayload().getName(), workflowAction.getPayload().getValue());
   }
 
   @Override

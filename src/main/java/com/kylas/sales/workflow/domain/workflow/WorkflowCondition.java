@@ -32,7 +32,17 @@ public class WorkflowCondition {
     this.type = type;
   }
 
+  private WorkflowCondition(Long id, ConditionType type, Workflow workflow) {
+    this.id = id;
+    this.type = type;
+    this.workflow = workflow;
+  }
+
   public static WorkflowCondition createNew(com.kylas.sales.workflow.common.dto.WorkflowCondition condition) {
     return new WorkflowCondition(condition.getConditionType());
+  }
+
+  public WorkflowCondition update(com.kylas.sales.workflow.common.dto.WorkflowCondition condition) {
+    return new WorkflowCondition(this.id, condition.getConditionType(), this.workflow);
   }
 }

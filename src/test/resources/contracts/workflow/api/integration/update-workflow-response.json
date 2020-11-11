@@ -1,9 +1,8 @@
 {
   "id": 301,
   "name": "Workflow 1",
-  "description": "Workflow 1",
+  "description": "Workflow Description",
   "entityType": "LEAD",
-  "active": true,
   "trigger": {
     "name": "EVENT",
     "triggerFrequency": "CREATED"
@@ -13,11 +12,11 @@
   },
   "actions": [
     {
-      "id": "d277e0ef-f6ec-45ff-99e6-cfa1b5fd2015",
+      "id": "3422a716-438f-4b6d-b66b-919760c6c76a",
       "type": "EDIT_PROPERTY",
       "payload": {
-        "name": "firstName",
-        "value": "Tony 301"
+        "name": "city",
+        "value": "Pune"
       }
     }
   ],
@@ -30,9 +29,10 @@
     "name": "Steve"
   },
   "createdAt": "2020-10-21T04:47:59.442+0000",
-  "updatedAt": "2020-10-21T04:47:59.442+0000",
+  "updatedAt": "2020-11-11T10:23:34.483+0000",
   "lastTriggeredAt": "2020-10-21T04:47:59.442+0000",
-  "triggerCount": 151,
+  "triggerCount": 0,
+  "active": true,
   "recordActions": {
     "read": true,
     "update": true,

@@ -1,5 +1,7 @@
 package com.kylas.sales.workflow.domain.workflow;
 
+import static org.springframework.util.CollectionUtils.isEmpty;
+
 import com.kylas.sales.workflow.domain.exception.InsufficientPrivilegeException;
 import com.kylas.sales.workflow.domain.exception.InvalidWorkflowPropertyException;
 import com.kylas.sales.workflow.domain.user.Action;
@@ -81,14 +83,17 @@ public class Workflow {
   private Workflow(Long id, @NotBlank @Size(min = 3, max = 255) String name, String description,
       EntityType entityType, WorkflowTrigger workflowTrigger, WorkflowCondition workflowCondition,
       Set<AbstractWorkflowAction> workflowActions, boolean active, User createdBy, User updatedBy, Long tenantId, Date createdAt,
-      Date updatedAt, Action allowedActions) {
+      Date updatedAt, Action allowedActions, WorkflowExecutedEvent executedEvent) {
     this.id = id;
     this.name = name;
     this.description = description;
     this.entityType = entityType;
     this.workflowTrigger = workflowTrigger;
+    workflowTrigger.setWorkflow(this);
     this.workflowCondition = workflowCondition;
+    workflowCondition.setWorkflow(this);
     this.workflowActions = workflowActions;
+    workflowActions.forEach(workflowAction -> workflowAction.setWorkflow(this));
     this.active = active;
     this.createdBy = createdBy;
     this.updatedBy = updatedBy;
@@ -96,6 +101,7 @@ public class Workflow {
     this.createdAt = createdAt;
     this.updatedAt = updatedAt;
     this.allowedActions = allowedActions;
+    this.workflowExecutedEvent = executedEvent;
   }
 
   private Workflow(String name, String description, EntityType entityType, WorkflowTrigger workflowTrigger,
@@ -129,6 +135,12 @@ public class Workflow {
       log.error("User with id: {} does not have create permission on Workflow", creator.getId());
       throw new InsufficientPrivilegeException();
     }
+    validateProperties(entityType, trigger, workflowActions, condition);
+    return new Workflow(name, description, entityType, trigger, workflowActions, condition, creator.getTenantId(), creator, creator, active);
+  }
+
+  private static void validateProperties(EntityType entityType, WorkflowTrigger trigger, Set<AbstractWorkflowAction> workflowActions,
+      WorkflowCondition condition) {
     if (entityType == null) {
       log.error("Try to create workflow with entityType {}", entityType);
       throw new InvalidWorkflowPropertyException();
@@ -137,7 +149,7 @@ public class Workflow {
       log.error("Try to create workflow with trigger {}", trigger);
       throw new InvalidWorkflowPropertyException();
     }
-    if (workflowActions == null) {
+    if (isEmpty(workflowActions)) {
       log.error("Try to create workflow with action {}", workflowActions);
       throw new InvalidWorkflowPropertyException();
     }
@@ -145,7 +157,6 @@ public class Workflow {
       log.error("Try to create workflow with condition {}", condition);
       throw new InvalidWorkflowPropertyException();
     }
-    return new Workflow(name, description, entityType, trigger, workflowActions, condition, creator.getTenantId(), creator, creator, active);
   }
 
   public Workflow setAllowedActionsForUser(User loggedInUser) {
@@ -193,7 +204,8 @@ public class Workflow {
         this.tenantId,
         this.createdAt,
         new Date(),
-        this.allowedActions);
+        this.allowedActions,
+        this.workflowExecutedEvent);
   }
 
   public Workflow deactivate() {
@@ -211,6 +223,34 @@ public class Workflow {
         this.tenantId,
         this.createdAt,
         new Date(),
-        this.allowedActions);
+        this.allowedActions,
+        this.workflowExecutedEvent);
+  }
+
+  public Workflow update(
+      String name, String description, EntityType entityType, WorkflowCondition condition, WorkflowTrigger trigger,
+      Set<AbstractWorkflowAction> actions, User updatedBy) {
+    if (!updatedBy.canUpdateAllWorkflow()) {
+      log.error("User with id: {} does not have update permission on Workflow", updatedBy.getId());
+      throw new InsufficientPrivilegeException();
+    }
+    validateProperties(entityType, trigger, actions, condition);
+    return new Workflow(
+        this.id,
+        name,
+        description,
+        entityType,
+        trigger,
+        condition,
+        actions,
+        this.active,
+        this.createdBy,
+        updatedBy,
+        this.tenantId,
+        this.createdAt,
+        new Date(),
+        this.allowedActions,
+        this.workflowExecutedEvent.resetTriggerCount()
+    );
   }
 }

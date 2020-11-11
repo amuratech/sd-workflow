@@ -74,6 +74,21 @@ class WorkflowServiceTest {
   }
 
   @Test
+  public void givenWorkflowUpdateRequest_shouldUpdateIt() {
+    //given
+    var workflowRequestMock = mock(WorkflowRequest.class);
+    var workflowMock = mock(Workflow.class);
+    given(workflowMock.getId()).willReturn(1L);
+    given(workflowFacade.create(workflowRequestMock)).willReturn(Mono.just(workflowMock));
+    //when
+    Mono<WorkflowSummary> workflowSummaryMono = workflowService.create(workflowRequestMock);
+    //then
+    StepVerifier.create(workflowSummaryMono)
+        .assertNext(workflowSummary -> assertThat(workflowMock.getId()).isEqualTo(1L))
+        .verifyComplete();
+  }
+
+  @Test
   public void givenTenantAndEntityType_shouldReturnWorkflows() {
     //given
     long tenantId = 99;

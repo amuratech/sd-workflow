@@ -36,7 +36,18 @@ public class WorkflowExecutedEvent {
     this.workflow = workflow;
   }
 
+  private WorkflowExecutedEvent(Long id, Date lastTriggeredAt, long triggerCount, Workflow workflow) {
+    this.id = id;
+    this.lastTriggeredAt = lastTriggeredAt;
+    this.triggerCount = triggerCount;
+    this.workflow = workflow;
+  }
+
   public static WorkflowExecutedEvent createNew(Workflow workflow) {
     return new WorkflowExecutedEvent(null, 0, workflow);
+  }
+
+  public WorkflowExecutedEvent resetTriggerCount() {
+    return new WorkflowExecutedEvent(this.id, this.lastTriggeredAt, 0, this.workflow);
   }
 }

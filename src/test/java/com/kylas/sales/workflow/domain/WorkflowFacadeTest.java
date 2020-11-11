@@ -102,6 +102,51 @@ class WorkflowFacadeTest {
 
   @Transactional
   @Test
+  @Sql("/test-scripts/insert-workflow.sql")
+  public void givenWorkflowUpdateRequest_shouldUpdateIt() {
+    //given
+    User aUser = UserStub.aUser(11L, 99L, true, true, true, true, true)
+        .withName("user 1");
+    given(authService.getLoggedInUser()).willReturn(aUser);
+
+    given(userService.getUserDetails(11L, authService.getAuthenticationToken()))
+        .willReturn(
+            Mono.just(
+                aUser));
+    var workflowRequest = WorkflowStub
+        .anEditPropertyWorkflowRequest("Edit Lead Property", "Edit Lead Property", EntityType.LEAD, TriggerType.EVENT, TriggerFrequency.CREATED,
+            ConditionType.FOR_ALL, ActionType.EDIT_PROPERTY, "lastName", "Stark", true);
+    //when
+    var workflowMono = workflowFacade.update(301L, workflowRequest);
+    //then
+    StepVerifier.create(workflowMono)
+        .expectNextMatches(workflow -> {
+          assertThat(workflow.getId())
+              .isNotNull()
+              .isGreaterThan(0L);
+
+          assertThat(workflow.getWorkflowTrigger().getTriggerFrequency()).isEqualTo(TriggerFrequency.CREATED);
+          assertThat(workflow.getWorkflowTrigger().getTriggerType()).isEqualTo(TriggerType.EVENT);
+
+          assertThat(workflow.getWorkflowActions().size()).isEqualTo(1);
+          EditPropertyAction workflowAction = (EditPropertyAction) workflow.getWorkflowActions().iterator().next();
+          assertThat(workflowAction.getName()).isEqualTo("lastName");
+          assertThat(workflowAction.getValue()).isEqualTo("Stark");
+
+          assertThat(workflow.getWorkflowCondition().getType()).isEqualTo(ConditionType.FOR_ALL);
+
+          assertThat(workflow.getWorkflowExecutedEvent().getLastTriggeredAt()).isNull();
+          assertThat(workflow.getWorkflowExecutedEvent().getId()).isGreaterThan(0);
+          assertThat(workflow.getWorkflowExecutedEvent().getTriggerCount()).isZero();
+
+          assertThat(workflow.isActive()).isTrue();
+          return true;
+        })
+        .verifyComplete();
+  }
+
+  @Transactional
+  @Test
   @Sql("/test-scripts/insert-users.sql")
   public void givenDeactivatedWorkflowRequest_shouldCreateIt() {
     //given

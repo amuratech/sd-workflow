@@ -12,6 +12,7 @@
   },
   "actions": [
     {
+      "id": "d277e0ef-f6ec-45ff-99e6-cfa1b5fd2015",
       "type": "EDIT_PROPERTY",
       "payload": {
         "name": "lastName",
