@@ -71,4 +71,14 @@ public class EditPropertyAction extends AbstractWorkflowAction implements com.ky
       throw new WorkflowExecutionException(ErrorCode.UPDATE_PROPERTY);
     }
   }
+
+  @Override
+  public EditPropertyAction update(WorkflowAction action) {
+    if (isBlank(action.getPayload().getName()) || isBlank(action.getPayload().getValue())) {
+      throw new InvalidActionException();
+    }
+    this.setName(action.getPayload().getName());
+    this.setValue(action.getPayload().getValue());
+    return this;
+  }
 }

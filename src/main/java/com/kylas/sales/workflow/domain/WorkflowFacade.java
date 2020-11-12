@@ -100,7 +100,7 @@ public class WorkflowFacade {
                 .map(workflow -> {
                   var condition = workflow.getWorkflowCondition().update(request.getCondition());
                   var trigger = workflow.getWorkflowTrigger().update(request.getTrigger());
-                  var actions = getOrCreateFrom(request.getActions(), workflow.getWorkflowActions());
+                  var actions = updateOrCreateFrom(request.getActions(), workflow.getWorkflowActions());
                   var workflowToUpdate =
                       workflow.update(request.getName(), request.getDescription(), request.getEntityType(),
                           condition, trigger, actions, loggedInUser);
@@ -111,13 +111,14 @@ public class WorkflowFacade {
                 .orElseThrow(WorkflowNotFoundException::new));
   }
 
-  private Set<AbstractWorkflowAction> getOrCreateFrom(
+  private Set<AbstractWorkflowAction> updateOrCreateFrom(
       Set<WorkflowAction> requestedActions, Set<AbstractWorkflowAction> existingActions) {
     return requestedActions.stream()
         .map(requestedAction ->
             existingActions.stream()
                 .filter(existingAction -> existingAction.getId().equals(requestedAction.getId()))
                 .findFirst()
+                .map(workflowAction -> workflowAction.update(requestedAction))
                 .orElseGet(() -> EditPropertyAction.createNew(requestedAction)))
         .collect(Collectors.toCollection(HashSet::new));
   }

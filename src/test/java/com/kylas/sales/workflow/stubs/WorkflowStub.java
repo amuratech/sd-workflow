@@ -15,6 +15,7 @@ import com.kylas.sales.workflow.domain.workflow.TriggerType;
 import com.kylas.sales.workflow.domain.workflow.action.WorkflowAction.ActionType;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.UUID;
 
 public class WorkflowStub {
 
@@ -33,6 +34,27 @@ public class WorkflowStub {
     var triggerRequest = new WorkflowTrigger(triggerType, triggerFrequency);
     var conditionRequest = new WorkflowCondition(conditionType);
     var actionRequest = new WorkflowAction(actionType, new WorkflowEditProperty(propertyName, propertyValue));
+    var actionRequests = new HashSet<WorkflowAction>();
+    actionRequests.add(actionRequest);
+    return new WorkflowRequest(name, description, entityType, triggerRequest, conditionRequest, actionRequests, active);
+  }
+
+  public static WorkflowRequest anExistingEditPropertyWorkflowRequest(
+      String name,
+      String description,
+      EntityType entityType,
+      TriggerType triggerType,
+      TriggerFrequency triggerFrequency,
+      ConditionType conditionType,
+      UUID actionId,
+      ActionType actionType,
+      String propertyName,
+      String propertyValue,
+      boolean active
+  ) {
+    var triggerRequest = new WorkflowTrigger(triggerType, triggerFrequency);
+    var conditionRequest = new WorkflowCondition(conditionType);
+    var actionRequest = new WorkflowAction(actionId, actionType, new WorkflowEditProperty(propertyName, propertyValue));
     var actionRequests = new HashSet<WorkflowAction>();
     actionRequests.add(actionRequest);
     return new WorkflowRequest(name, description, entityType, triggerRequest, conditionRequest, actionRequests, active);

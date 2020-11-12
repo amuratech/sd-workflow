@@ -1,5 +1,6 @@
 package com.kylas.sales.workflow.domain.workflow.action;
 
+import com.kylas.sales.workflow.common.dto.WorkflowAction;
 import com.kylas.sales.workflow.domain.processor.Actionable;
 import com.kylas.sales.workflow.domain.processor.lead.Lead;
 import com.kylas.sales.workflow.domain.workflow.Workflow;
@@ -29,4 +30,6 @@ public abstract class AbstractWorkflowAction {
   private Workflow workflow;
 
   public abstract Actionable process(Lead entity);
+
+  public abstract AbstractWorkflowAction update(WorkflowAction action);
 }

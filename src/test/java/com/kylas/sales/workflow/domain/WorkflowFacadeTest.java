@@ -23,6 +23,7 @@ import com.kylas.sales.workflow.stubs.UserStub;
 import com.kylas.sales.workflow.stubs.WorkflowStub;
 import java.util.Date;
 import java.util.List;
+import java.util.UUID;
 import javax.transaction.Transactional;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -140,6 +141,45 @@ class WorkflowFacadeTest {
           assertThat(workflow.getWorkflowExecutedEvent().getTriggerCount()).isZero();
 
           assertThat(workflow.isActive()).isTrue();
+          return true;
+        })
+        .verifyComplete();
+  }
+
+  @Transactional
+  @Test
+  @Sql("/test-scripts/insert-workflow.sql")
+  public void givenWorkflowUpdateRequest_shouldUpdateExistingAction() {
+    //given
+    User aUser = UserStub.aUser(11L, 99L, true, true, true, true, true)
+        .withName("user 1");
+    given(authService.getLoggedInUser()).willReturn(aUser);
+
+    given(userService.getUserDetails(11L, authService.getAuthenticationToken()))
+        .willReturn(
+            Mono.just(
+                aUser));
+    var workflowRequest = WorkflowStub
+        .anExistingEditPropertyWorkflowRequest("Edit Lead Property", "Edit Lead Property",
+            EntityType.LEAD, TriggerType.EVENT, TriggerFrequency.CREATED,
+            ConditionType.FOR_ALL, UUID.fromString("a0eebc55-9c0b-4ef8-bb6d-6bb9bd380a11"), ActionType.EDIT_PROPERTY, "lastName", "Stark", true);
+    //when
+    var workflowMono = workflowFacade.update(301L, workflowRequest);
+    //then
+    StepVerifier.create(workflowMono)
+        .expectNextMatches(workflow -> {
+          assertThat(workflow.getId())
+              .isNotNull()
+              .isGreaterThan(0L);
+
+          assertThat(workflow.getWorkflowTrigger().getTriggerFrequency()).isEqualTo(TriggerFrequency.CREATED);
+          assertThat(workflow.getWorkflowTrigger().getTriggerType()).isEqualTo(TriggerType.EVENT);
+
+          assertThat(workflow.getWorkflowActions().size()).isEqualTo(1);
+          EditPropertyAction workflowAction = (EditPropertyAction) workflow.getWorkflowActions().iterator().next();
+          assertThat(workflowAction.getName()).isEqualTo("lastName");
+          assertThat(workflowAction.getValue()).isEqualTo("Stark");
+          assertThat(workflowAction.getId()).isEqualTo(UUID.fromString("a0eebc55-9c0b-4ef8-bb6d-6bb9bd380a11"));
           return true;
         })
         .verifyComplete();
