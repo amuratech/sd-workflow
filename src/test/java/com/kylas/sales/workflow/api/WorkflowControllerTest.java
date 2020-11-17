@@ -10,8 +10,8 @@ import static org.mockito.BDDMockito.given;
 import com.kylas.sales.workflow.api.request.WorkflowRequest;
 import com.kylas.sales.workflow.api.response.WorkflowDetail;
 import com.kylas.sales.workflow.api.response.WorkflowSummary;
+import com.kylas.sales.workflow.common.dto.ActionResponse;
 import com.kylas.sales.workflow.common.dto.User;
-import com.kylas.sales.workflow.common.dto.WorkflowAction;
 import com.kylas.sales.workflow.common.dto.WorkflowCondition;
 import com.kylas.sales.workflow.common.dto.WorkflowEditProperty;
 import com.kylas.sales.workflow.common.dto.WorkflowTrigger;
@@ -132,7 +132,7 @@ class WorkflowControllerTest {
     var requestPayload = getResourceAsString("classpath:contracts/workflow/api/update-workflow-request.json");
     WorkflowTrigger trigger = new WorkflowTrigger(TriggerType.EVENT, TriggerFrequency.CREATED);
     WorkflowCondition condition = new WorkflowCondition(ConditionType.FOR_ALL);
-    Set<WorkflowAction> actions = Set.of(new WorkflowAction(ActionType.EDIT_PROPERTY, new WorkflowEditProperty("city", "Pune")));
+    Set<ActionResponse> actions = Set.of(new ActionResponse(ActionType.EDIT_PROPERTY, new WorkflowEditProperty("city", "Pune")));
     User user = new User(5000L, "Tony Stark");
     WorkflowDetail workflowDetail = new WorkflowDetail(1L, "Workflow 1", "Workflow Description", EntityType.LEAD, trigger, condition, actions, user,
         user, null, null, null, 0L, null, true);

@@ -11,13 +11,13 @@ import lombok.NoArgsConstructor;
 @JsonIgnoreProperties(ignoreUnknown = true)
 @AllArgsConstructor
 @NoArgsConstructor
-public class WorkflowAction {
+public class ActionResponse {
 
   private UUID id;
   private ActionType type;
   private WorkflowEditProperty payload;
 
-  public WorkflowAction(ActionType type, WorkflowEditProperty payload) {
+  public ActionResponse(ActionType type, WorkflowEditProperty payload) {
     this.type = type;
     this.payload = payload;
   }

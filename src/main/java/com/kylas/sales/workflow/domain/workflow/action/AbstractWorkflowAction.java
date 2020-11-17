@@ -1,9 +1,10 @@
 package com.kylas.sales.workflow.domain.workflow.action;
 
-import com.kylas.sales.workflow.common.dto.WorkflowAction;
+import com.kylas.sales.workflow.common.dto.ActionResponse;
 import com.kylas.sales.workflow.domain.processor.Actionable;
 import com.kylas.sales.workflow.domain.processor.lead.Lead;
 import com.kylas.sales.workflow.domain.workflow.Workflow;
+import com.kylas.sales.workflow.domain.workflow.action.WorkflowAction.ActionType;
 import java.util.UUID;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
@@ -31,5 +32,7 @@ public abstract class AbstractWorkflowAction {
 
   public abstract Actionable process(Lead entity);
 
-  public abstract AbstractWorkflowAction update(WorkflowAction action);
+  public abstract AbstractWorkflowAction update(ActionResponse action);
+
+  public abstract ActionType getType();
 }

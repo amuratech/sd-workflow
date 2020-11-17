@@ -2,8 +2,8 @@ package com.kylas.sales.workflow.stubs;
 
 import com.kylas.sales.workflow.api.request.WorkflowRequest;
 import com.kylas.sales.workflow.api.response.WorkflowDetail;
+import com.kylas.sales.workflow.common.dto.ActionResponse;
 import com.kylas.sales.workflow.common.dto.User;
-import com.kylas.sales.workflow.common.dto.WorkflowAction;
 import com.kylas.sales.workflow.common.dto.WorkflowCondition;
 import com.kylas.sales.workflow.common.dto.WorkflowEditProperty;
 import com.kylas.sales.workflow.common.dto.WorkflowTrigger;
@@ -33,8 +33,8 @@ public class WorkflowStub {
   ) {
     var triggerRequest = new WorkflowTrigger(triggerType, triggerFrequency);
     var conditionRequest = new WorkflowCondition(conditionType);
-    var actionRequest = new WorkflowAction(actionType, new WorkflowEditProperty(propertyName, propertyValue));
-    var actionRequests = new HashSet<WorkflowAction>();
+    var actionRequest = new ActionResponse(actionType, new WorkflowEditProperty(propertyName, propertyValue));
+    var actionRequests = new HashSet<ActionResponse>();
     actionRequests.add(actionRequest);
     return new WorkflowRequest(name, description, entityType, triggerRequest, conditionRequest, actionRequests, active);
   }
@@ -54,8 +54,8 @@ public class WorkflowStub {
   ) {
     var triggerRequest = new WorkflowTrigger(triggerType, triggerFrequency);
     var conditionRequest = new WorkflowCondition(conditionType);
-    var actionRequest = new WorkflowAction(actionId, actionType, new WorkflowEditProperty(propertyName, propertyValue));
-    var actionRequests = new HashSet<WorkflowAction>();
+    var actionRequest = new ActionResponse(actionId, actionType, new WorkflowEditProperty(propertyName, propertyValue));
+    var actionRequests = new HashSet<ActionResponse>();
     actionRequests.add(actionRequest);
     return new WorkflowRequest(name, description, entityType, triggerRequest, conditionRequest, actionRequests, active);
   }
@@ -76,14 +76,14 @@ public class WorkflowStub {
   ) {
     var workflowTrigger = new WorkflowTrigger(triggerType, triggerFrequency);
     var condition = new WorkflowCondition(conditionType);
-    var action = new WorkflowAction(actionType, new WorkflowEditProperty(propertyName, propertyValue));
-    var actions = new HashSet<WorkflowAction>();
+    var action = new ActionResponse(actionType, new WorkflowEditProperty(propertyName, propertyValue));
+    var actions = new HashSet<ActionResponse>();
     actions.add(action);
     Action allowedActions = new Action();
     allowedActions.setRead(canRead);
     allowedActions.setWrite(canCreate);
     return new WorkflowDetail(id, name, description, entityType, workflowTrigger, condition, actions, createdBy, updatedBy, createdAndUpdatedAt,
-        createdAndUpdatedAt, null, 0L,allowedActions, active);
+        createdAndUpdatedAt, null, 0L, allowedActions, active);
   }
 
 }

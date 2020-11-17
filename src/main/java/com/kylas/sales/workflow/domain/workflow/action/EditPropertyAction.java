@@ -1,17 +1,16 @@
 package com.kylas.sales.workflow.domain.workflow.action;
 
+import static com.kylas.sales.workflow.domain.workflow.action.WorkflowAction.ActionType.EDIT_PROPERTY;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 
-import com.kylas.sales.workflow.common.dto.WorkflowAction;
+import com.kylas.sales.workflow.common.dto.ActionResponse;
+import com.kylas.sales.workflow.common.dto.WorkflowEditProperty;
 import com.kylas.sales.workflow.domain.exception.InvalidActionException;
 import com.kylas.sales.workflow.domain.processor.Actionable;
 import com.kylas.sales.workflow.domain.processor.exception.WorkflowExecutionException;
 import com.kylas.sales.workflow.domain.processor.lead.Lead;
 import com.kylas.sales.workflow.domain.workflow.Workflow;
 import com.kylas.sales.workflow.error.ErrorCode;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.stream.Collectors;
 import javax.persistence.Entity;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -38,18 +37,15 @@ public class EditPropertyAction extends AbstractWorkflowAction implements com.ky
     this.value = value;
   }
 
-  public static Set<AbstractWorkflowAction> createNew(Set<WorkflowAction> actions) {
-    return actions.stream()
-        .filter(workflowAction -> ActionType.EDIT_PROPERTY.equals(workflowAction.getType()))
-        .map(EditPropertyAction::createNew)
-        .collect(Collectors.toCollection(HashSet::new));
-  }
-
-  public static AbstractWorkflowAction createNew(WorkflowAction workflowAction) {
-    if (isBlank(workflowAction.getPayload().getName()) || isBlank(workflowAction.getPayload().getValue())) {
+  public static AbstractWorkflowAction createNew(ActionResponse actionResponse) {
+    if (isBlank(actionResponse.getPayload().getName()) || isBlank(actionResponse.getPayload().getValue())) {
       throw new InvalidActionException();
     }
-    return new EditPropertyAction(workflowAction.getPayload().getName(), workflowAction.getPayload().getValue());
+    return new EditPropertyAction(actionResponse.getPayload().getName(), actionResponse.getPayload().getValue());
+  }
+
+  public static ActionResponse toActionResponse(EditPropertyAction action) {
+    return new ActionResponse(action.getId(), EDIT_PROPERTY, new WorkflowEditProperty(action.name, action.value));
   }
 
   @Override
@@ -73,12 +69,17 @@ public class EditPropertyAction extends AbstractWorkflowAction implements com.ky
   }
 
   @Override
-  public EditPropertyAction update(WorkflowAction action) {
+  public EditPropertyAction update(ActionResponse action) {
     if (isBlank(action.getPayload().getName()) || isBlank(action.getPayload().getValue())) {
       throw new InvalidActionException();
     }
     this.setName(action.getPayload().getName());
     this.setValue(action.getPayload().getValue());
     return this;
+  }
+
+  @Override
+  public ActionType getType() {
+    return EDIT_PROPERTY;
   }
 }

@@ -1,7 +1,7 @@
 package com.kylas.sales.workflow.api.request;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.kylas.sales.workflow.common.dto.WorkflowAction;
+import com.kylas.sales.workflow.common.dto.ActionResponse;
 import com.kylas.sales.workflow.common.dto.WorkflowCondition;
 import com.kylas.sales.workflow.common.dto.WorkflowTrigger;
 import com.kylas.sales.workflow.domain.workflow.EntityType;
@@ -30,6 +30,6 @@ public class WorkflowRequest {
   @NotNull
   private WorkflowCondition condition;
   @NotEmpty
-  private Set<WorkflowAction> actions;
+  private Set<ActionResponse> actions;
   private boolean active = true;
 }

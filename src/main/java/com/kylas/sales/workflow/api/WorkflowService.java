@@ -5,18 +5,16 @@ import static java.util.Objects.nonNull;
 import com.kylas.sales.workflow.api.request.WorkflowRequest;
 import com.kylas.sales.workflow.api.response.WorkflowDetail;
 import com.kylas.sales.workflow.api.response.WorkflowSummary;
+import com.kylas.sales.workflow.common.dto.ActionResponse;
 import com.kylas.sales.workflow.common.dto.User;
-import com.kylas.sales.workflow.common.dto.WorkflowAction;
 import com.kylas.sales.workflow.common.dto.WorkflowCondition;
-import com.kylas.sales.workflow.common.dto.WorkflowEditProperty;
 import com.kylas.sales.workflow.common.dto.WorkflowTrigger;
 import com.kylas.sales.workflow.domain.WorkflowFacade;
 import com.kylas.sales.workflow.domain.workflow.EntityType;
 import com.kylas.sales.workflow.domain.workflow.Workflow;
 import com.kylas.sales.workflow.domain.workflow.WorkflowExecutedEvent;
-import com.kylas.sales.workflow.domain.workflow.action.EditPropertyAction;
-import com.kylas.sales.workflow.domain.workflow.action.WorkflowAction.ActionType;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -59,17 +57,16 @@ public class WorkflowService {
     var workflowTrigger = new WorkflowTrigger(workflow.getWorkflowTrigger().getTriggerType(), workflow.getWorkflowTrigger().getTriggerFrequency());
     var workflowCondition = new WorkflowCondition(workflow.getWorkflowCondition().getType());
 
-    var actions = workflow.getWorkflowActions()
-        .stream()
-        .map(abstractWorkflowAction -> (EditPropertyAction) abstractWorkflowAction)
-        .map(editPropertyAction -> new WorkflowAction(editPropertyAction.getId(),
-            ActionType.EDIT_PROPERTY, new WorkflowEditProperty(editPropertyAction.getName(), editPropertyAction.getValue())))
+    Set<ActionResponse> actions = workflow.getWorkflowActions().stream()
+        .map(workflowAction -> workflowAction.getType().toActionResponse(workflowAction))
         .collect(Collectors.toSet());
+
     var createdBy = new User(workflow.getCreatedBy().getId(), workflow.getCreatedBy().getName());
     var updatedBy = new User(workflow.getUpdatedBy().getId(), workflow.getUpdatedBy().getName());
     var executedEvent = nonNull(workflow.getWorkflowExecutedEvent())
         ? workflow.getWorkflowExecutedEvent()
         : WorkflowExecutedEvent.createNew(workflow);
+
     return new WorkflowDetail(
         workflow.getId(), workflow.getName(), workflow.getDescription(), workflow.getEntityType(), workflowTrigger,
         workflowCondition, actions, createdBy, updatedBy, workflow.getCreatedAt(), workflow.getUpdatedAt(),

@@ -7,7 +7,7 @@ import static com.kylas.sales.workflow.domain.WorkflowSpecification.withEntityTy
 import static com.kylas.sales.workflow.domain.WorkflowSpecification.withId;
 
 import com.kylas.sales.workflow.api.request.WorkflowRequest;
-import com.kylas.sales.workflow.common.dto.WorkflowAction;
+import com.kylas.sales.workflow.common.dto.ActionResponse;
 import com.kylas.sales.workflow.domain.exception.InsufficientPrivilegeException;
 import com.kylas.sales.workflow.domain.exception.WorkflowNotFoundException;
 import com.kylas.sales.workflow.domain.service.UserService;
@@ -18,7 +18,6 @@ import com.kylas.sales.workflow.domain.workflow.Workflow;
 import com.kylas.sales.workflow.domain.workflow.WorkflowCondition;
 import com.kylas.sales.workflow.domain.workflow.WorkflowTrigger;
 import com.kylas.sales.workflow.domain.workflow.action.AbstractWorkflowAction;
-import com.kylas.sales.workflow.domain.workflow.action.EditPropertyAction;
 import com.kylas.sales.workflow.security.AuthService;
 import java.util.HashSet;
 import java.util.List;
@@ -60,14 +59,16 @@ public class WorkflowFacade {
     return userService.getUserDetails(loggedInUser.getId(), authenticationToken)
         .map(user -> userFacade.getExistingOrCreateNewUser(user, loggedInUser.getTenantId()))
         .map(user -> {
-          var editPropertyActions = EditPropertyAction.createNew(workflowRequest.getActions());
+          var actions = workflowRequest.getActions().stream()
+              .map(workflowAction -> workflowAction.getType().create(workflowAction))
+              .collect(Collectors.toSet());
           var condition = WorkflowCondition.createNew(workflowRequest.getCondition());
           var trigger = WorkflowTrigger.createNew(workflowRequest.getTrigger());
           Workflow aNew = Workflow.createNew(
               workflowRequest.getName(),
               workflowRequest.getDescription(),
               workflowRequest.getEntityType(),
-              trigger, user, editPropertyActions, condition, workflowRequest.isActive());
+              trigger, user, actions, condition, workflowRequest.isActive());
           return workflowRepository.saveAndFlush(aNew);
         });
 
@@ -112,14 +113,14 @@ public class WorkflowFacade {
   }
 
   private Set<AbstractWorkflowAction> updateOrCreateFrom(
-      Set<WorkflowAction> requestedActions, Set<AbstractWorkflowAction> existingActions) {
+      Set<ActionResponse> requestedActions, Set<AbstractWorkflowAction> existingActions) {
     return requestedActions.stream()
         .map(requestedAction ->
             existingActions.stream()
                 .filter(existingAction -> existingAction.getId().equals(requestedAction.getId()))
                 .findFirst()
                 .map(workflowAction -> workflowAction.update(requestedAction))
-                .orElseGet(() -> EditPropertyAction.createNew(requestedAction)))
+                .orElseGet(() -> requestedAction.getType().create(requestedAction)))
         .collect(Collectors.toCollection(HashSet::new));
   }
 
