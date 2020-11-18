@@ -46,6 +46,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.Sort.Order;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
@@ -247,6 +248,65 @@ class WorkflowServiceTest {
         }).verifyComplete();
   }
 
+  @Test
+  public void givenSearchRequest_tryToSortOnLastTriggeredAt_shouldGet() {
+    //given
+    User aUser = UserStub.aUser(11L, 99L, true, true, true, false, false)
+        .withName("user 1");
+    WorkflowTrigger trigger = WorkflowTrigger
+        .createNew(new com.kylas.sales.workflow.common.dto.WorkflowTrigger(TriggerType.EVENT, TriggerFrequency.CREATED));
+    WorkflowCondition condition = WorkflowCondition.createNew(new com.kylas.sales.workflow.common.dto.WorkflowCondition(ConditionType.FOR_ALL));
+    Set<AbstractWorkflowAction> actions = new HashSet<>();
+    EditPropertyAction editPropertyAction = new EditPropertyAction();
+    UUID id = UUID.randomUUID();
+    editPropertyAction.setId(id);
+    editPropertyAction.setName("firstName");
+    editPropertyAction.setValue("tony");
+    actions.add(editPropertyAction);
+
+    Workflow workflow = Workflow.createNew("Workflow 1", "Workflow 1", LEAD, trigger, aUser, actions, condition, true);
+    workflow.setAllowedActionsForUser(aUser);
+    Workflow workflowSpy = Mockito.spy(workflow);
+    given(workflowSpy.getId()).willReturn(100L);
+    List<Workflow> workflows = new ArrayList<>();
+    workflows.add(workflowSpy);
+
+    Sort sortByLastTriggeredAt = Sort.by(Order.desc("lastTriggeredAt"));
+    PageImpl<Workflow> workflowPageable = new PageImpl<>(workflows, PageRequest.of(0, 10, sortByLastTriggeredAt), 12);
+    given(workflowFacade.search(argThat(new PageableMatcher(0, 10, sortByLastTriggeredAt)))).willReturn(workflowPageable);
+    PageRequest pageable = PageRequest.of(0, 10, sortByLastTriggeredAt);
+    //when
+    Mono<Page<WorkflowDetail>> workflowPages = workflowService.search(pageable);
+    //then
+    StepVerifier.create(workflowPages)
+        .assertNext(workflowDetails -> {
+          assertThat(workflowDetails.getTotalElements()).isEqualTo(12);
+          assertThat(workflowDetails.getNumber()).isEqualTo(0);
+          assertThat(workflowDetails.getTotalPages()).isEqualTo(2);
+          assertThat(workflowDetails.isFirst()).isTrue();
+          assertThat(workflowDetails.isLast()).isFalse();
+
+          assertThat(workflowDetails.getContent().size()).isEqualTo(1);
+
+          WorkflowDetail workflowDetail = workflowDetails.getContent().get(0);
+          assertThat(workflowDetail.getId()).isEqualTo(100L);
+          assertThat(workflowDetail.getName()).isEqualTo("Workflow 1");
+          assertThat(workflowDetail.getDescription()).isEqualTo("Workflow 1");
+          assertThat(workflowDetail.getEntityType()).isEqualTo(LEAD);
+
+          assertThat(workflowDetail.getTrigger().getName()).isEqualTo(TriggerType.EVENT);
+          assertThat(workflowDetail.getTrigger().getTriggerFrequency()).isEqualTo(TriggerFrequency.CREATED);
+
+          assertThat(workflowDetail.getActions().size()).isEqualTo(1);
+          ActionResponse actionResponseResponse = workflowDetail.getActions().iterator().next();
+          assertThat(actionResponseResponse.getType()).isEqualTo(ActionType.EDIT_PROPERTY);
+          assertThat(actionResponseResponse.getPayload().getName()).isEqualTo("firstName");
+          assertThat(actionResponseResponse.getPayload().getValue()).isEqualTo("tony");
+
+          assertThat(workflowDetail.getAllowedActions().canRead()).isTrue();
+
+        }).verifyComplete();
+  }
   @Test
   public void givenWorkflow_shouldUpdateExecutedEvent(){
     //given

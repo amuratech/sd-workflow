@@ -1,5 +1,6 @@
 package com.kylas.sales.workflow.domain;
 
+import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
 
@@ -22,6 +23,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.Sort.Order;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
@@ -30,7 +33,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 @SpringBootTest
 @AutoConfigureTestDatabase(replace = Replace.NONE)
 @ContextConfiguration(initializers = {TestDatabaseInitializer.class})
-class WorkflowFacadeListTest {
+class WorkflowFacadeSearchTest {
 
   @MockBean
   AuthService authService;
@@ -54,7 +57,7 @@ class WorkflowFacadeListTest {
 
     PageRequest pageable = PageRequest.of(0, 10);
     //when
-    Page<Workflow> pageResponse = workflowFacade.list(pageable);
+    Page<Workflow> pageResponse = workflowFacade.search(pageable);
     //then
     assertThat(pageResponse.getTotalElements()).isEqualTo(3);
     assertThat(pageResponse.getTotalPages()).isEqualTo(1);
@@ -74,7 +77,7 @@ class WorkflowFacadeListTest {
 
     PageRequest pageable = PageRequest.of(0, 10);
     //when
-    Page<Workflow> pageResponse = workflowFacade.list(pageable);
+    Page<Workflow> pageResponse = workflowFacade.search(pageable);
     //then
     assertThat(pageResponse.getTotalElements()).isEqualTo(1);
     assertThat(pageResponse.getTotalPages()).isEqualTo(1);
@@ -97,8 +100,48 @@ class WorkflowFacadeListTest {
     PageRequest pageable = PageRequest.of(0, 10);
     //when
     //then
-    Assertions.assertThatThrownBy(() -> workflowFacade.list(pageable))
+    Assertions.assertThatThrownBy(() -> workflowFacade.search(pageable))
         .isInstanceOf(InsufficientPrivilegeException.class)
         .hasMessage("01702001");
+  }
+
+  @Transactional
+  @Test
+  @Sql("/test-scripts/insert-lead-workflow-for-multiple-users.sql")
+  public void givenUserWithReadAllPermission_tryToSearchWithSortOnLastTriggeredAtDesc_shouldGet() {
+    //given
+    long tenantId = 99L;
+    long userId = 12L;
+    User aUser = UserStub.aUser(userId, tenantId, false, true, true, false, false)
+        .withName("user 1");
+    given(authService.getLoggedInUser()).willReturn(aUser);
+
+    Sort sortByLastTriggeredAt = Sort.by(Order.desc("workflowExecutedEvent.lastTriggeredAt"));
+    PageRequest pageable = PageRequest.of(0, 10,sortByLastTriggeredAt);
+    //when
+    Page<Workflow> pageResponse = workflowFacade.search(pageable);
+    //then
+    assertThat(pageResponse.getTotalElements()).isEqualTo(3);
+    assertThat(pageResponse.getContent().stream().map(workflow -> workflow.getId()).collect(toList())).containsExactly(303L,302L,301L);
+  }
+
+  @Transactional
+  @Test
+  @Sql("/test-scripts/insert-lead-workflow-for-multiple-users.sql")
+  public void givenUserWithReadAllPermission_tryToSearchWithSortOnLastTriggeredAtAsc_shouldGet() {
+    //given
+    long tenantId = 99L;
+    long userId = 12L;
+    User aUser = UserStub.aUser(userId, tenantId, false, true, true, false, false)
+        .withName("user 1");
+    given(authService.getLoggedInUser()).willReturn(aUser);
+
+    Sort sortByLastTriggeredAt = Sort.by(Order.asc("workflowExecutedEvent.lastTriggeredAt"));
+    PageRequest pageable = PageRequest.of(0, 10,sortByLastTriggeredAt);
+    //when
+    Page<Workflow> pageResponse = workflowFacade.search(pageable);
+    //then
+    assertThat(pageResponse.getTotalElements()).isEqualTo(3);
+    assertThat(pageResponse.getContent().stream().map(workflow -> workflow.getId()).collect(toList())).containsExactly(301L,302L,303L);
   }
 }

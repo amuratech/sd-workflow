@@ -180,4 +180,15 @@ public class WorkflowFacade {
     }
     return belongToTenant(user.getTenantId()).and(belongToUser(user.getId()));
   }
+
+  public Page<Workflow> search(Pageable pageable) {
+    User loggedInUser = authService.getLoggedInUser();
+
+    Specification<Workflow> readSpecification = getSpecificationByReadPrivileges(loggedInUser);
+    Page<Workflow> workflowList = workflowRepository.findAll(readSpecification, pageable);
+    workflowList.getContent()
+        .stream()
+        .forEach(workflow -> workflow.setAllowedActionsForUser(loggedInUser));
+    return workflowList;
+  }
 }

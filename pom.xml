@@ -300,6 +300,7 @@
                 <include>**/*IntegrationTests.java</include>
               </includes>
               <skipTests>${skip.integration.tests}</skipTests>
+              <argLine>-Duser.timezone=UTC</argLine>
             </configuration>
           </execution>
         </executions>

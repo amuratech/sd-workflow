@@ -51,6 +51,7 @@ import org.springframework.core.io.ResourceLoader;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.Sort.Order;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ContextConfiguration;
@@ -426,6 +427,111 @@ class WorkflowControllerTest {
         .expectComplete()
         .verify();
   }
+
+
+  @Test
+  public void givenSearchRequest_tryToSortOnLastTriggeredAt_shouldGetPageableListingPage() {
+    //given
+
+    User createdBy = new User(101L, "Tony Start");
+    var updatedBy = new User(102L, "Steve Roger");
+
+    WorkflowDetail workflowDetail1 = WorkflowStub
+        .workflowDetail(101, "Workflow 1", "Workflow 1", EntityType.LEAD, true, TriggerType.EVENT, TriggerFrequency.CREATED,
+            ConditionType.FOR_ALL, ActionType.EDIT_PROPERTY, "lastName", "Stark", true, true, createdBy, updatedBy, new Date());
+
+    WorkflowDetail workflowDetail2 = WorkflowStub
+        .workflowDetail(102, "Workflow 2", "Workflow 2", EntityType.LEAD, true, TriggerType.EVENT, TriggerFrequency.CREATED,
+            ConditionType.FOR_ALL, ActionType.EDIT_PROPERTY, "firstName", "Tony", true, true, createdBy, updatedBy, new Date());
+
+    Sort sortByLastTriggeredAt = Sort.by(Order.desc("lastTriggeredAt"));
+    Sort expectedSortable = Sort.by(Order.desc("workflowExecutedEvent.lastTriggeredAt"));
+
+    given(
+        workflowService.search(
+            argThat(new PageableMatcher(0, 10, expectedSortable))))
+        .willReturn(
+            Mono.just(new PageImpl<>(asList(workflowDetail1, workflowDetail2), PageRequest.of(0, 10, sortByLastTriggeredAt), 12)));
+    //when
+    var workflowResponse = buildWebClient()
+        .post()
+        .uri("/v1/workflows/search?page=0&size=10&sort=lastTriggeredAt,desc")
+        .contentType(MediaType.APPLICATION_JSON)
+        .retrieve()
+        .bodyToMono(String.class);
+    //then
+    var expectedResponse =
+        getResourceAsString("classpath:contracts/workflow/api/search-workflows-sort-on-lastTriggeredAt-desc.json");
+    StepVerifier.create(workflowResponse)
+        .assertNext(json -> {
+          try {
+            JSONAssert.assertEquals(expectedResponse, json, new CustomComparator(JSONCompareMode.STRICT,
+                new Customization("content[0].createdAt", (o1, o2) -> true),
+                new Customization("content[0].updatedAt", (o1, o2) -> true),
+                new Customization("content[0].actions[0].id", (o1, o2) -> true),
+                new Customization("content[1].createdAt", (o1, o2) -> true),
+                new Customization("content[1].updatedAt", (o1, o2) -> true),
+                new Customization("content[1].actions[0].id", (o1, o2) -> true)
+            ));
+          } catch (JSONException e) {
+            fail(e.getMessage());
+          }
+        })
+        .expectComplete()
+        .verify();
+  }
+
+  @Test
+  public void givenSearchRequest_tryToSortOnLastUpdatedAt_shouldGetPageableListingPage() {
+    //given
+
+    User createdBy = new User(101L, "Tony Start");
+    var updatedBy = new User(102L, "Steve Roger");
+
+    WorkflowDetail workflowDetail1 = WorkflowStub
+        .workflowDetail(101, "Workflow 1", "Workflow 1", EntityType.LEAD, true, TriggerType.EVENT, TriggerFrequency.CREATED,
+            ConditionType.FOR_ALL, ActionType.EDIT_PROPERTY, "lastName", "Stark", true, true, createdBy, updatedBy, new Date());
+
+    WorkflowDetail workflowDetail2 = WorkflowStub
+        .workflowDetail(102, "Workflow 2", "Workflow 2", EntityType.LEAD, true, TriggerType.EVENT, TriggerFrequency.CREATED,
+            ConditionType.FOR_ALL, ActionType.EDIT_PROPERTY, "firstName", "Tony", true, true, createdBy, updatedBy, new Date());
+
+    Sort sortByLastTriggeredAt = Sort.by(Order.desc("lastUpdatedAt"));
+
+    given(
+        workflowService.search(
+            argThat(new PageableMatcher(0, 10, sortByLastTriggeredAt))))
+        .willReturn(
+            Mono.just(new PageImpl<>(asList(workflowDetail1, workflowDetail2), PageRequest.of(0, 10, sortByLastTriggeredAt), 12)));
+    //when
+    var workflowResponse = buildWebClient()
+        .post()
+        .uri("/v1/workflows/search?page=0&size=10&sort=lastUpdatedAt,desc")
+        .contentType(MediaType.APPLICATION_JSON)
+        .retrieve()
+        .bodyToMono(String.class);
+    //then
+    var expectedResponse =
+        getResourceAsString("classpath:contracts/workflow/api/search-workflows-sort-on-lastUpdatedAt-desc.json");
+    StepVerifier.create(workflowResponse)
+        .assertNext(json -> {
+          try {
+            JSONAssert.assertEquals(expectedResponse, json, new CustomComparator(JSONCompareMode.STRICT,
+                new Customization("content[0].createdAt", (o1, o2) -> true),
+                new Customization("content[0].updatedAt", (o1, o2) -> true),
+                new Customization("content[0].actions[0].id", (o1, o2) -> true),
+                new Customization("content[1].createdAt", (o1, o2) -> true),
+                new Customization("content[1].updatedAt", (o1, o2) -> true),
+                new Customization("content[1].actions[0].id", (o1, o2) -> true)
+            ));
+          } catch (JSONException e) {
+            fail(e.getMessage());
+          }
+        })
+        .expectComplete()
+        .verify();
+  }
+
 
   private String getResourceAsString(String resourcePath) {
     var resource = resourceLoader.getResource(resourcePath);

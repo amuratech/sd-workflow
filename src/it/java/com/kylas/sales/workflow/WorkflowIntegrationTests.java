@@ -43,15 +43,13 @@ import reactor.test.StepVerifier;
 @ContextConfiguration(initializers = {TestDatabaseInitializer.class})
 public class WorkflowIntegrationTests {
 
-  @Autowired
-  Environment environment;
+  @Autowired Environment environment;
   private final String authenticationToken =
       "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzZWxsIiwiZGF0YSI6eyJleHBpcmVzSW4iOjQzMTk5LCJleHBpcnkiOjE1NzY0OTM3MTAsInRva2VuVHlwZSI6ImJlYXJlciIsInBlcm1pc3Npb25zIjpbeyJpZCI6NCwibmFtZSI6ImxlYWQiLCJkZXNjcmlwdGlvbiI6ImhhcyBhY2Nlc3MgdG8gbGVhZCByZXNvdXJjZSIsImxpbWl0cyI6LTEsInVuaXRzIjoiY291bnQiLCJhY3Rpb24iOnsicmVhZCI6dHJ1ZSwid3JpdGUiOnRydWUsInVwZGF0ZSI6dHJ1ZSwiZGVsZXRlIjp0cnVlLCJlbWFpbCI6ZmFsc2UsImNhbGwiOmZhbHNlLCJzbXMiOmZhbHNlLCJ0YXNrIjp0cnVlLCJub3RlIjp0cnVlLCJyZWFkQWxsIjp0cnVlLCJ1cGRhdGVBbGwiOnRydWV9fSx7ImlkIjo3LCJuYW1lIjoid29ya2Zsb3ciLCJkZXNjcmlwdGlvbiI6ImhhcyBhY2Nlc3MgdG8gd29ya2Zsb3cgcmVzb3VyY2UiLCJsaW1pdHMiOi0xLCJ1bml0cyI6ImNvdW50IiwiYWN0aW9uIjp7InJlYWQiOnRydWUsIndyaXRlIjp0cnVlLCJ1cGRhdGUiOnRydWUsImRlbGV0ZSI6dHJ1ZSwiZW1haWwiOmZhbHNlLCJjYWxsIjpmYWxzZSwic21zIjpmYWxzZSwidGFzayI6ZmFsc2UsIm5vdGUiOmZhbHNlLCJyZWFkQWxsIjp0cnVlLCJ1cGRhdGVBbGwiOnRydWV9fV0sInVzZXJJZCI6IjEyIiwidXNlcm5hbWUiOiJ0b255QHN0YXJrLmNvbSIsInRlbmFudElkIjoiNTUifX0.xzQ-Ih5N1nllqkqgsBdS1NJgqhgNVJi1hiSZcuOrxp8";
 
-
   @Test
   public void givenWorkflowRequest_shouldCreate() throws IOException {
-    //given
+    // given
     stubFor(
         get("/iam/v1/users/12")
             .withHeader(AUTHORIZATION, matching("Bearer " + authenticationToken))
@@ -60,34 +58,37 @@ public class WorkflowIntegrationTests {
                     .withHeader("Content-Type", "application/json")
                     .withStatus(200)
                     .withBody(
-                        getResourceAsString(
-                            "/contracts/user/responses/user-details-by-id.json"))));
-    var workflowRequest = getResourceAsString("/contracts/workflow/api/create-workflow-request.json");
-    //when
-    var workflowResponse = buildWebClient()
-        .post()
-        .uri("/v1/workflows")
-        .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(workflowRequest)
-        .retrieve()
-        .bodyToMono(String.class);
-    //then
+                        getResourceAsString("/contracts/user/responses/user-details-by-id.json"))));
+    var workflowRequest =
+        getResourceAsString("/contracts/workflow/api/create-workflow-request.json");
+    // when
+    var workflowResponse =
+        buildWebClient()
+            .post()
+            .uri("/v1/workflows")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(workflowRequest)
+            .retrieve()
+            .bodyToMono(String.class);
+    // then
     var expectedResponse =
         getResourceAsString("/contracts/workflow/api/create-workflow-response.json");
     StepVerifier.create(workflowResponse)
-        .assertNext(json -> {
-          try {
-            JSONAssert.assertEquals(expectedResponse, json, false);
-          } catch (JSONException e) {
-            fail(e.getMessage());
-          }
-        }).verifyComplete();
+        .assertNext(
+            json -> {
+              try {
+                JSONAssert.assertEquals(expectedResponse, json, false);
+              } catch (JSONException e) {
+                fail(e.getMessage());
+              }
+            })
+        .verifyComplete();
   }
 
   @Test
   @Sql("/test-scripts/integration/insert-lead-workflow-for-integration-test.sql")
   public void givenWorkflowUpdateRequest_shouldUpdate() throws IOException {
-    //given
+    // given
     stubFor(
         get("/iam/v1/users/12")
             .withHeader(AUTHORIZATION, matching("Bearer " + authenticationToken))
@@ -96,41 +97,45 @@ public class WorkflowIntegrationTests {
                     .withHeader(CONTENT_TYPE, APPLICATION_JSON_VALUE)
                     .withStatus(200)
                     .withBody(
-                        getResourceAsString(
-                            "/contracts/user/responses/user-details-by-id.json"))));
-    var workflowRequest = getResourceAsString("/contracts/workflow/api/update-workflow-request.json");
-    //when
-    var workflowResponse = buildWebClient()
-        .put()
-        .uri("/v1/workflows/301")
-        .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(workflowRequest)
-        .retrieve()
-        .bodyToMono(String.class);
-    //then
+                        getResourceAsString("/contracts/user/responses/user-details-by-id.json"))));
+    var workflowRequest =
+        getResourceAsString("/contracts/workflow/api/update-workflow-request.json");
+    // when
+    var workflowResponse =
+        buildWebClient()
+            .put()
+            .uri("/v1/workflows/301")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(workflowRequest)
+            .retrieve()
+            .bodyToMono(String.class);
+    // then
     var expectedResponse =
         getResourceAsString("/contracts/workflow/api/integration/update-workflow-response.json");
     StepVerifier.create(workflowResponse)
-        .assertNext(json -> {
-          try {
-            JSONAssert.assertEquals(
-                expectedResponse,
-                json,
-                new CustomComparator(
-                    JSONCompareMode.STRICT,
-                    new Customization("actions[0].id", (o1, o2) -> true),
-                    new Customization("updatedAt", (o1, o2) -> true)
-                ));
-          } catch (JSONException e) {
-            fail(e.getMessage());
-          }
-        }).verifyComplete();
+        .assertNext(
+            json -> {
+              try {
+                JSONAssert.assertEquals(
+                    expectedResponse,
+                    json,
+                    new CustomComparator(
+                        JSONCompareMode.STRICT,
+                        new Customization("actions[0].id", (o1, o2) -> true),
+                        new Customization("lastTriggeredAt", (o1, o2) -> true),
+                        new Customization("updatedAt", (o1, o2) -> true),
+                        new Customization("createdAt", (o1, o2) -> true)));
+              } catch (JSONException e) {
+                fail(e.getMessage());
+              }
+            })
+        .verifyComplete();
   }
 
   @Test
   @Sql("/test-scripts/integration/insert-lead-workflow-for-integration-test.sql")
   public void givenWorkflowId_shouldGetIt() throws IOException {
-    //given
+    // given
     stubFor(
         get("/iam/v1/users/12")
             .withHeader(AUTHORIZATION, matching("Bearer " + authenticationToken))
@@ -139,30 +144,79 @@ public class WorkflowIntegrationTests {
                     .withHeader("Content-Type", "application/json")
                     .withStatus(200)
                     .withBody(
-                        getResourceAsString(
-                            "/contracts/user/responses/user-details-by-id.json"))));
-    //when
-    var workflowResponse = buildWebClient()
-        .get()
-        .uri("/v1/workflows/301")
-        .retrieve()
-        .bodyToMono(String.class);
-    //then
+                        getResourceAsString("/contracts/user/responses/user-details-by-id.json"))));
+    // when
+    var workflowResponse =
+        buildWebClient().get().uri("/v1/workflows/301").retrieve().bodyToMono(String.class);
+    // then
     var expectedResponse =
         getResourceAsString("/contracts/workflow/api/integration/workflowId-301-response.json");
     StepVerifier.create(workflowResponse)
-        .assertNext(json -> {
-          try {
-            JSONAssert.assertEquals(expectedResponse, json, new CustomComparator(JSONCompareMode.STRICT,
-                new Customization("lastTriggeredAt", (o1, o2) -> true),
-                new Customization("createdAt", (o1, o2) -> true),
-                new Customization("updatedAt", (o1, o2) -> true),
-                new Customization("actions[0].id", (o1, o2) -> true)
-            ));
-          } catch (JSONException e) {
-            fail(e.getMessage());
-          }
-        }).verifyComplete();
+        .assertNext(
+            json -> {
+              try {
+                JSONAssert.assertEquals(
+                    expectedResponse,
+                    json,
+                    new CustomComparator(
+                        JSONCompareMode.STRICT,
+                        new Customization("lastTriggeredAt", (o1, o2) -> true),
+                        new Customization("createdAt", (o1, o2) -> true),
+                        new Customization("updatedAt", (o1, o2) -> true),
+                        new Customization("actions[0].id", (o1, o2) -> true)));
+              } catch (JSONException e) {
+                fail(e.getMessage());
+              }
+            })
+        .verifyComplete();
+  }
+
+  @Test
+  @Sql("/test-scripts/integration/insert-lead-workflow-for-integration-test.sql")
+  public void givenSearchRequest_tryToSortOnLastTriggeredAt_shouldSortAndGet() throws IOException {
+    // given
+    stubFor(
+        get("/iam/v1/users/12")
+            .withHeader(AUTHORIZATION, matching("Bearer " + authenticationToken))
+            .willReturn(
+                aResponse()
+                    .withHeader("Content-Type", "application/json")
+                    .withStatus(200)
+                    .withBody(
+                        getResourceAsString("/contracts/user/responses/user-details-by-id.json"))));
+    // when
+    var workflowResponse =
+        buildWebClient()
+            .post()
+            .uri("/v1/workflows/search?page=0&size=10&sort=lastTriggeredAt,desc")
+            .contentType(MediaType.APPLICATION_JSON)
+            .retrieve()
+            .bodyToMono(String.class);
+    // then
+    var expectedResponse =
+        getResourceAsString(
+            "/contracts/workflow/api/integration/search-sort-on-lastTriggeredAt.json");
+    StepVerifier.create(workflowResponse)
+        .assertNext(
+            json -> {
+              try {
+                JSONAssert.assertEquals(
+                    expectedResponse,
+                    json,
+                    new CustomComparator(
+                        JSONCompareMode.STRICT,
+                        new Customization("content[0].actions[0].id", (o1, o2) -> true),
+                        new Customization("content[0].lastTriggeredAt", (o1, o2) -> true),
+                        new Customization("content[0].createdAt", (o1, o2) -> true),
+                        new Customization("content[0].updatedAt", (o1, o2) -> true),
+                        new Customization("content[1].lastTriggeredAt", (o1, o2) -> true),
+                        new Customization("content[1].createdAt", (o1, o2) -> true),
+                        new Customization("content[1].updatedAt", (o1, o2) -> true)));
+              } catch (JSONException e) {
+                fail(e.getMessage());
+              }
+            })
+        .verifyComplete();
   }
 
   @NotNull

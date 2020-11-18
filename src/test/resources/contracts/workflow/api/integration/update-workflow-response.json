@@ -12,7 +12,7 @@
   },
   "actions": [
     {
-      "id": "3422a716-438f-4b6d-b66b-919760c6c76a",
+      "id": "727e7d6f-4d30-4e27-90fe-f5d84d0e1fb9",
       "type": "EDIT_PROPERTY",
       "payload": {
         "name": "city",
@@ -28,9 +28,9 @@
     "id": 12,
     "name": "Steve"
   },
-  "createdAt": "2020-10-21T04:47:59.442+0000",
-  "updatedAt": "2020-11-11T10:23:34.483+0000",
-  "lastTriggeredAt": "2020-10-21T04:47:59.442+0000",
+  "createdAt": "2020-10-20T23:17:59.442+0000",
+  "updatedAt": "2020-11-17T11:01:31.603+0000",
+  "lastTriggeredAt": "2020-10-21T23:17:59.442+0000",
   "triggerCount": 0,
   "active": true,
   "recordActions": {

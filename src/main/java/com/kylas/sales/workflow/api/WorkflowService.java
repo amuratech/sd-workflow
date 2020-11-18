@@ -93,4 +93,13 @@ public class WorkflowService {
   public WorkflowDetail activate(long workflowId) {
     return toWorkflowDetail(workflowFacade.activate(workflowId));
   }
+
+  public Mono<Page<WorkflowDetail>> search(Pageable pageable) {
+    Page<Workflow> list = workflowFacade.search(pageable);
+    List<WorkflowDetail> workflowDetails = list.getContent()
+        .stream()
+        .map(this::toWorkflowDetail)
+        .collect(Collectors.toList());
+    return Mono.just(new PageImpl<>(workflowDetails, list.getPageable(), list.getTotalElements()));
+  }
 }
