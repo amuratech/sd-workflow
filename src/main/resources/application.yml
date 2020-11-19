@@ -50,3 +50,5 @@ management:
 client:
   iam:
     basePath: http://localhost:8081
+  config:
+    basePath: http://localhost:8086

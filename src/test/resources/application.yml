@@ -19,3 +19,5 @@ security:
 client:
   iam:
     basePath: http://localhost:9090/iam
+  config:
+    basePath: http://localhost:9090/config

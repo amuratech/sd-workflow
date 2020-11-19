@@ -34,6 +34,7 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 @ExtendWith(SpringExtension.class)
@@ -217,6 +218,45 @@ public class WorkflowIntegrationTests {
               }
             })
         .verifyComplete();
+  }
+
+  @Test
+  public void getWebhookConfigurations_shouldFetchIt() throws IOException, JSONException {
+    stubFor(
+        get("/config/v1/entities/user/fields")
+            .withHeader(AUTHORIZATION, matching("Bearer " + authenticationToken))
+            .willReturn(
+                aResponse()
+                    .withHeader(CONTENT_TYPE, APPLICATION_JSON_VALUE)
+                    .withStatus(200)
+                    .withBody(getResourceAsString("/contracts/config/response/get-all-user-fields.json"))));
+
+    stubFor(
+        get("/config/v1/entities/lead/fields")
+            .withHeader(AUTHORIZATION, matching("Bearer " + authenticationToken))
+            .willReturn(
+                aResponse()
+                    .withHeader(CONTENT_TYPE, APPLICATION_JSON_VALUE)
+                    .withStatus(200)
+                    .withBody(getResourceAsString("/contracts/config/response/get-all-lead-fields.json"))));
+    //when
+    Mono<String> response = buildWebClient()
+        .get()
+        .uri("/v1/workflows/webhook/config")
+        .retrieve()
+        .bodyToMono(String.class);
+    //then
+    var expectedResponse =
+        getResourceAsString("/contracts/workflow/api/integration/webhook-configuration.json");
+
+    StepVerifier.create(response)
+        .assertNext(json -> {
+          try {
+            JSONAssert.assertEquals(expectedResponse, json, false);
+          } catch (JSONException e) {
+            fail(e.getMessage());
+          }
+        }).expectComplete();
   }
 
   @NotNull

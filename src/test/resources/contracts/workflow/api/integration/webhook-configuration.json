@@ -1,0 +1,283 @@
+[
+  {
+    "entity": "Lead",
+    "fields": [
+      {
+        "name": "id",
+        "displayName": "Id"
+      },
+      {
+        "name": "salutation",
+        "displayName": "Salutation"
+      },
+      {
+        "name": "firstName",
+        "displayName": "First Name"
+      },
+      {
+        "name": "lastName",
+        "displayName": "Last Name"
+      },
+      {
+        "name": "pipeline",
+        "displayName": "Pipeline"
+      },
+      {
+        "name": "pipelineStage",
+        "displayName": "Status"
+      },
+      {
+        "name": "createdBy",
+        "displayName": "Created By"
+      },
+      {
+        "name": "createdAt",
+        "displayName": "Created At"
+      },
+      {
+        "name": "updatedBy",
+        "displayName": "Updated By"
+      },
+      {
+        "name": "updatedAt",
+        "displayName": "Updated At"
+      }
+    ]
+  },
+  {
+    "entity": "Lead Owner",
+    "fields": [
+      {
+        "name": "salutation",
+        "displayName": "Salutation"
+      },
+      {
+        "name": "firstName",
+        "displayName": "First Name"
+      },
+      {
+        "name": "lastName",
+        "displayName": "Last Name"
+      },
+      {
+        "name": "email",
+        "displayName": "Email"
+      },
+      {
+        "name": "phoneNumbers",
+        "displayName": "Phone Numbers"
+      },
+      {
+        "name": "designation",
+        "displayName": "Designation"
+      },
+      {
+        "name": "department",
+        "displayName": "Department"
+      },
+      {
+        "name": "currency",
+        "displayName": "Currency"
+      },
+      {
+        "name": "timezone",
+        "displayName": "Timezone"
+      },
+      {
+        "name": "signature",
+        "displayName": "Signature"
+      },
+      {
+        "name": "language",
+        "displayName": "Language"
+      },
+      {
+        "name": "active",
+        "displayName": "Active"
+      },
+      {
+        "name": "createdBy",
+        "displayName": "Created By"
+      },
+      {
+        "name": "updatedBy",
+        "displayName": "Updated By"
+      }
+    ]
+  },
+  {
+    "entity": "Created By",
+    "fields": [
+      {
+        "name": "salutation",
+        "displayName": "Salutation"
+      },
+      {
+        "name": "firstName",
+        "displayName": "First Name"
+      },
+      {
+        "name": "lastName",
+        "displayName": "Last Name"
+      },
+      {
+        "name": "email",
+        "displayName": "Email"
+      },
+      {
+        "name": "phoneNumbers",
+        "displayName": "Phone Numbers"
+      },
+      {
+        "name": "designation",
+        "displayName": "Designation"
+      },
+      {
+        "name": "department",
+        "displayName": "Department"
+      },
+      {
+        "name": "currency",
+        "displayName": "Currency"
+      },
+      {
+        "name": "timezone",
+        "displayName": "Timezone"
+      },
+      {
+        "name": "signature",
+        "displayName": "Signature"
+      },
+      {
+        "name": "language",
+        "displayName": "Language"
+      },
+      {
+        "name": "active",
+        "displayName": "Active"
+      },
+      {
+        "name": "createdBy",
+        "displayName": "Created By"
+      },
+      {
+        "name": "updatedBy",
+        "displayName": "Updated By"
+      }
+    ]
+  },
+  {
+    "entity": "Updated By",
+    "fields": [
+      {
+        "name": "salutation",
+        "displayName": "Salutation"
+      },
+      {
+        "name": "firstName",
+        "displayName": "First Name"
+      },
+      {
+        "name": "lastName",
+        "displayName": "Last Name"
+      },
+      {
+        "name": "email",
+        "displayName": "Email"
+      },
+      {
+        "name": "phoneNumbers",
+        "displayName": "Phone Numbers"
+      },
+      {
+        "name": "designation",
+        "displayName": "Designation"
+      },
+      {
+        "name": "department",
+        "displayName": "Department"
+      },
+      {
+        "name": "currency",
+        "displayName": "Currency"
+      },
+      {
+        "name": "timezone",
+        "displayName": "Timezone"
+      },
+      {
+        "name": "signature",
+        "displayName": "Signature"
+      },
+      {
+        "name": "language",
+        "displayName": "Language"
+      },
+      {
+        "name": "active",
+        "displayName": "Active"
+      },
+      {
+        "name": "createdBy",
+        "displayName": "Created By"
+      },
+      {
+        "name": "updatedBy",
+        "displayName": "Updated By"
+      }
+    ]
+  },
+  {
+    "entity": "Tenant",
+    "fields": [
+      {
+        "name": "accountName",
+        "displayName": "Account Name"
+      },
+      {
+        "name": "industry",
+        "displayName": "Industry"
+      },
+      {
+        "name": "address",
+        "displayName": "Address"
+      },
+      {
+        "name": "city",
+        "displayName": "City"
+      },
+      {
+        "name": "state",
+        "displayName": "State"
+      },
+      {
+        "name": "country",
+        "displayName": "Country"
+      },
+      {
+        "name": "zipcode",
+        "displayName": "Zipcode"
+      },
+      {
+        "name": "language",
+        "displayName": "Language"
+      },
+      {
+        "name": "currency",
+        "displayName": "Currency"
+      },
+      {
+        "name": "timezone",
+        "displayName": "Timezone"
+      },
+      {
+        "name": "companyName",
+        "displayName": "Company Name"
+      },
+      {
+        "name": "website",
+        "displayName": "Website"
+      }
+    ]
+  }
+]

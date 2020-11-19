@@ -21,7 +21,7 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
 @AutoConfigureMockMvc
-@WebMvcTest
+@WebMvcTest(controllers = LayoutController.class)
 class LayoutControllerTest {
 
   @Autowired
