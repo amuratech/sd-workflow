@@ -2,6 +2,7 @@ package com.kylas.sales.workflow.api;
 
 import static java.util.Objects.nonNull;
 
+import com.kylas.sales.workflow.api.request.FilterRequest;
 import com.kylas.sales.workflow.api.request.WorkflowRequest;
 import com.kylas.sales.workflow.api.response.WorkflowDetail;
 import com.kylas.sales.workflow.api.response.WorkflowSummary;
@@ -10,10 +11,12 @@ import com.kylas.sales.workflow.common.dto.User;
 import com.kylas.sales.workflow.common.dto.WorkflowCondition;
 import com.kylas.sales.workflow.common.dto.WorkflowTrigger;
 import com.kylas.sales.workflow.domain.WorkflowFacade;
+import com.kylas.sales.workflow.domain.WorkflowFilter;
 import com.kylas.sales.workflow.domain.workflow.EntityType;
 import com.kylas.sales.workflow.domain.workflow.Workflow;
 import com.kylas.sales.workflow.domain.workflow.WorkflowExecutedEvent;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,37 +51,50 @@ public class WorkflowService {
   }
 
   public Mono<WorkflowDetail> update(long workflowId, WorkflowRequest workflowRequest) {
-    return workflowFacade
-        .update(workflowId, workflowRequest)
-        .map(this::toWorkflowDetail);
+    return workflowFacade.update(workflowId, workflowRequest).map(this::toWorkflowDetail);
   }
 
   private WorkflowDetail toWorkflowDetail(Workflow workflow) {
-    var workflowTrigger = new WorkflowTrigger(workflow.getWorkflowTrigger().getTriggerType(), workflow.getWorkflowTrigger().getTriggerFrequency());
+    var workflowTrigger =
+        new WorkflowTrigger(
+            workflow.getWorkflowTrigger().getTriggerType(),
+            workflow.getWorkflowTrigger().getTriggerFrequency());
     var workflowCondition = new WorkflowCondition(workflow.getWorkflowCondition().getType());
 
-    Set<ActionResponse> actions = workflow.getWorkflowActions().stream()
-        .map(workflowAction -> workflowAction.getType().toActionResponse(workflowAction))
-        .collect(Collectors.toSet());
+    Set<ActionResponse> actions =
+        workflow.getWorkflowActions().stream()
+            .map(workflowAction -> workflowAction.getType().toActionResponse(workflowAction))
+            .collect(Collectors.toSet());
 
     var createdBy = new User(workflow.getCreatedBy().getId(), workflow.getCreatedBy().getName());
     var updatedBy = new User(workflow.getUpdatedBy().getId(), workflow.getUpdatedBy().getName());
-    var executedEvent = nonNull(workflow.getWorkflowExecutedEvent())
-        ? workflow.getWorkflowExecutedEvent()
-        : WorkflowExecutedEvent.createNew(workflow);
+    var executedEvent =
+        nonNull(workflow.getWorkflowExecutedEvent())
+            ? workflow.getWorkflowExecutedEvent()
+            : WorkflowExecutedEvent.createNew(workflow);
 
     return new WorkflowDetail(
-        workflow.getId(), workflow.getName(), workflow.getDescription(), workflow.getEntityType(), workflowTrigger,
-        workflowCondition, actions, createdBy, updatedBy, workflow.getCreatedAt(), workflow.getUpdatedAt(),
-        executedEvent.getLastTriggeredAt(), executedEvent.getTriggerCount(), workflow.getAllowedActions(), workflow.isActive());
+        workflow.getId(),
+        workflow.getName(),
+        workflow.getDescription(),
+        workflow.getEntityType(),
+        workflowTrigger,
+        workflowCondition,
+        actions,
+        createdBy,
+        updatedBy,
+        workflow.getCreatedAt(),
+        workflow.getUpdatedAt(),
+        executedEvent.getLastTriggeredAt(),
+        executedEvent.getTriggerCount(),
+        workflow.getAllowedActions(),
+        workflow.isActive());
   }
 
   public Mono<Page<WorkflowDetail>> list(Pageable pageable) {
     Page<Workflow> list = workflowFacade.list(pageable);
-    List<WorkflowDetail> workflowDetails = list.getContent()
-        .stream()
-        .map(this::toWorkflowDetail)
-        .collect(Collectors.toList());
+    List<WorkflowDetail> workflowDetails =
+        list.getContent().stream().map(this::toWorkflowDetail).collect(Collectors.toList());
     return Mono.just(new PageImpl<>(workflowDetails, list.getPageable(), list.getTotalElements()));
   }
 
@@ -94,12 +110,17 @@ public class WorkflowService {
     return toWorkflowDetail(workflowFacade.activate(workflowId));
   }
 
-  public Mono<Page<WorkflowDetail>> search(Pageable pageable) {
-    Page<Workflow> list = workflowFacade.search(pageable);
-    List<WorkflowDetail> workflowDetails = list.getContent()
-        .stream()
-        .map(this::toWorkflowDetail)
-        .collect(Collectors.toList());
+  public Mono<Page<WorkflowDetail>> search(
+      Pageable pageable, Optional<FilterRequest> optionalFilterRequest) {
+    Optional<Set<WorkflowFilter>> workflowFilters = optionalFilterRequest
+        .map(filterRequest -> filterRequest.getFilters().stream()
+            .map(filter -> new WorkflowFilter(filter.getOperator(), filter.getFieldName(), filter.getFieldType(), filter.getValue()))
+            .collect(Collectors.toSet()));
+
+    Page<Workflow> list = workflowFacade.search(pageable, workflowFilters);
+
+    List<WorkflowDetail> workflowDetails =
+        list.getContent().stream().map(this::toWorkflowDetail).collect(Collectors.toList());
     return Mono.just(new PageImpl<>(workflowDetails, list.getPageable(), list.getTotalElements()));
   }
 }

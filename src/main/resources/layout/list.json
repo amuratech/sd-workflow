@@ -70,7 +70,7 @@
           "values": null
         },
         {
-          "id": "status",
+          "id": "active",
           "header": "Status",
           "isStandard": true,
           "isFilterable": true,

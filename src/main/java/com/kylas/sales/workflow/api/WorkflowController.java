@@ -2,8 +2,10 @@ package com.kylas.sales.workflow.api;
 
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 
+import com.kylas.sales.workflow.api.request.FilterRequest;
 import com.kylas.sales.workflow.api.request.WorkflowRequest;
 import com.kylas.sales.workflow.api.response.WorkflowDetail;
+import java.util.Collections;
 import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -73,7 +75,7 @@ public class WorkflowController {
       consumes = APPLICATION_JSON_VALUE,
       produces = APPLICATION_JSON_VALUE)
   public Mono<Page<WorkflowDetail>> search(
-      @PageableDefault(page = 0, size = 10) Pageable pageable) {
+      @PageableDefault(page = 0, size = 10) Pageable pageable, @RequestBody(required = false) FilterRequest filterRequest) {
 
     Pageable lastTriggeredAt = pageable.getSort().stream()
         .filter(order -> order.getProperty().equalsIgnoreCase("lastTriggeredAt"))
@@ -91,7 +93,7 @@ public class WorkflowController {
 
 
 
-       return workflowService.search(lastTriggeredAt);
+       return workflowService.search(lastTriggeredAt, Optional.ofNullable(filterRequest));
   }
 
   @PostMapping(value = "/{id}/deactivate", produces = APPLICATION_JSON_VALUE)

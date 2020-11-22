@@ -1,0 +1,10 @@
+{
+  "rules": [
+    {
+      "operator": "equal",
+      "field": "entityType",
+      "type": "string",
+      "value": "LEAD"
+    }
+  ]
+}

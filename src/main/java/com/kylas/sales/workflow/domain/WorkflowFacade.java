@@ -21,6 +21,7 @@ import com.kylas.sales.workflow.domain.workflow.action.AbstractWorkflowAction;
 import com.kylas.sales.workflow.security.AuthService;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import javax.transaction.Transactional;
@@ -43,9 +44,12 @@ public class WorkflowFacade {
   private final UserFacade userFacade;
 
   @Autowired
-  public WorkflowFacade(WorkflowRepository workflowRepository,
-      WorkflowExecutedEventRepository workflowExecutedEventRepository, AuthService authService,
-      UserService userService, UserFacade userFacade) {
+  public WorkflowFacade(
+      WorkflowRepository workflowRepository,
+      WorkflowExecutedEventRepository workflowExecutedEventRepository,
+      AuthService authService,
+      UserService userService,
+      UserFacade userFacade) {
     this.workflowRepository = workflowRepository;
     this.workflowExecutedEventRepository = workflowExecutedEventRepository;
     this.authService = authService;
@@ -56,22 +60,29 @@ public class WorkflowFacade {
   public Mono<Workflow> create(WorkflowRequest workflowRequest) {
     var loggedInUser = authService.getLoggedInUser();
     var authenticationToken = authService.getAuthenticationToken();
-    return userService.getUserDetails(loggedInUser.getId(), authenticationToken)
+    return userService
+        .getUserDetails(loggedInUser.getId(), authenticationToken)
         .map(user -> userFacade.getExistingOrCreateNewUser(user, loggedInUser.getTenantId()))
-        .map(user -> {
-          var actions = workflowRequest.getActions().stream()
-              .map(workflowAction -> workflowAction.getType().create(workflowAction))
-              .collect(Collectors.toSet());
-          var condition = WorkflowCondition.createNew(workflowRequest.getCondition());
-          var trigger = WorkflowTrigger.createNew(workflowRequest.getTrigger());
-          Workflow aNew = Workflow.createNew(
-              workflowRequest.getName(),
-              workflowRequest.getDescription(),
-              workflowRequest.getEntityType(),
-              trigger, user, actions, condition, workflowRequest.isActive());
-          return workflowRepository.saveAndFlush(aNew);
-        });
-
+        .map(
+            user -> {
+              var actions =
+                  workflowRequest.getActions().stream()
+                      .map(workflowAction -> workflowAction.getType().create(workflowAction))
+                      .collect(Collectors.toSet());
+              var condition = WorkflowCondition.createNew(workflowRequest.getCondition());
+              var trigger = WorkflowTrigger.createNew(workflowRequest.getTrigger());
+              Workflow aNew =
+                  Workflow.createNew(
+                      workflowRequest.getName(),
+                      workflowRequest.getDescription(),
+                      workflowRequest.getEntityType(),
+                      trigger,
+                      user,
+                      actions,
+                      condition,
+                      workflowRequest.isActive());
+              return workflowRepository.saveAndFlush(aNew);
+            });
   }
 
   public List<Workflow> findActiveBy(long tenantId, EntityType entityType) {
@@ -83,9 +94,10 @@ public class WorkflowFacade {
   public Workflow get(long workflowId) {
     User loggedInUser = authService.getLoggedInUser();
 
-    Specification<Workflow> readSpecification = getSpecificationByReadPrivileges(loggedInUser)
-        .and(withId(workflowId));
-    return workflowRepository.findOne(readSpecification)
+    Specification<Workflow> readSpecification =
+        getSpecificationByReadPrivileges(loggedInUser).and(withId(workflowId));
+    return workflowRepository
+        .findOne(readSpecification)
         .map(workflow -> workflow.setAllowedActionsForUser(loggedInUser))
         .orElseThrow(WorkflowNotFoundException::new);
   }
@@ -93,40 +105,57 @@ public class WorkflowFacade {
   public Mono<Workflow> update(long workflowId, WorkflowRequest request) {
     var loggedInUser = authService.getLoggedInUser();
     var authenticationToken = authService.getAuthenticationToken();
-    return userService.getUserDetails(loggedInUser.getId(), authenticationToken)
+    return userService
+        .getUserDetails(loggedInUser.getId(), authenticationToken)
         .map(user -> userFacade.getExistingOrCreateNewUser(user, loggedInUser.getTenantId()))
-        .map(user ->
-            workflowRepository
-                .findOne(getSpecificationByUpdatePrivileges(loggedInUser).and(withId(workflowId)))
-                .map(workflow -> {
-                  var condition = workflow.getWorkflowCondition().update(request.getCondition());
-                  var trigger = workflow.getWorkflowTrigger().update(request.getTrigger());
-                  var actions = updateOrCreateFrom(request.getActions(), workflow.getWorkflowActions());
-                  var workflowToUpdate =
-                      workflow.update(request.getName(), request.getDescription(), request.getEntityType(),
-                          condition, trigger, actions, loggedInUser);
-                  var updatedWorkflow = workflowRepository.saveAndFlush(workflowToUpdate);
-                  updatedWorkflow.setAllowedActionsForUser(loggedInUser);
-                  return updatedWorkflow;
-                })
-                .orElseThrow(WorkflowNotFoundException::new));
+        .map(
+            user ->
+                workflowRepository
+                    .findOne(
+                        getSpecificationByUpdatePrivileges(loggedInUser).and(withId(workflowId)))
+                    .map(
+                        workflow -> {
+                          var condition =
+                              workflow.getWorkflowCondition().update(request.getCondition());
+                          var trigger = workflow.getWorkflowTrigger().update(request.getTrigger());
+                          var actions =
+                              updateOrCreateFrom(
+                                  request.getActions(), workflow.getWorkflowActions());
+                          var workflowToUpdate =
+                              workflow.update(
+                                  request.getName(),
+                                  request.getDescription(),
+                                  request.getEntityType(),
+                                  condition,
+                                  trigger,
+                                  actions,
+                                  loggedInUser);
+                          var updatedWorkflow = workflowRepository.saveAndFlush(workflowToUpdate);
+                          updatedWorkflow.setAllowedActionsForUser(loggedInUser);
+                          return updatedWorkflow;
+                        })
+                    .orElseThrow(WorkflowNotFoundException::new));
   }
 
   private Set<AbstractWorkflowAction> updateOrCreateFrom(
       Set<ActionResponse> requestedActions, Set<AbstractWorkflowAction> existingActions) {
     return requestedActions.stream()
-        .map(requestedAction ->
-            existingActions.stream()
-                .filter(existingAction -> existingAction.getId().equals(requestedAction.getId()))
-                .findFirst()
-                .map(workflowAction -> workflowAction.update(requestedAction))
-                .orElseGet(() -> requestedAction.getType().create(requestedAction)))
+        .map(
+            requestedAction ->
+                existingActions.stream()
+                    .filter(
+                        existingAction -> existingAction.getId().equals(requestedAction.getId()))
+                    .findFirst()
+                    .map(workflowAction -> workflowAction.update(requestedAction))
+                    .orElseGet(() -> requestedAction.getType().create(requestedAction)))
         .collect(Collectors.toCollection(HashSet::new));
   }
 
   private Specification<Workflow> getSpecificationByReadPrivileges(User user) {
     if (!user.canQueryHisWorkflow() && !user.canQueryAllWorkflow()) {
-      log.error("TenantId {} and UserId {} does not have read privilege on workflow", user.getTenantId(),
+      log.error(
+          "TenantId {} and UserId {} does not have read privilege on workflow",
+          user.getTenantId(),
           user.getId());
       throw new InsufficientPrivilegeException();
     }
@@ -142,8 +171,7 @@ public class WorkflowFacade {
 
     Specification<Workflow> readSpecification = getSpecificationByReadPrivileges(loggedInUser);
     Page<Workflow> workflowList = workflowRepository.findAll(readSpecification, pageable);
-    workflowList.getContent()
-        .stream()
+    workflowList.getContent().stream()
         .forEach(workflow -> workflow.setAllowedActionsForUser(loggedInUser));
     return workflowList;
   }
@@ -171,7 +199,9 @@ public class WorkflowFacade {
 
   private Specification<Workflow> getSpecificationByUpdatePrivileges(User user) {
     if (!user.canUpdateHisWorkflow() && !user.canUpdateAllWorkflow()) {
-      log.error("TenantId {} and UserId {} does not have update privilege on workflow", user.getTenantId(),
+      log.error(
+          "TenantId {} and UserId {} does not have update privilege on workflow",
+          user.getTenantId(),
           user.getId());
       throw new InsufficientPrivilegeException();
     }
@@ -181,13 +211,19 @@ public class WorkflowFacade {
     return belongToTenant(user.getTenantId()).and(belongToUser(user.getId()));
   }
 
-  public Page<Workflow> search(Pageable pageable) {
+  public Page<Workflow> search(Pageable pageable, Optional<Set<WorkflowFilter>> filters) {
     User loggedInUser = authService.getLoggedInUser();
 
     Specification<Workflow> readSpecification = getSpecificationByReadPrivileges(loggedInUser);
+
+    if(filters.isPresent()){
+      Set<WorkflowFilter> workflowFilters = filters.get();
+      for(WorkflowFilter workflowFilter : workflowFilters){
+        readSpecification = readSpecification.and(workflowFilter.toSpecification());
+      }
+    }
     Page<Workflow> workflowList = workflowRepository.findAll(readSpecification, pageable);
-    workflowList.getContent()
-        .stream()
+    workflowList.getContent().stream()
         .forEach(workflow -> workflow.setAllowedActionsForUser(loggedInUser));
     return workflowList;
   }

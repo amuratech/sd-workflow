@@ -259,6 +259,55 @@ public class WorkflowIntegrationTests {
         }).expectComplete();
   }
 
+  @Test
+  @Sql("/test-scripts/integration/insert-lead-workflow-to-search.sql")
+  public void givenSearchRequest_tryToFilter_shouldGet() throws IOException {
+    // given
+    stubFor(
+        get("/iam/v1/users/12")
+            .withHeader(AUTHORIZATION, matching("Bearer " + authenticationToken))
+            .willReturn(
+                aResponse()
+                    .withHeader("Content-Type", "application/json")
+                    .withStatus(200)
+                    .withBody(
+                        getResourceAsString("/contracts/user/responses/user-details-by-id.json"))));
+    // when
+    var workflowResponse =
+        buildWebClient()
+            .post()
+            .uri("/v1/workflows/search?page=0&size=10&sort=lastTriggeredAt,desc")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(getResourceAsString("/contracts/workflow/api/integration/search-workflow-apply-filter-request.json"))
+            .retrieve()
+            .bodyToMono(String.class);
+    // then
+    var expectedResponse =
+        getResourceAsString(
+            "contracts/workflow/api/integration/search-workflow-apply-filter-response.json");
+    StepVerifier.create(workflowResponse)
+        .assertNext(
+            json -> {
+              try {
+                JSONAssert.assertEquals(
+                    expectedResponse,
+                    json,
+                    new CustomComparator(
+                        JSONCompareMode.STRICT,
+                        new Customization("content[0].actions[0].id", (o1, o2) -> true),
+                        new Customization("content[0].lastTriggeredAt", (o1, o2) -> true),
+                        new Customization("content[0].createdAt", (o1, o2) -> true),
+                        new Customization("content[0].updatedAt", (o1, o2) -> true),
+                        new Customization("content[1].lastTriggeredAt", (o1, o2) -> true),
+                        new Customization("content[1].createdAt", (o1, o2) -> true),
+                        new Customization("content[1].updatedAt", (o1, o2) -> true)));
+              } catch (JSONException e) {
+                fail(e.getMessage());
+              }
+            })
+        .verifyComplete();
+  }
+
   @NotNull
   private WebClient buildWebClient() {
     var port = environment.getProperty("local.server.port");

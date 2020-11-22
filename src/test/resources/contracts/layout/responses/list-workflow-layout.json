@@ -73,7 +73,7 @@
           "showDefaultOptions": true
         },
         {
-          "id": "status",
+          "id": "active",
           "header": "Status",
           "isStandard": true,
           "isFilterable": true,
