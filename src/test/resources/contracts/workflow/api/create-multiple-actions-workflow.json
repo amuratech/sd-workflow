@@ -1,0 +1,41 @@
+{
+  "name": "Workflow 1",
+  "description": "Workflow Description",
+  "entityType": "LEAD",
+  "trigger": {
+    "name": "EVENT",
+    "triggerFrequency": "CREATED",
+    "payload": {
+    }
+  },
+  "condition": {
+    "conditionType": "FOR_ALL",
+    "values": []
+  },
+  "actions": [
+    {
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "city",
+        "value": "Pune"
+      }
+    },
+    {
+      "type": "WEBHOOK",
+      "payload": {
+        "name": "Webhook 1",
+        "description": "Webhook Description",
+        "method": "GET",
+        "requestUrl": "https://reqres.in/api/users",
+        "authorizationType": "NONE",
+        "parameters": [
+          {
+            "name": "name",
+            "entity": "Lead",
+            "attribute": "firstName"
+          }
+        ]
+      }
+    }
+  ]
+}

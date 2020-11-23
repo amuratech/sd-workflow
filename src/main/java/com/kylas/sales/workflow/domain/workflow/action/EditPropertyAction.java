@@ -3,8 +3,8 @@ package com.kylas.sales.workflow.domain.workflow.action;
 import static com.kylas.sales.workflow.domain.workflow.action.WorkflowAction.ActionType.EDIT_PROPERTY;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 
+import com.kylas.sales.workflow.common.dto.ActionDetail;
 import com.kylas.sales.workflow.common.dto.ActionResponse;
-import com.kylas.sales.workflow.common.dto.WorkflowEditProperty;
 import com.kylas.sales.workflow.domain.exception.InvalidActionException;
 import com.kylas.sales.workflow.domain.processor.Actionable;
 import com.kylas.sales.workflow.domain.processor.exception.WorkflowExecutionException;
@@ -38,14 +38,16 @@ public class EditPropertyAction extends AbstractWorkflowAction implements com.ky
   }
 
   public static AbstractWorkflowAction createNew(ActionResponse actionResponse) {
-    if (isBlank(actionResponse.getPayload().getName()) || isBlank(actionResponse.getPayload().getValue())) {
+    var payload = (ActionDetail.EditPropertyAction) actionResponse.getPayload();
+    if (isBlank(payload.getName()) || isBlank(payload.getValue())) {
       throw new InvalidActionException();
     }
-    return new EditPropertyAction(actionResponse.getPayload().getName(), actionResponse.getPayload().getValue());
+    return new EditPropertyAction(payload.getName(), payload.getValue());
   }
 
   public static ActionResponse toActionResponse(EditPropertyAction action) {
-    return new ActionResponse(action.getId(), EDIT_PROPERTY, new WorkflowEditProperty(action.name, action.value));
+    var editPropertyAction = new ActionDetail.EditPropertyAction(action.name, action.value);
+    return new ActionResponse(action.getId(), EDIT_PROPERTY, editPropertyAction);
   }
 
   @Override
@@ -70,11 +72,12 @@ public class EditPropertyAction extends AbstractWorkflowAction implements com.ky
 
   @Override
   public EditPropertyAction update(ActionResponse action) {
-    if (isBlank(action.getPayload().getName()) || isBlank(action.getPayload().getValue())) {
+    var payload = (ActionDetail.EditPropertyAction) action.getPayload();
+    if (isBlank(payload.getName()) || isBlank(payload.getValue())) {
       throw new InvalidActionException();
     }
-    this.setName(action.getPayload().getName());
-    this.setValue(action.getPayload().getValue());
+    this.setName(payload.getName());
+    this.setValue(payload.getValue());
     return this;
   }
 

@@ -3,8 +3,8 @@ package com.kylas.sales.workflow.domain.workflow.action;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.kylas.sales.workflow.common.dto.ActionDetail.EditPropertyAction;
 import com.kylas.sales.workflow.common.dto.ActionResponse;
-import com.kylas.sales.workflow.common.dto.WorkflowEditProperty;
 import com.kylas.sales.workflow.domain.exception.InvalidActionException;
 import com.kylas.sales.workflow.domain.processor.exception.WorkflowExecutionException;
 import com.kylas.sales.workflow.domain.processor.lead.Lead;
@@ -19,7 +19,7 @@ class EditPropertyActionTest {
   @Test
   public void givenEditPropertyAction_shouldCreate() {
     //given
-    var editPropertyAction = new ActionResponse(ActionType.EDIT_PROPERTY, new WorkflowEditProperty("firstName", "Tony"));
+    var editPropertyAction = new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("firstName", "Tony"));
     Set<ActionResponse> actionResponses = new HashSet<>();
     actionResponses.add(editPropertyAction);
     //when
@@ -28,7 +28,8 @@ class EditPropertyActionTest {
         .collect(Collectors.toSet());
     //then
     assertThat(actions.size()).isEqualTo(1);
-    EditPropertyAction action = (EditPropertyAction) actions.iterator().next();
+    com.kylas.sales.workflow.domain.workflow.action.EditPropertyAction action = (com.kylas.sales.workflow.domain.workflow.action.EditPropertyAction) actions
+        .iterator().next();
     assertThat(action.getName()).isEqualTo("firstName");
     assertThat(action.getValue()).isEqualTo("Tony");
   }
@@ -36,20 +37,20 @@ class EditPropertyActionTest {
   @Test
   public void givenActionWithoutName_shouldThrow() {
     //given
-    var editPropertyAction = new ActionResponse(ActionType.EDIT_PROPERTY, new WorkflowEditProperty("", "Tony"));
+    var editPropertyAction = new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("", "Tony"));
     //when
     //then
-    assertThatThrownBy(() -> EditPropertyAction.createNew(editPropertyAction))
+    assertThatThrownBy(() -> com.kylas.sales.workflow.domain.workflow.action.EditPropertyAction.createNew(editPropertyAction))
         .isInstanceOf(InvalidActionException.class);
   }
 
   @Test
   public void givenActionWithoutValue_shouldThrow() {
     //given
-    var editPropertyAction = new ActionResponse(ActionType.EDIT_PROPERTY, new WorkflowEditProperty("firstName", ""));
+    var editPropertyAction = new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("firstName", ""));
     //when
     //then
-    assertThatThrownBy(() -> EditPropertyAction.createNew(editPropertyAction))
+    assertThatThrownBy(() -> com.kylas.sales.workflow.domain.workflow.action.EditPropertyAction.createNew(editPropertyAction))
         .isInstanceOf(InvalidActionException.class);
   }
 
@@ -59,9 +60,9 @@ class EditPropertyActionTest {
     Lead lead = new Lead();
     lead.setFirstName("Steve");
     lead.setLastName("Stark");
-    var editPropertyAction = new ActionResponse(ActionType.EDIT_PROPERTY, new WorkflowEditProperty("firstName", "Tony"));
+    var editPropertyAction = new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("firstName", "Tony"));
 
-    AbstractWorkflowAction workflowAction = EditPropertyAction.createNew(editPropertyAction);
+    AbstractWorkflowAction workflowAction = com.kylas.sales.workflow.domain.workflow.action.EditPropertyAction.createNew(editPropertyAction);
     //when
     Lead processedLead = (Lead) workflowAction.process(lead);
     //then
@@ -76,8 +77,8 @@ class EditPropertyActionTest {
     Lead lead = new Lead();
     lead.setFirstName("Steve");
     lead.setLastName("Stark");
-    var editPropertyAction = new ActionResponse(ActionType.EDIT_PROPERTY, new WorkflowEditProperty("myFirstName", "Tony"));
-    AbstractWorkflowAction workflowAction = EditPropertyAction.createNew(editPropertyAction);
+    var editPropertyAction = new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("myFirstName", "Tony"));
+    AbstractWorkflowAction workflowAction = com.kylas.sales.workflow.domain.workflow.action.EditPropertyAction.createNew(editPropertyAction);
     //when
     assertThatThrownBy(() -> workflowAction.process(lead))
         .isInstanceOf(WorkflowExecutionException.class)

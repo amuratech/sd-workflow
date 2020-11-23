@@ -12,10 +12,10 @@ import com.kylas.sales.workflow.api.request.FilterRequest.Filter;
 import com.kylas.sales.workflow.api.request.WorkflowRequest;
 import com.kylas.sales.workflow.api.response.WorkflowDetail;
 import com.kylas.sales.workflow.api.response.WorkflowSummary;
+import com.kylas.sales.workflow.common.dto.ActionDetail.EditPropertyAction;
 import com.kylas.sales.workflow.common.dto.ActionResponse;
 import com.kylas.sales.workflow.common.dto.User;
 import com.kylas.sales.workflow.common.dto.WorkflowCondition;
-import com.kylas.sales.workflow.common.dto.WorkflowEditProperty;
 import com.kylas.sales.workflow.common.dto.WorkflowTrigger;
 import com.kylas.sales.workflow.config.TestDatabaseInitializer;
 import com.kylas.sales.workflow.domain.exception.InsufficientPrivilegeException;
@@ -93,272 +93,197 @@ class WorkflowControllerTest {
 
   @Test
   public void givenWorkflow_shouldCreateIt() {
-    // given
-    var requestPayload =
-        getResourceAsString("classpath:contracts/workflow/api/create-workflow-request.json");
-    given(
-            workflowService.create(
-                argThat(
-                    workflowRequest ->
-                        workflowRequest.getName().equalsIgnoreCase("Workflow 1")
-                            && workflowRequest
-                                .getDescription()
-                                .equalsIgnoreCase("Workflow Description")
-                            && workflowRequest.getEntityType().equals(EntityType.LEAD)
-                            && workflowRequest.getTrigger().getName().equals(TriggerType.EVENT)
-                            && workflowRequest
-                                .getTrigger()
-                                .getTriggerFrequency()
-                                .equals(TriggerFrequency.CREATED)
-                            && workflowRequest
-                                .getCondition()
-                                .getConditionType()
-                                .equals(ConditionType.FOR_ALL)
-                            && workflowRequest
-                                .getActions()
-                                .iterator()
-                                .next()
-                                .getType()
-                                .equals(ActionType.EDIT_PROPERTY)
-                            && workflowRequest
-                                .getActions()
-                                .iterator()
-                                .next()
-                                .getPayload()
-                                .getName()
-                                .equalsIgnoreCase("city")
-                            && workflowRequest
-                                .getActions()
-                                .iterator()
-                                .next()
-                                .getPayload()
-                                .getValue()
-                                .equalsIgnoreCase("Pune")
-                            && workflowRequest.isActive())))
-        .willReturn(Mono.just(new WorkflowSummary(1L)));
-    // when
-    var workflowResponse =
-        buildWebClient()
-            .post()
-            .uri("/v1/workflows")
-            .contentType(MediaType.APPLICATION_JSON)
-            .bodyValue(requestPayload)
-            .retrieve()
-            .bodyToMono(String.class);
-    // then
+    //given
+    var requestPayload = getResourceAsString("classpath:contracts/workflow/api/create-workflow-request.json");
+    given(workflowService.create(argThat(workflowRequest ->
+        {
+          var actionDetail =
+              (EditPropertyAction) workflowRequest.getActions().iterator().next().getPayload();
+          return workflowRequest.getName().equalsIgnoreCase("Workflow 1")
+              && workflowRequest.getDescription().equalsIgnoreCase("Workflow Description")
+              && workflowRequest.getEntityType().equals(EntityType.LEAD)
+              && workflowRequest.getTrigger().getName().equals(TriggerType.EVENT)
+              && workflowRequest.getTrigger().getTriggerFrequency().equals(TriggerFrequency.CREATED)
+              && workflowRequest.getCondition().getConditionType().equals(ConditionType.FOR_ALL)
+              && workflowRequest.getActions().iterator().next().getType().equals(ActionType.EDIT_PROPERTY)
+              && actionDetail.getName().equalsIgnoreCase("city")
+              && actionDetail.getValue().equalsIgnoreCase("Pune")
+              && workflowRequest.isActive();
+        }
+    ))).willReturn(Mono.just(new WorkflowSummary(1L)));
+    //when
+    var workflowResponse = buildWebClient()
+        .post()
+        .uri("/v1/workflows")
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(requestPayload)
+        .retrieve()
+        .bodyToMono(String.class);
+    //then
     var expectedResponse =
         getResourceAsString("classpath:contracts/workflow/api/create-workflow-response.json");
     StepVerifier.create(workflowResponse)
-        .assertNext(
-            json -> {
-              try {
-                JSONAssert.assertEquals(expectedResponse, json, false);
-              } catch (JSONException e) {
-                fail(e.getMessage());
-              }
-            })
-        .verifyComplete();
+        .assertNext(json -> {
+          try {
+            JSONAssert.assertEquals(expectedResponse, json, false);
+          } catch (JSONException e) {
+            fail(e.getMessage());
+          }
+        }).verifyComplete();
+  }
+
+  @Test
+  public void givenWorkflowWithMultipleActions_shouldCreateIt() {
+    //given
+    var requestPayload = getResourceAsString("classpath:contracts/workflow/api/create-multiple-actions-workflow.json");
+    given(workflowService.create(argThat(
+        workflowRequest ->
+            workflowRequest.getActions()
+                .stream()
+                .anyMatch(editPropertyAction ->
+                    editPropertyAction.getType().equals(ActionType.EDIT_PROPERTY))
+                && workflowRequest.getActions()
+                .stream()
+                .anyMatch(webhookAction ->
+                    webhookAction.getType().equals(ActionType.WEBHOOK))
+    ))).willReturn(Mono.just(new WorkflowSummary(1L)));
+    //when
+    var workflowResponse = buildWebClient()
+        .post()
+        .uri("/v1/workflows")
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(requestPayload)
+        .retrieve()
+        .bodyToMono(String.class);
+    //then
+    var expectedResponse =
+        getResourceAsString("classpath:contracts/workflow/api/create-workflow-response.json");
+    StepVerifier.create(workflowResponse)
+        .assertNext(json -> {
+          try {
+            JSONAssert.assertEquals(expectedResponse, json, false);
+          } catch (JSONException e) {
+            fail(e.getMessage());
+          }
+        }).verifyComplete();
   }
 
   @Test
   public void givenWorkflowUpdate_shouldUpdateIt() {
-    // given
-    var requestPayload =
-        getResourceAsString("classpath:contracts/workflow/api/update-workflow-request.json");
+    //given
+    var requestPayload = getResourceAsString("classpath:contracts/workflow/api/update-workflow-request.json");
     WorkflowTrigger trigger = new WorkflowTrigger(TriggerType.EVENT, TriggerFrequency.CREATED);
     WorkflowCondition condition = new WorkflowCondition(ConditionType.FOR_ALL);
     Set<ActionResponse> actions =
         Set.of(
-            new ActionResponse(ActionType.EDIT_PROPERTY, new WorkflowEditProperty("city", "Pune")));
+            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("city", "Pune")));
     User user = new User(5000L, "Tony Stark");
-    WorkflowDetail workflowDetail =
-        new WorkflowDetail(
-            1L,
-            "Workflow 1",
-            "Workflow Description",
-            EntityType.LEAD,
-            trigger,
-            condition,
-            actions,
-            user,
-            user,
-            null,
-            null,
-            null,
-            0L,
-            null,
-            true);
-    given(
-            workflowService.update(
-                eq(1L),
-                argThat(
-                    workflowRequest ->
-                        workflowRequest.getName().equalsIgnoreCase("Workflow 1")
-                            && workflowRequest
-                                .getDescription()
-                                .equalsIgnoreCase("Workflow Description")
-                            && workflowRequest.getEntityType().equals(EntityType.LEAD)
-                            && workflowRequest.getTrigger().getName().equals(TriggerType.EVENT)
-                            && workflowRequest
-                                .getTrigger()
-                                .getTriggerFrequency()
-                                .equals(TriggerFrequency.CREATED)
-                            && workflowRequest
-                                .getCondition()
-                                .getConditionType()
-                                .equals(ConditionType.FOR_ALL)
-                            && workflowRequest
-                                .getActions()
-                                .iterator()
-                                .next()
-                                .getType()
-                                .equals(ActionType.EDIT_PROPERTY)
-                            && workflowRequest
-                                .getActions()
-                                .iterator()
-                                .next()
-                                .getId()
-                                .equals(UUID.fromString("08518b20-23f9-11eb-adc1-0242ac120002"))
-                            && workflowRequest
-                                .getActions()
-                                .iterator()
-                                .next()
-                                .getPayload()
-                                .getName()
-                                .equalsIgnoreCase("city")
-                            && workflowRequest
-                                .getActions()
-                                .iterator()
-                                .next()
-                                .getPayload()
-                                .getValue()
-                                .equalsIgnoreCase("Pune")
-                            && workflowRequest.isActive())))
-        .willReturn(Mono.just(workflowDetail));
-    // when
-    var workflowResponse =
-        buildWebClient()
-            .put()
-            .uri("/v1/workflows/1")
-            .contentType(MediaType.APPLICATION_JSON)
-            .bodyValue(requestPayload)
-            .retrieve()
-            .bodyToMono(String.class);
-    // then
+    WorkflowDetail workflowDetail = new WorkflowDetail(1L, "Workflow 1", "Workflow Description", EntityType.LEAD, trigger, condition, actions, user,
+        user, null, null, null, 0L, null, true);
+    given(workflowService.update(eq(1L), argThat(workflowRequest ->
+        {
+          var actionDetail =
+              (EditPropertyAction) workflowRequest.getActions().iterator().next().getPayload();
+          return workflowRequest.getName().equalsIgnoreCase("Workflow 1")
+              && workflowRequest.getDescription().equalsIgnoreCase("Workflow Description")
+              && workflowRequest.getEntityType().equals(EntityType.LEAD)
+              && workflowRequest.getTrigger().getName().equals(TriggerType.EVENT)
+              && workflowRequest.getTrigger().getTriggerFrequency().equals(TriggerFrequency.CREATED)
+              && workflowRequest.getCondition().getConditionType().equals(ConditionType.FOR_ALL)
+              && workflowRequest.getActions().iterator().next().getType().equals(ActionType.EDIT_PROPERTY)
+              && workflowRequest.getActions().iterator().next().getId().equals(UUID.fromString("08518b20-23f9-11eb-adc1-0242ac120002"))
+              && actionDetail.getName().equalsIgnoreCase("city")
+              && actionDetail.getValue().equalsIgnoreCase("Pune")
+              && workflowRequest.isActive();
+        }
+    ))).willReturn(Mono.just(workflowDetail));
+    //when
+    var workflowResponse = buildWebClient()
+        .put()
+        .uri("/v1/workflows/1")
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(requestPayload)
+        .retrieve()
+        .bodyToMono(String.class);
+    //then
     var expectedResponse =
         getResourceAsString("classpath:contracts/workflow/api/update-workflow-response.json");
     StepVerifier.create(workflowResponse)
-        .assertNext(
-            json -> {
-              try {
-                JSONAssert.assertEquals(expectedResponse, json, false);
-              } catch (JSONException e) {
-                fail(e.getMessage());
-              }
-            })
-        .verifyComplete();
+        .assertNext(json -> {
+          try {
+            JSONAssert.assertEquals(expectedResponse, json, false);
+          } catch (JSONException e) {
+            fail(e.getMessage());
+          }
+        }).verifyComplete();
   }
 
   @Test
   public void givenDeactivatedWorkflow_shouldCreateIt() {
-    // given
-    var requestPayload =
-        getResourceAsString(
-            "classpath:contracts/workflow/api/create-deactivated-workflow-request.json");
-    given(
-            workflowService.create(
-                argThat(
-                    workflowRequest ->
-                        workflowRequest.getName().equalsIgnoreCase("Workflow 1")
-                            && workflowRequest
-                                .getDescription()
-                                .equalsIgnoreCase("Workflow Description")
-                            && workflowRequest.getEntityType().equals(EntityType.LEAD)
-                            && workflowRequest.getTrigger().getName().equals(TriggerType.EVENT)
-                            && workflowRequest
-                                .getTrigger()
-                                .getTriggerFrequency()
-                                .equals(TriggerFrequency.CREATED)
-                            && workflowRequest
-                                .getCondition()
-                                .getConditionType()
-                                .equals(ConditionType.FOR_ALL)
-                            && workflowRequest
-                                .getActions()
-                                .iterator()
-                                .next()
-                                .getType()
-                                .equals(ActionType.EDIT_PROPERTY)
-                            && workflowRequest
-                                .getActions()
-                                .iterator()
-                                .next()
-                                .getPayload()
-                                .getName()
-                                .equalsIgnoreCase("city")
-                            && workflowRequest
-                                .getActions()
-                                .iterator()
-                                .next()
-                                .getPayload()
-                                .getValue()
-                                .equalsIgnoreCase("Pune")
-                            && !workflowRequest.isActive())))
-        .willReturn(Mono.just(new WorkflowSummary(1L)));
-    // when
-    var workflowResponse =
-        buildWebClient()
-            .post()
-            .uri("/v1/workflows")
-            .contentType(MediaType.APPLICATION_JSON)
-            .bodyValue(requestPayload)
-            .retrieve()
-            .bodyToMono(String.class);
-    // then
+    //given
+    var requestPayload = getResourceAsString("classpath:contracts/workflow/api/create-deactivated-workflow-request.json");
+    given(workflowService.create(argThat(workflowRequest ->
+        {
+          var actionDetail =
+              (EditPropertyAction) workflowRequest.getActions().iterator().next().getPayload();
+          return workflowRequest.getName().equalsIgnoreCase("Workflow 1")
+              && workflowRequest.getDescription().equalsIgnoreCase("Workflow Description")
+              && workflowRequest.getEntityType().equals(EntityType.LEAD)
+              && workflowRequest.getTrigger().getName().equals(TriggerType.EVENT)
+              && workflowRequest.getTrigger().getTriggerFrequency().equals(TriggerFrequency.CREATED)
+              && workflowRequest.getCondition().getConditionType().equals(ConditionType.FOR_ALL)
+              && workflowRequest.getActions().iterator().next().getType().equals(ActionType.EDIT_PROPERTY)
+              && actionDetail.getName().equalsIgnoreCase("city")
+              && actionDetail.getValue().equalsIgnoreCase("Pune")
+              && !workflowRequest.isActive();
+        }
+    ))).willReturn(Mono.just(new WorkflowSummary(1L)));
+    //when
+    var workflowResponse = buildWebClient()
+        .post()
+        .uri("/v1/workflows")
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(requestPayload)
+        .retrieve()
+        .bodyToMono(String.class);
+    //then
     var expectedResponse =
         getResourceAsString("classpath:contracts/workflow/api/create-workflow-response.json");
     StepVerifier.create(workflowResponse)
-        .assertNext(
-            json -> {
-              try {
-                JSONAssert.assertEquals(expectedResponse, json, false);
-              } catch (JSONException e) {
-                fail(e.getMessage());
-              }
-            })
-        .verifyComplete();
+        .assertNext(json -> {
+          try {
+            JSONAssert.assertEquals(expectedResponse, json, false);
+          } catch (JSONException e) {
+            fail(e.getMessage());
+          }
+        }).verifyComplete();
   }
 
   @Test
   public void givenActionWithoutNameWorkflow_shouldThrow() {
-    // given
-    var requestPayload =
-        getResourceAsString("classpath:contracts/workflow/api/create-workflow-request.json");
+    //given
+    var requestPayload = getResourceAsString("classpath:contracts/workflow/api/create-workflow-request.json");
 
-    given(workflowService.create(any(WorkflowRequest.class)))
-        .willThrow(new InvalidActionException());
-    // when
-    var workflowResponse =
-        buildWebClient()
-            .post()
-            .uri("/v1/workflows")
-            .contentType(MediaType.APPLICATION_JSON)
-            .bodyValue(requestPayload)
-            .accept(MediaType.APPLICATION_JSON)
-            .exchange()
-            .block()
-            .bodyToMono(String.class);
+    given(workflowService.create(any(WorkflowRequest.class))).willThrow(new InvalidActionException());
+    //when
+    var workflowResponse = buildWebClient()
+        .post()
+        .uri("/v1/workflows")
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(requestPayload)
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .block().bodyToMono(String.class);
 
     StepVerifier.create(workflowResponse)
-        .assertNext(
-            json -> {
-              try {
-                JSONAssert.assertEquals("{\"code\":\"01701002\"}", json, false);
-              } catch (JSONException e) {
-                fail(e.getMessage());
-              }
-            })
-        .verifyComplete();
+        .assertNext(json -> {
+          try {
+            JSONAssert.assertEquals("{\"code\":\"01701002\"}", json, false);
+          } catch (JSONException e) {
+            fail(e.getMessage());
+          }
+        }).verifyComplete();
+
   }
 
   @Test

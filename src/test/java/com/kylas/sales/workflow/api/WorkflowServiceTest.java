@@ -13,6 +13,7 @@ import com.kylas.sales.workflow.api.request.FilterRequest.Filter;
 import com.kylas.sales.workflow.api.request.WorkflowRequest;
 import com.kylas.sales.workflow.api.response.WorkflowDetail;
 import com.kylas.sales.workflow.api.response.WorkflowSummary;
+import com.kylas.sales.workflow.common.dto.ActionDetail;
 import com.kylas.sales.workflow.common.dto.ActionResponse;
 import com.kylas.sales.workflow.domain.WorkflowFacade;
 import com.kylas.sales.workflow.domain.user.User;
@@ -141,10 +142,12 @@ class WorkflowServiceTest {
         .isEqualTo(TriggerFrequency.CREATED);
 
     assertThat(workflowDetail.getActions().size()).isEqualTo(1);
-    ActionResponse actionResponseResponse = workflowDetail.getActions().iterator().next();
-    assertThat(actionResponseResponse.getType()).isEqualTo(ActionType.EDIT_PROPERTY);
-    assertThat(actionResponseResponse.getPayload().getName()).isEqualTo("firstName");
-    assertThat(actionResponseResponse.getPayload().getValue()).isEqualTo("tony");
+    ActionResponse response = workflowDetail.getActions().iterator().next();
+    assertThat(response.getType()).isEqualTo(ActionType.EDIT_PROPERTY);
+    var payload =
+        (ActionDetail.EditPropertyAction) response.getPayload();
+    assertThat(payload.getName()).isEqualTo("firstName");
+    assertThat(payload.getValue()).isEqualTo("tony");
   }
 
   @Test
@@ -257,10 +260,12 @@ class WorkflowServiceTest {
                   .isEqualTo(TriggerFrequency.CREATED);
 
               assertThat(workflowDetail.getActions().size()).isEqualTo(1);
-              ActionResponse actionResponseResponse = workflowDetail.getActions().iterator().next();
-              assertThat(actionResponseResponse.getType()).isEqualTo(ActionType.EDIT_PROPERTY);
-              assertThat(actionResponseResponse.getPayload().getName()).isEqualTo("firstName");
-              assertThat(actionResponseResponse.getPayload().getValue()).isEqualTo("tony");
+              ActionResponse response = workflowDetail.getActions().iterator().next();
+              assertThat(response.getType()).isEqualTo(ActionType.EDIT_PROPERTY);
+              var payload =
+              (ActionDetail.EditPropertyAction) response.getPayload();
+          assertThat(payload.getName()).isEqualTo("firstName");
+              assertThat(payload.getValue()).isEqualTo("tony");
 
               assertThat(workflowDetail.getAllowedActions().canRead()).isTrue();
             })
@@ -327,10 +332,12 @@ class WorkflowServiceTest {
                   .isEqualTo(TriggerFrequency.CREATED);
 
               assertThat(workflowDetail.getActions().size()).isEqualTo(1);
-              ActionResponse actionResponseResponse = workflowDetail.getActions().iterator().next();
-              assertThat(actionResponseResponse.getType()).isEqualTo(ActionType.EDIT_PROPERTY);
-              assertThat(actionResponseResponse.getPayload().getName()).isEqualTo("firstName");
-              assertThat(actionResponseResponse.getPayload().getValue()).isEqualTo("tony");
+              ActionResponse response = workflowDetail.getActions().iterator().next();
+              assertThat(response.getType()).isEqualTo(ActionType.EDIT_PROPERTY);
+              var payload =
+              (ActionDetail.EditPropertyAction) response.getPayload();
+          assertThat(payload.getName()).isEqualTo("firstName");
+              assertThat(payload.getValue()).isEqualTo("tony");
 
               assertThat(workflowDetail.getAllowedActions().canRead()).isTrue();
             })
@@ -433,8 +440,9 @@ class WorkflowServiceTest {
               assertThat(workflowDetail.getActions().size()).isEqualTo(1);
               ActionResponse actionResponseResponse = workflowDetail.getActions().iterator().next();
               assertThat(actionResponseResponse.getType()).isEqualTo(ActionType.EDIT_PROPERTY);
-              assertThat(actionResponseResponse.getPayload().getName()).isEqualTo("firstName");
-              assertThat(actionResponseResponse.getPayload().getValue()).isEqualTo("tony");
+              var actionDetail = (ActionDetail.EditPropertyAction) actionResponseResponse.getPayload();
+              assertThat(actionDetail.getName()).isEqualTo("firstName");
+              assertThat(actionDetail.getValue()).isEqualTo("tony");
 
               assertThat(workflowDetail.getAllowedActions().canRead()).isTrue();
             })

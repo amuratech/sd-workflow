@@ -2,6 +2,7 @@ package com.kylas.sales.workflow.domain.workflow.action;
 
 import com.kylas.sales.workflow.common.dto.ActionResponse;
 import com.kylas.sales.workflow.domain.workflow.Workflow;
+import com.kylas.sales.workflow.domain.workflow.action.webhook.WebhookAction;
 
 public interface WorkflowAction {
 
@@ -17,6 +18,17 @@ public interface WorkflowAction {
       @Override
       public ActionResponse toActionResponse(AbstractWorkflowAction workflowAction) {
         return EditPropertyAction.toActionResponse((EditPropertyAction) workflowAction);
+      }
+    },
+    WEBHOOK {
+      @Override
+      public AbstractWorkflowAction create(ActionResponse actionResponse) {
+        return WebhookAction.createNew(actionResponse);
+      }
+
+      @Override
+      public ActionResponse toActionResponse(AbstractWorkflowAction workflowAction) {
+        return WebhookAction.toActionResponse((WebhookAction) workflowAction);
       }
     };
 

@@ -1,10 +1,16 @@
 package com.kylas.sales.workflow.domain;
 
+import static com.kylas.sales.workflow.domain.workflow.action.WorkflowAction.ActionType.EDIT_PROPERTY;
+import static com.kylas.sales.workflow.domain.workflow.action.WorkflowAction.ActionType.WEBHOOK;
 import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.mockito.BDDMockito.given;
 
+import com.kylas.sales.workflow.common.dto.ActionDetail;
+import com.kylas.sales.workflow.common.dto.ActionDetail.WebhookAction;
+import com.kylas.sales.workflow.common.dto.ActionDetail.WebhookAction.AuthorizationType;
+import com.kylas.sales.workflow.common.dto.ActionResponse;
 import com.kylas.sales.workflow.config.TestDatabaseInitializer;
 import com.kylas.sales.workflow.domain.exception.InsufficientPrivilegeException;
 import com.kylas.sales.workflow.domain.exception.WorkflowNotFoundException;
@@ -17,12 +23,13 @@ import com.kylas.sales.workflow.domain.workflow.TriggerFrequency;
 import com.kylas.sales.workflow.domain.workflow.TriggerType;
 import com.kylas.sales.workflow.domain.workflow.Workflow;
 import com.kylas.sales.workflow.domain.workflow.action.EditPropertyAction;
-import com.kylas.sales.workflow.domain.workflow.action.WorkflowAction.ActionType;
+import com.kylas.sales.workflow.domain.workflow.action.webhook.Parameter;
 import com.kylas.sales.workflow.security.AuthService;
 import com.kylas.sales.workflow.stubs.UserStub;
 import com.kylas.sales.workflow.stubs.WorkflowStub;
 import java.util.Date;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import javax.transaction.Transactional;
 import org.assertj.core.api.Assertions;
@@ -35,11 +42,10 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
-import org.springframework.data.domain.Sort.Order;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.springframework.web.bind.annotation.RequestMethod;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
@@ -73,7 +79,7 @@ class WorkflowFacadeTest {
                 aUser));
     var workflowRequest = WorkflowStub
         .anEditPropertyWorkflowRequest("Edit Lead Property", "Edit Lead Property", EntityType.LEAD, TriggerType.EVENT, TriggerFrequency.CREATED,
-            ConditionType.FOR_ALL, ActionType.EDIT_PROPERTY, "lastName", "Stark", true);
+            ConditionType.FOR_ALL, EDIT_PROPERTY, "lastName", "Stark", true);
     //when
     var workflowMono = workflowFacade.create(workflowRequest);
     //then
@@ -105,6 +111,45 @@ class WorkflowFacadeTest {
 
   @Transactional
   @Test
+  @Sql("/test-scripts/insert-users.sql")
+  public void givenWorkflowRequest_withMultipleActions_shouldCreateIt() {
+    //given
+    User aUser = UserStub.aUser(11L, 99L, true, true, true, true, true)
+        .withName("user 1");
+    given(authService.getLoggedInUser()).willReturn(aUser);
+
+    given(userService.getUserDetails(11L, authService.getAuthenticationToken()))
+        .willReturn(Mono.just(aUser));
+
+    List<Parameter> parameters = List.of(new Parameter("paramKey", "Lead", "firstName"));
+
+    Set<ActionResponse> actions = Set.of(
+        new ActionResponse(EDIT_PROPERTY,
+            new ActionDetail.EditPropertyAction("city", "Pune")),
+        new ActionResponse(WEBHOOK,
+            new WebhookAction("name", "desc", RequestMethod.GET, "someUrl", AuthorizationType.NONE, parameters))
+    );
+    var workflowRequest = WorkflowStub
+        .aWorkflowRequestWithActions("Edit Lead Property", "Edit Lead Property", EntityType.LEAD, TriggerType.EVENT, TriggerFrequency.CREATED,
+            ConditionType.FOR_ALL, true, actions);
+    //when
+    var workflowMono = workflowFacade.create(workflowRequest);
+    //then
+    StepVerifier.create(workflowMono)
+        .expectNextMatches(workflow -> {
+          assertThat(workflow.getId())
+              .isNotNull()
+              .isGreaterThan(0L);
+          assertThat(workflow.getWorkflowActions()).isNotEmpty().hasSize(2);
+          assertThat(workflow.getWorkflowActions().stream().anyMatch(action -> action.getType().equals(EDIT_PROPERTY)));
+          assertThat(workflow.getWorkflowActions().stream().anyMatch(action -> action.getType().equals(WEBHOOK)));
+          return true;
+        })
+        .verifyComplete();
+  }
+
+  @Transactional
+  @Test
   @Sql("/test-scripts/insert-workflow.sql")
   public void givenWorkflowUpdateRequest_shouldUpdateIt() {
     //given
@@ -118,7 +163,7 @@ class WorkflowFacadeTest {
                 aUser));
     var workflowRequest = WorkflowStub
         .anEditPropertyWorkflowRequest("Edit Lead Property", "Edit Lead Property", EntityType.LEAD, TriggerType.EVENT, TriggerFrequency.CREATED,
-            ConditionType.FOR_ALL, ActionType.EDIT_PROPERTY, "lastName", "Stark", true);
+            ConditionType.FOR_ALL, EDIT_PROPERTY, "lastName", "Stark", true);
     //when
     var workflowMono = workflowFacade.update(301L, workflowRequest);
     //then
@@ -164,7 +209,7 @@ class WorkflowFacadeTest {
     var workflowRequest = WorkflowStub
         .anExistingEditPropertyWorkflowRequest("Edit Lead Property", "Edit Lead Property",
             EntityType.LEAD, TriggerType.EVENT, TriggerFrequency.CREATED,
-            ConditionType.FOR_ALL, UUID.fromString("a0eebc55-9c0b-4ef8-bb6d-6bb9bd380a11"), ActionType.EDIT_PROPERTY, "lastName", "Stark", true);
+            ConditionType.FOR_ALL, UUID.fromString("a0eebc55-9c0b-4ef8-bb6d-6bb9bd380a11"), EDIT_PROPERTY, "lastName", "Stark", true);
     //when
     var workflowMono = workflowFacade.update(301L, workflowRequest);
     //then
@@ -202,7 +247,7 @@ class WorkflowFacadeTest {
                 aUser));
     var workflowRequest = WorkflowStub
         .anEditPropertyWorkflowRequest("Edit Lead Property", "Edit Lead Property", EntityType.LEAD, TriggerType.EVENT, TriggerFrequency.CREATED,
-            ConditionType.FOR_ALL, ActionType.EDIT_PROPERTY, "lastName", "Stark", false);
+            ConditionType.FOR_ALL, EDIT_PROPERTY, "lastName", "Stark", false);
     //when
     var workflowMono = workflowFacade.create(workflowRequest);
     //then
@@ -232,7 +277,7 @@ class WorkflowFacadeTest {
                 aUser));
     var workflowRequest = WorkflowStub
         .anEditPropertyWorkflowRequest("Edit Lead Property", "Edit Lead Property", EntityType.LEAD, TriggerType.EVENT, TriggerFrequency.CREATED,
-            ConditionType.FOR_ALL, ActionType.EDIT_PROPERTY, "lastName", "Stark", true);
+            ConditionType.FOR_ALL, EDIT_PROPERTY, "lastName", "Stark", true);
     //when
     var workflowMono = workflowFacade.create(workflowRequest);
     //then
@@ -361,6 +406,42 @@ class WorkflowFacadeTest {
     //then
     assertThat(workflow.getId()).isEqualTo(workflowId);
     assertThat(workflow.getAllowedActions().canRead()).isEqualTo(true);
+  }
+
+  @Transactional
+  @Test
+  @Sql("/test-scripts/create-multiple-actions-workflow.sql")
+  public void givenWorkflowId_havingMultipleActions_shouldGetIt() {
+    //given
+    long tenantId = 99L;
+    long userId = 12L;
+    User aUser = UserStub.aUser(userId, tenantId, false, true, true, false, false)
+        .withName("user 1");
+    given(authService.getLoggedInUser()).willReturn(aUser);
+    long workflowId = 301;
+    //when
+    var workflow = workflowFacade.get(workflowId);
+    //then
+    assertThat(workflow.getId()).isEqualTo(workflowId);
+    assertThat(workflow.getAllowedActions().canRead()).isEqualTo(true);
+    var editPropertyAction = (EditPropertyAction) workflow.getWorkflowActions().stream()
+        .filter(action -> action.getType().equals(EDIT_PROPERTY))
+        .findFirst().get();
+    assertThat(editPropertyAction.getName()).isEqualTo("firstName");
+    assertThat(editPropertyAction.getValue()).isEqualTo("Tony 301");
+
+    var webhookAction = (com.kylas.sales.workflow.domain.workflow.action.webhook.WebhookAction) workflow
+        .getWorkflowActions().stream()
+        .filter(workflowAction -> workflowAction.getType().equals(WEBHOOK)).findFirst().get();
+    assertThat(webhookAction.getName()).isEqualTo("webhookName");
+    assertThat(webhookAction.getMethod()).isEqualTo(RequestMethod.GET);
+    assertThat(webhookAction.getAuthorizationType()).isEqualTo(AuthorizationType.NONE);
+    assertThat(webhookAction.getParameters())
+        .isNotEmpty()
+        .hasSize(1);
+    assertThat(webhookAction.getParameters().stream()
+        .anyMatch(parameter -> parameter.getName().equals("param1") && parameter.getAttribute().equals("firstName")))
+        .isTrue();
   }
 
   @Transactional
