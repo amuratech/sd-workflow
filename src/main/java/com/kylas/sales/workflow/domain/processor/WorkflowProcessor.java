@@ -8,7 +8,7 @@ import com.kylas.sales.workflow.domain.processor.lead.Lead;
 import com.kylas.sales.workflow.domain.workflow.action.AbstractWorkflowAction;
 import com.kylas.sales.workflow.mq.command.LeadUpdatedCommandPublisher;
 import com.kylas.sales.workflow.mq.event.EntityAction;
-import com.kylas.sales.workflow.mq.event.LeadCreatedEvent;
+import com.kylas.sales.workflow.mq.event.LeadEvent;
 import com.kylas.sales.workflow.mq.event.Metadata;
 import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
@@ -29,9 +29,9 @@ public class WorkflowProcessor {
     this.leadUpdatedCommandPublisher = leadUpdatedCommandPublisher;
   }
 
-  public void process(LeadCreatedEvent event) {
+  public void process(LeadEvent event) {
 
-    log.info("Lead created event received with metadata {}", event.getMetadata());
+    log.info("Lead {} event received with metadata {}", event.getMetadata().getEntityAction(),event.getMetadata());
     workflowService.findActiveBy(event.getMetadata().getTenantId(), event.getMetadata().getEntityType())
         .stream()
         .filter(workflow -> event.getMetadata().getEntityAction().equals(EntityAction.CREATED))

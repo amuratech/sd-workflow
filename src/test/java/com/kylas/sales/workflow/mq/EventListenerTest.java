@@ -9,7 +9,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kylas.sales.workflow.config.TestDatabaseInitializer;
 import com.kylas.sales.workflow.domain.processor.WorkflowProcessor;
 import com.kylas.sales.workflow.mq.EventListenerTest.TestMqSetup;
-import com.kylas.sales.workflow.mq.event.LeadCreatedEvent;
+import com.kylas.sales.workflow.mq.event.EntityAction;
+import com.kylas.sales.workflow.mq.event.LeadEvent;
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -51,7 +52,7 @@ class EventListenerTest {
   @MockBean
   private WorkflowProcessor workflowProcessor;
   @Captor
-  ArgumentCaptor<LeadCreatedEvent> leadCreatedEventArgumentCaptor;
+  ArgumentCaptor<LeadEvent> leadCreatedEventArgumentCaptor;
 
   CountDownLatch latch = new CountDownLatch(1);
 
@@ -69,19 +70,38 @@ class EventListenerTest {
   public void givenLeadCreatedRequest_shouldCaptureIt() throws IOException, InterruptedException {
     //given
     String resourceAsString = getResourceAsString("/contracts/mq/events/lead-created-event.json");
-    LeadCreatedEvent leadCreatedEvent = objectMapper.readValue(resourceAsString, LeadCreatedEvent.class);
-    doNothing().when(workflowProcessor).process(Mockito.any(LeadCreatedEvent.class));
+    LeadEvent leadEvent = objectMapper.readValue(resourceAsString, LeadEvent.class);
+    doNothing().when(workflowProcessor).process(Mockito.any(LeadEvent.class));
     //when
-    rabbitTemplate.convertAndSend(RabbitMqConfig.SALES_EXCHANGE, LeadCreatedEvent.getEventName(),
-        leadCreatedEvent);
+    rabbitTemplate.convertAndSend(RabbitMqConfig.SALES_EXCHANGE, LeadEvent.getLeadCreatedEventName(),
+        leadEvent);
     //then
     latch.await(3, TimeUnit.SECONDS);
     Mockito.verify(workflowProcessor, times(1)).process(leadCreatedEventArgumentCaptor.capture());
-    LeadCreatedEvent eventReceived = leadCreatedEventArgumentCaptor.getValue();
+    LeadEvent eventReceived = leadCreatedEventArgumentCaptor.getValue();
     assertThat(eventReceived.getMetadata().getTenantId()).isEqualTo(99L);
+    assertThat(eventReceived.getMetadata().getEntityAction()).isEqualTo(EntityAction.CREATED);
+
 
   }
 
+  @Test
+  public void givenLeadUpdatedRequest_shouldCaptureIt() throws Exception {
+    //given
+    String resourceAsString = getResourceAsString("/contracts/mq/events/lead-updated-event.json");
+    LeadEvent leadEvent = objectMapper.readValue(resourceAsString, LeadEvent.class);
+    doNothing().when(workflowProcessor).process(Mockito.any(LeadEvent.class));
+    //when
+    rabbitTemplate.convertAndSend(RabbitMqConfig.SALES_EXCHANGE, LeadEvent.getLeadUpdatedEventName(),
+        leadEvent);
+    //then
+    latch.await(3, TimeUnit.SECONDS);
+    Mockito.verify(workflowProcessor, times(1)).process(leadCreatedEventArgumentCaptor.capture());
+    LeadEvent eventReceived = leadCreatedEventArgumentCaptor.getValue();
+    assertThat(eventReceived.getMetadata().getTenantId()).isEqualTo(99L);
+    assertThat(eventReceived.getMetadata().getEntityAction()).isEqualTo(EntityAction.UPDATED);
+
+  }
   private String getResourceAsString(String resourcePath) throws IOException {
     var resource = new ClassPathResource(resourcePath);
     var file = resource.getFile();

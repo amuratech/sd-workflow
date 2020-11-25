@@ -18,7 +18,7 @@ import com.kylas.sales.workflow.domain.workflow.action.AbstractWorkflowAction;
 import com.kylas.sales.workflow.domain.workflow.action.EditPropertyAction;
 import com.kylas.sales.workflow.mq.command.LeadUpdatedCommandPublisher;
 import com.kylas.sales.workflow.mq.event.EntityAction;
-import com.kylas.sales.workflow.mq.event.LeadCreatedEvent;
+import com.kylas.sales.workflow.mq.event.LeadEvent;
 import com.kylas.sales.workflow.mq.event.Metadata;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -64,7 +64,7 @@ class WorkflowProcessorTest {
     given(updatedMetadata.withEntityId(55L)).willReturn(updatedMetadataWithEntityId);
     given(metadata.getEntityAction()).willReturn(EntityAction.CREATED);
 
-    var leadCreatedEvent = new LeadCreatedEvent(lead, null, metadata);
+    var leadCreatedEvent = new LeadEvent(lead, null, metadata);
 
     Workflow workflowMock = mock(Workflow.class);
     given(workflowMock.getId()).willReturn(workflowId);
@@ -119,7 +119,7 @@ class WorkflowProcessorTest {
 
     given(metadata.getEntityAction()).willReturn(EntityAction.CREATED);
 
-    var leadCreatedEvent = new LeadCreatedEvent(lead, null, metadata);
+    var leadCreatedEvent = new LeadEvent(lead, null, metadata);
 
     Workflow workflowMock = mock(Workflow.class);
     given(workflowMock.getId()).willReturn(workflowId);

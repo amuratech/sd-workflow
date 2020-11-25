@@ -9,7 +9,7 @@ import com.kylas.sales.workflow.config.TestDatabaseInitializer;
 import com.kylas.sales.workflow.domain.WorkflowFacade;
 import com.kylas.sales.workflow.domain.user.User;
 import com.kylas.sales.workflow.domain.workflow.Workflow;
-import com.kylas.sales.workflow.mq.event.LeadCreatedEvent;
+import com.kylas.sales.workflow.mq.event.LeadEvent;
 import com.kylas.sales.workflow.security.AuthService;
 import com.kylas.sales.workflow.stubs.UserStub;
 import java.io.IOException;
@@ -85,11 +85,11 @@ public class WorkflowProcessorIntegrationTests {
     given(authService.getLoggedInUser()).willReturn(aUser);
 
     String resourceAsString = getResourceAsString("/contracts/mq/events/lead-created-event.json");
-    LeadCreatedEvent leadCreatedEvent = objectMapper.readValue(resourceAsString, LeadCreatedEvent.class);
+    LeadEvent leadEvent = objectMapper.readValue(resourceAsString, LeadEvent.class);
     initializeRabbitMqListener(LEAD_UPDATE_COMMAND_QUEUE, SALES_LEAD_UPDATE_QUEUE);
     //when
-    rabbitTemplate.convertAndSend(SALES_EXCHANGE, LeadCreatedEvent.getEventName(),
-        leadCreatedEvent);
+    rabbitTemplate.convertAndSend(SALES_EXCHANGE, LeadEvent.getLeadCreatedEventName(),
+        leadEvent);
     //then
     mockMqListener.latch.await(3, TimeUnit.SECONDS);
     JSONAssert
@@ -111,10 +111,10 @@ public class WorkflowProcessorIntegrationTests {
     given(authService.getLoggedInUser()).willReturn(aUser);
 
     String resourceAsString = getResourceAsString("/contracts/mq/events/lead-created-event.json");
-    LeadCreatedEvent leadCreatedEvent = objectMapper.readValue(resourceAsString, LeadCreatedEvent.class);
+    LeadEvent leadEvent = objectMapper.readValue(resourceAsString, LeadEvent.class);
     //when
-    rabbitTemplate.convertAndSend(SALES_EXCHANGE, LeadCreatedEvent.getEventName(),
-        leadCreatedEvent);
+    rabbitTemplate.convertAndSend(SALES_EXCHANGE, LeadEvent.getLeadCreatedEventName(),
+        leadEvent);
     //then
     mockMqListener.latch.await(3, TimeUnit.SECONDS);
 

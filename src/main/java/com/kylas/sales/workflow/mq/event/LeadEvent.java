@@ -11,13 +11,13 @@ import lombok.NoArgsConstructor;
 @Getter
 @NoArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class LeadCreatedEvent {
+public class LeadEvent {
   private Lead entity;
   private Lead oldEntity;
   private Metadata metadata;
 
   @JsonCreator
-  public LeadCreatedEvent(
+  public LeadEvent(
       @JsonProperty("entity") Lead entity,
       @JsonProperty("oldEntity") Lead oldEntity,
       @JsonProperty("metadata") Metadata metadata
@@ -27,7 +27,11 @@ public class LeadCreatedEvent {
     this.metadata = metadata;
   }
 
-  public static String getEventName() {
+  public static String getLeadCreatedEventName() {
     return "sales.lead.created.v2";
   }
+  public static String getLeadUpdatedEventName() {
+    return "sales.lead.updated.v2";
+  }
+
 }

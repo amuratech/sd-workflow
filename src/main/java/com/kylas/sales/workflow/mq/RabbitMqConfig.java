@@ -1,6 +1,6 @@
 package com.kylas.sales.workflow.mq;
 
-import com.kylas.sales.workflow.mq.event.LeadCreatedEvent;
+import com.kylas.sales.workflow.mq.event.LeadEvent;
 import org.springframework.amqp.core.BindingBuilder;
 import org.springframework.amqp.core.Declarables;
 import org.springframework.amqp.core.Queue;
@@ -16,6 +16,7 @@ public class RabbitMqConfig {
 
   static final String SALES_EXCHANGE = "ex.sales";
   static final String SALES_LEAD_CREATED_QUEUE = "q.lead.created.workflow";
+  static final String SALES_LEAD_UPDATED_QUEUE = "q.lead.updated.workflow";
 
   @Bean
   public RabbitTemplate rabbitTemplate(final ConnectionFactory connectionFactory) {
@@ -34,13 +35,18 @@ public class RabbitMqConfig {
     var salesExchange = new TopicExchange(SALES_EXCHANGE, true, false);
 
     var salesLeadCreatedQueue = new Queue(SALES_LEAD_CREATED_QUEUE, true);
+    var salesLeadUpdatedQueue = new Queue(SALES_LEAD_UPDATED_QUEUE, true);
 
     return new Declarables(
         salesLeadCreatedQueue,
+        salesLeadUpdatedQueue,
         salesExchange,
 
         BindingBuilder.bind(salesLeadCreatedQueue).to(salesExchange)
-            .with(LeadCreatedEvent.getEventName())
+            .with(LeadEvent.getLeadCreatedEventName()),
+
+        BindingBuilder.bind(salesLeadUpdatedQueue).to(salesExchange)
+            .with(LeadEvent.getLeadUpdatedEventName())
     );
   }
 }
