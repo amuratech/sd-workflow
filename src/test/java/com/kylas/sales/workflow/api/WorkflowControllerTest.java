@@ -722,7 +722,7 @@ class WorkflowControllerTest {
     given(
             workflowService.search(
                 argThat(new PageableMatcher(0, 10, sortByLastTriggeredAt)),
-                argThat(filterRequest -> filterRequest.isEmpty())))
+                argThat(filterRequest -> filterRequest.get().getFilters().isEmpty())))
         .willReturn(
             Mono.just(
                 new PageImpl<>(
@@ -735,6 +735,8 @@ class WorkflowControllerTest {
             .post()
             .uri("/v1/workflows/search?page=0&size=10&sort=lastUpdatedAt,desc")
             .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(
+                "{\"fields\":[\"name\",\"entityType\",\"createdAt\",\"createdBy\",\"lastTriggeredAt\",\"triggerCount\"],\"jsonRule\":null}")
             .retrieve()
             .bodyToMono(String.class);
     // then

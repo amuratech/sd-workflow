@@ -1,5 +1,5 @@
 {
-  "rules": [
+  "jsonRule": [
     {
       "operator": "equal",
       "field": "entityType",
