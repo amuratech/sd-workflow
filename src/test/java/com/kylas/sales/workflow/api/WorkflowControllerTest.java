@@ -736,7 +736,7 @@ class WorkflowControllerTest {
             .uri("/v1/workflows/search?page=0&size=10&sort=lastUpdatedAt,desc")
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(
-                "{\"fields\":[\"name\",\"entityType\",\"createdAt\",\"createdBy\",\"lastTriggeredAt\",\"triggerCount\"],\"jsonRule\":null}")
+                "{\"fields\":[\"name\",\"entityType\",\"createdAt\",\"createdBy\",\"lastTriggeredAt\",\"triggerCount\"],\"jsonRules\":null}")
             .retrieve()
             .bodyToMono(String.class);
     // then

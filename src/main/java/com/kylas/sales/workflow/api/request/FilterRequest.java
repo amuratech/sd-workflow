@@ -16,7 +16,7 @@ public class FilterRequest {
   private final ArrayList<Filter> filters = new ArrayList<>();
 
   @JsonCreator
-  public FilterRequest(@JsonProperty("jsonRule") List<Filter> filters) {
+  public FilterRequest(@JsonProperty("jsonRules") List<Filter> filters) {
     if (filters != null) {
       this.filters.addAll(filters);
     }
