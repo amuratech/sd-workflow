@@ -250,7 +250,7 @@ public class Workflow {
         this.createdAt,
         new Date(),
         this.allowedActions,
-        this.workflowExecutedEvent.resetTriggerCount()
+        this.workflowExecutedEvent
     );
   }
 }

@@ -6,8 +6,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.kylas.sales.workflow.common.dto.ActionDetail.EditPropertyAction;
 import com.kylas.sales.workflow.common.dto.ActionResponse;
 import com.kylas.sales.workflow.domain.exception.InvalidActionException;
-import com.kylas.sales.workflow.domain.processor.exception.WorkflowExecutionException;
-import com.kylas.sales.workflow.domain.processor.lead.Lead;
 import com.kylas.sales.workflow.domain.workflow.action.WorkflowAction.ActionType;
 import java.util.HashSet;
 import java.util.Set;
@@ -54,35 +52,4 @@ class EditPropertyActionTest {
         .isInstanceOf(InvalidActionException.class);
   }
 
-  @Test
-  public void givenEntityToUpdateProperty_shouldUpdate() {
-    //given
-    Lead lead = new Lead();
-    lead.setFirstName("Steve");
-    lead.setLastName("Stark");
-    var editPropertyAction = new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("firstName", "Tony"));
-
-    AbstractWorkflowAction workflowAction = com.kylas.sales.workflow.domain.workflow.action.EditPropertyAction.createNew(editPropertyAction);
-    //when
-    Lead processedLead = (Lead) workflowAction.process(lead);
-    //then
-    assertThat(processedLead.getFirstName()).isEqualTo("Tony");
-    assertThat(processedLead.getLastName()).isEqualTo("Stark");
-
-  }
-
-  @Test
-  public void givenEntityToUpdateProperty_shouldThrow() {
-    //given
-    Lead lead = new Lead();
-    lead.setFirstName("Steve");
-    lead.setLastName("Stark");
-    var editPropertyAction = new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("myFirstName", "Tony"));
-    AbstractWorkflowAction workflowAction = com.kylas.sales.workflow.domain.workflow.action.EditPropertyAction.createNew(editPropertyAction);
-    //when
-    assertThatThrownBy(() -> workflowAction.process(lead))
-        .isInstanceOf(WorkflowExecutionException.class)
-        .hasMessage("01701004");
-
-  }
 }

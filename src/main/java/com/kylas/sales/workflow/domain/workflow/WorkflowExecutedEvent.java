@@ -47,7 +47,4 @@ public class WorkflowExecutedEvent {
     return new WorkflowExecutedEvent(null, 0, workflow);
   }
 
-  public WorkflowExecutedEvent resetTriggerCount() {
-    return new WorkflowExecutedEvent(this.id, this.lastTriggeredAt, 0, this.workflow);
-  }
 }

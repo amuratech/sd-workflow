@@ -1,6 +1,7 @@
 [
   {
-    "entity": "Lead",
+    "entityDisplayName": "Lead",
+    "entity": "LEAD",
     "fields": [
       {
         "name": "id",
@@ -45,7 +46,8 @@
     ]
   },
   {
-    "entity": "Lead Owner",
+    "entityDisplayName": "Lead Owner",
+    "entity": "LEAD_OWNER",
     "fields": [
       {
         "name": "salutation",
@@ -106,7 +108,8 @@
     ]
   },
   {
-    "entity": "Created By",
+    "entityDisplayName": "Created By",
+    "entity": "CREATED_BY",
     "fields": [
       {
         "name": "salutation",
@@ -167,7 +170,8 @@
     ]
   },
   {
-    "entity": "Updated By",
+    "entityDisplayName": "Updated By",
+    "entity": "UPDATED_BY",
     "fields": [
       {
         "name": "salutation",
@@ -228,7 +232,8 @@
     ]
   },
   {
-    "entity": "Tenant",
+    "entityDisplayName": "Tenant",
+    "entity": "TENANT",
     "fields": [
       {
         "name": "accountName",

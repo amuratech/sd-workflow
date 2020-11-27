@@ -5,8 +5,6 @@ import static com.kylas.sales.workflow.domain.workflow.action.WorkflowAction.Act
 import com.kylas.sales.workflow.common.dto.ActionDetail;
 import com.kylas.sales.workflow.common.dto.ActionDetail.WebhookAction.AuthorizationType;
 import com.kylas.sales.workflow.common.dto.ActionResponse;
-import com.kylas.sales.workflow.domain.processor.Actionable;
-import com.kylas.sales.workflow.domain.processor.lead.Lead;
 import com.kylas.sales.workflow.domain.workflow.Workflow;
 import com.kylas.sales.workflow.domain.workflow.action.AbstractWorkflowAction;
 import com.kylas.sales.workflow.domain.workflow.action.WorkflowAction;
@@ -23,7 +21,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.http.HttpMethod;
 
 @Entity
 @Getter
@@ -38,7 +36,7 @@ public class WebhookAction extends AbstractWorkflowAction implements WorkflowAct
   private String description;
 
   @Enumerated(value = EnumType.STRING)
-  private RequestMethod method;
+  private HttpMethod method;
 
   @Enumerated(value = EnumType.STRING)
   private AuthorizationType authorizationType;
@@ -50,7 +48,7 @@ public class WebhookAction extends AbstractWorkflowAction implements WorkflowAct
   @JoinColumn(name = "webhook_action_id")
   private List<Parameter> parameters;
 
-  public WebhookAction(@NotBlank String name, String description, RequestMethod method,
+  public WebhookAction(@NotBlank String name, String description, HttpMethod method,
       AuthorizationType authorizationType, @NotBlank String requestUrl,
       List<Parameter> parameters) {
     this.name = name;
@@ -82,11 +80,6 @@ public class WebhookAction extends AbstractWorkflowAction implements WorkflowAct
   @Override
   public void setWorkflow(Workflow workflow) {
     super.setWorkflow(workflow);
-  }
-
-  @Override
-  public Actionable process(Lead entity) {
-    return () -> null;
   }
 
   @Override

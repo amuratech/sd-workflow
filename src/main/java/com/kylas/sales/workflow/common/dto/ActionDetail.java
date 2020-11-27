@@ -5,7 +5,7 @@ import com.kylas.sales.workflow.domain.workflow.action.webhook.Parameter;
 import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.http.HttpMethod;
 
 public interface ActionDetail {
 
@@ -16,7 +16,7 @@ public interface ActionDetail {
 
     private final String name;
     private final String description;
-    private final RequestMethod method;
+    private final HttpMethod method;
     private final String requestUrl;
     private final AuthorizationType authorizationType;
     private final List<Parameter> parameters;

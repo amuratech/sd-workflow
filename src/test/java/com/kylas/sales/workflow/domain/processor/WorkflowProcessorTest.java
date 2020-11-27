@@ -10,12 +10,14 @@ import static org.mockito.Mockito.verify;
 
 import com.kylas.sales.workflow.api.WorkflowService;
 import com.kylas.sales.workflow.domain.processor.lead.Lead;
+import com.kylas.sales.workflow.domain.processor.lead.LeadDetail;
 import com.kylas.sales.workflow.domain.workflow.TriggerFrequency;
 import com.kylas.sales.workflow.domain.workflow.TriggerType;
 import com.kylas.sales.workflow.domain.workflow.Workflow;
 import com.kylas.sales.workflow.domain.workflow.WorkflowTrigger;
 import com.kylas.sales.workflow.domain.workflow.action.AbstractWorkflowAction;
 import com.kylas.sales.workflow.domain.workflow.action.EditPropertyAction;
+import com.kylas.sales.workflow.domain.workflow.action.WorkflowAction.ActionType;
 import com.kylas.sales.workflow.mq.command.LeadUpdatedCommandPublisher;
 import com.kylas.sales.workflow.mq.event.EntityAction;
 import com.kylas.sales.workflow.mq.event.LeadEvent;
@@ -28,7 +30,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.springframework.expression.spel.SpelEvaluationException;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 @ExtendWith(SpringExtension.class)
@@ -47,7 +48,7 @@ class WorkflowProcessorTest {
     long tenantId = 101;
     long workflowId = 99L;
 
-    var lead = new Lead();
+    var lead = new LeadDetail();
     lead.setId(55L);
     lead.setFirstName("Tony");
     lead.setLastName("Stark");
@@ -72,8 +73,7 @@ class WorkflowProcessorTest {
     EditPropertyAction workflowAction = mock(EditPropertyAction.class);
     given(workflowAction.getName()).willReturn("firstName");
     given(workflowAction.getValue()).willReturn("Steve");
-    Actionable actionableMock = mock(Actionable.class);
-    given(workflowAction.process(any(Lead.class))).willReturn(actionableMock);
+    given(workflowAction.getType()).willReturn(ActionType.EDIT_PROPERTY);
     Set<AbstractWorkflowAction> actions = new HashSet<>();
     actions.add(workflowAction);
 
@@ -90,7 +90,6 @@ class WorkflowProcessorTest {
     //when
     workflowProcessor.process(leadCreatedEvent);
     //then
-    verify(workflowAction, times(1)).process(any(Lead.class));
     verify(leadUpdatedCommandPublisher, times(1)).execute(any(Metadata.class), any(Actionable.class));
     verify(workflowService, times(1)).updateExecutedEventDetails(any(Workflow.class));
   }
@@ -101,7 +100,7 @@ class WorkflowProcessorTest {
     long tenantId = 101;
     long workflowId = 99L;
 
-    var lead = new Lead();
+    var lead = new LeadDetail();
     lead.setFirstName("Tony");
     lead.setLastName("Stark");
     lead.setId(55L);
@@ -129,14 +128,14 @@ class WorkflowProcessorTest {
     EditPropertyAction updateFirstNameAction = mock(EditPropertyAction.class);
     given(updateFirstNameAction.getName()).willReturn("firstName");
     given(updateFirstNameAction.getValue()).willReturn("Steve");
+    given(updateFirstNameAction.getType()).willReturn(ActionType.EDIT_PROPERTY);
     Actionable actionableMock = mock(Actionable.class);
-    given(updateFirstNameAction.process(any(Lead.class))).willReturn(actionableMock);
     actions.add(updateFirstNameAction);
 
     EditPropertyAction failedAction = mock(EditPropertyAction.class);
     given(failedAction.getName()).willReturn("firstName");
     given(failedAction.getValue()).willReturn("Steve");
-    given(failedAction.process(lead)).willThrow(SpelEvaluationException.class);
+    given(updateFirstNameAction.getType()).willReturn(ActionType.EDIT_PROPERTY);
     actions.add(failedAction);
 
     given(workflowMock.getWorkflowActions()).willReturn(actions);
@@ -152,8 +151,6 @@ class WorkflowProcessorTest {
     //when
     workflowProcessor.process(leadCreatedEvent);
     //then
-    verify(updateFirstNameAction, times(1)).process(any(Lead.class));
-    verify(failedAction, times(1)).process(any(Lead.class));
     verify(leadUpdatedCommandPublisher, times(1)).execute(any(Metadata.class), any(Actionable.class));
   }
 

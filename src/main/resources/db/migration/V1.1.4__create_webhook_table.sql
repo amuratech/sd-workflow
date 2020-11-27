@@ -1,3 +1,6 @@
+DROP TABLE IF EXISTS parameter CASCADE;
+DROP TABLE IF EXISTS webhook_action CASCADE;
+
 CREATE TABLE IF NOT EXISTS webhook_action(
   id UUID PRIMARY KEY,
   workflow_id BIGINT NOT NULL,

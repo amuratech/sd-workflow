@@ -1,6 +1,9 @@
 package com.kylas.sales.workflow.domain.workflow.action.webhook;
 
+import com.kylas.sales.workflow.domain.workflow.action.webhook.attribute.AttributeFactory.WebhookEntity;
 import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
@@ -18,13 +21,13 @@ public class Parameter {
   private Long id;
   @NotEmpty(message = "Parameter name must not be empty.")
   private String name;
-  @NotEmpty(message = "Parameter entity must not be empty.")
-  private String entity;
+  @Enumerated(value = EnumType.STRING)
+  private WebhookEntity entity;
   @NotEmpty(message = "Parameter attribute must not be empty.")
   private String attribute;
 
   public Parameter(@NotEmpty(message = "Parameter name must not be empty.") String name,
-      @NotEmpty(message = "Parameter entity must not be empty.") String entity,
+      WebhookEntity entity,
       @NotEmpty(message = "Parameter attribute must not be empty.") String attribute) {
     this.name = name;
     this.entity = entity;

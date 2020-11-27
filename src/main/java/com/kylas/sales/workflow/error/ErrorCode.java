@@ -8,8 +8,9 @@ public class ErrorCode {
   public static final String INVALID_ACTION = serviceCode + Module.Domain.getCode() + "002";
   public static final String INVALID_WORKFLOW_PROPERTY = serviceCode + Module.Domain.getCode() + "003";
   public static final String UPDATE_PROPERTY = serviceCode + Module.Domain.getCode() + "004";
-  public static final String WORKFLOW_NOT_FOUND = serviceCode+Module.Domain.getCode()+"005";
-  public static final String INVALID_FILTER_RULE = serviceCode+Module.Domain.getCode()+"006";
+  public static final String WORKFLOW_NOT_FOUND = serviceCode + Module.Domain.getCode() + "005";
+  public static final String INVALID_FILTER_RULE = serviceCode + Module.Domain.getCode() + "006";
+  public static final String INVALID_PARAMETER = serviceCode + Module.Domain.getCode() + "007";
 
   public static final String INSUFFICIENT_PRIVILEGES =
       serviceCode + Module.Security.getCode() + "001";

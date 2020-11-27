@@ -7,6 +7,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kylas.sales.workflow.domain.processor.WorkflowProcessor;
 import com.kylas.sales.workflow.mq.event.LeadEvent;
+import com.kylas.sales.workflow.security.InternalAuthProvider;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
@@ -19,10 +20,14 @@ public class EventListener {
 
   private final ObjectMapper objectMapper;
   private final WorkflowProcessor workflowProcessor;
+  private final InternalAuthProvider internalAuthProvider;
+
   @Autowired
-  public EventListener(ObjectMapper objectMapper, WorkflowProcessor workflowProcessor) {
+  public EventListener(ObjectMapper objectMapper, WorkflowProcessor workflowProcessor,
+      InternalAuthProvider internalAuthProvider) {
     this.objectMapper = objectMapper;
     this.workflowProcessor = workflowProcessor;
+    this.internalAuthProvider = internalAuthProvider;
   }
 
   @RabbitListener(queues = SALES_LEAD_CREATED_QUEUE)
@@ -32,6 +37,8 @@ public class EventListener {
         message.getMessageProperties().getReceivedRoutingKey());
     try {
       var leadCreatedEvent = objectMapper.readValue(new String(message.getBody()), LeadEvent.class);
+      var metadata = leadCreatedEvent.getMetadata();
+      internalAuthProvider.loginWith(metadata.getUserId(), metadata.getTenantId());
       workflowProcessor.process(leadCreatedEvent);
     } catch (JsonProcessingException e) {
       e.printStackTrace();
@@ -45,6 +52,8 @@ public class EventListener {
         message.getMessageProperties().getReceivedRoutingKey());
     try {
       var leadCreatedEvent = objectMapper.readValue(new String(message.getBody()), LeadEvent.class);
+      var metadata = leadCreatedEvent.getMetadata();
+      internalAuthProvider.loginWith(metadata.getUserId(), metadata.getTenantId());
       workflowProcessor.process(leadCreatedEvent);
     } catch (JsonProcessingException e) {
       e.printStackTrace();

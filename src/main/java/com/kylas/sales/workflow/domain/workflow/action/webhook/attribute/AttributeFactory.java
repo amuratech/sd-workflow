@@ -2,6 +2,7 @@ package com.kylas.sales.workflow.domain.workflow.action.webhook.attribute;
 
 import com.kylas.sales.workflow.domain.entity.EntityDefinition;
 import com.kylas.sales.workflow.domain.service.ConfigService;
+import com.kylas.sales.workflow.domain.workflow.EntityType;
 import com.kylas.sales.workflow.security.AuthService;
 import java.util.Arrays;
 import java.util.List;
@@ -47,6 +48,10 @@ public class AttributeFactory {
                 .collect(Collectors.toList()));
   }
 
+  public WebhookEntity[] getEntities() {
+    return WebhookEntity.values();
+  }
+
   private String getDisplayName(List<com.kylas.sales.workflow.domain.entity.EntityDefinition> entityDefinitions, String attributeName) {
     return entityDefinitions.stream()
         .filter(entityDefinition -> entityDefinition.getName().equals(attributeName))
@@ -57,21 +62,28 @@ public class AttributeFactory {
 
   @AllArgsConstructor
   @Getter
+  public enum WebhookEntity {
+    LEAD("Lead", EntityType.LEAD),
+    LEAD_OWNER("Lead Owner", EntityType.USER),
+    CREATED_BY("Created By", EntityType.USER),
+    UPDATED_BY("Updated By", EntityType.USER),
+    TENANT("Tenant", EntityType.TENANT);
+
+    private final String displayName;
+    private final EntityType type;
+  }
+
+  @AllArgsConstructor
+  @Getter
   public enum UserAttribute {
-    SALUTATION("salutation"),
     FIRST_NAME("firstName"),
     LAST_NAME("lastName"),
-    EMAIL("email"),
-    PHONE("phoneNumbers"),
     DESIGNATION("designation"),
     DEPARTMENT("department"),
     CURRENCY("currency"),
     TIMEZONE("timezone"),
     SIGNATURE("signature"),
-    LANGUAGE("language"),
-    ACTIVE_STATUS("active"),
-    CREATED_BY("createdBy"),
-    UPDATED_BY("updatedBy");
+    LANGUAGE("language");
 
     private final String name;
   }
@@ -80,14 +92,14 @@ public class AttributeFactory {
   @Getter
   public enum LeadAttribute {
     ID("id"),
-    SALUTATION("salutation"),
+    SALUTATION("salutation.name"),
     FIRST_NAME("firstName"),
     LAST_NAME("lastName"),
-    PIPELINE("pipeline"),
-    STATUS("pipelineStage"),
-    CREATED_BY("createdBy"),
+    PIPELINE("pipeline.name"),
+    STATUS("pipelineStage.name"),
+    CREATED_BY("createdBy.name"),
     CREATED_AT("createdAt"),
-    UPDATED_BY("updatedBy"),
+    UPDATED_BY("updatedBy.name"),
     UPDATED_AT("updatedAt");
 
     private final String name;

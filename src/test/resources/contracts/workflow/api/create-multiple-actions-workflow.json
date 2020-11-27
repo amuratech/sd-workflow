@@ -31,7 +31,7 @@
         "parameters": [
           {
             "name": "name",
-            "entity": "Lead",
+            "entity": "LEAD",
             "attribute": "firstName"
           }
         ]

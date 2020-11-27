@@ -16,7 +16,6 @@ import com.kylas.sales.workflow.domain.exception.InsufficientPrivilegeException;
 import com.kylas.sales.workflow.domain.exception.WorkflowNotFoundException;
 import com.kylas.sales.workflow.domain.service.UserService;
 import com.kylas.sales.workflow.domain.user.User;
-import com.kylas.sales.workflow.domain.user.UserFacade;
 import com.kylas.sales.workflow.domain.workflow.ConditionType;
 import com.kylas.sales.workflow.domain.workflow.EntityType;
 import com.kylas.sales.workflow.domain.workflow.TriggerFrequency;
@@ -24,6 +23,7 @@ import com.kylas.sales.workflow.domain.workflow.TriggerType;
 import com.kylas.sales.workflow.domain.workflow.Workflow;
 import com.kylas.sales.workflow.domain.workflow.action.EditPropertyAction;
 import com.kylas.sales.workflow.domain.workflow.action.webhook.Parameter;
+import com.kylas.sales.workflow.domain.workflow.action.webhook.attribute.AttributeFactory.WebhookEntity;
 import com.kylas.sales.workflow.security.AuthService;
 import com.kylas.sales.workflow.stubs.UserStub;
 import com.kylas.sales.workflow.stubs.WorkflowStub;
@@ -42,10 +42,10 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.http.HttpMethod;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
-import org.springframework.web.bind.annotation.RequestMethod;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
@@ -59,8 +59,6 @@ class WorkflowFacadeTest {
   AuthService authService;
   @MockBean
   UserService userService;
-  @Autowired
-  UserFacade userFacade;
   @Autowired
   WorkflowFacade workflowFacade;
 
@@ -121,13 +119,13 @@ class WorkflowFacadeTest {
     given(userService.getUserDetails(11L, authService.getAuthenticationToken()))
         .willReturn(Mono.just(aUser));
 
-    List<Parameter> parameters = List.of(new Parameter("paramKey", "Lead", "firstName"));
+    List<Parameter> parameters = List.of(new Parameter("paramKey", WebhookEntity.LEAD, "firstName"));
 
     Set<ActionResponse> actions = Set.of(
         new ActionResponse(EDIT_PROPERTY,
             new ActionDetail.EditPropertyAction("city", "Pune")),
         new ActionResponse(WEBHOOK,
-            new WebhookAction("name", "desc", RequestMethod.GET, "someUrl", AuthorizationType.NONE, parameters))
+            new WebhookAction("name", "desc", HttpMethod.GET, "someUrl", AuthorizationType.NONE, parameters))
     );
     var workflowRequest = WorkflowStub
         .aWorkflowRequestWithActions("Edit Lead Property", "Edit Lead Property", EntityType.LEAD, TriggerType.EVENT, TriggerFrequency.CREATED,
@@ -185,7 +183,6 @@ class WorkflowFacadeTest {
 
           assertThat(workflow.getWorkflowExecutedEvent().getLastTriggeredAt()).isNull();
           assertThat(workflow.getWorkflowExecutedEvent().getId()).isGreaterThan(0);
-          assertThat(workflow.getWorkflowExecutedEvent().getTriggerCount()).isZero();
 
           assertThat(workflow.isActive()).isTrue();
           return true;
@@ -434,7 +431,7 @@ class WorkflowFacadeTest {
         .getWorkflowActions().stream()
         .filter(workflowAction -> workflowAction.getType().equals(WEBHOOK)).findFirst().get();
     assertThat(webhookAction.getName()).isEqualTo("webhookName");
-    assertThat(webhookAction.getMethod()).isEqualTo(RequestMethod.GET);
+    assertThat(webhookAction.getMethod()).isEqualTo(HttpMethod.GET);
     assertThat(webhookAction.getAuthorizationType()).isEqualTo(AuthorizationType.NONE);
     assertThat(webhookAction.getParameters())
         .isNotEmpty()

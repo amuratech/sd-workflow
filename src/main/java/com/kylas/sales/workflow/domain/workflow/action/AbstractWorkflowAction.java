@@ -1,8 +1,6 @@
 package com.kylas.sales.workflow.domain.workflow.action;
 
 import com.kylas.sales.workflow.common.dto.ActionResponse;
-import com.kylas.sales.workflow.domain.processor.Actionable;
-import com.kylas.sales.workflow.domain.processor.lead.Lead;
 import com.kylas.sales.workflow.domain.workflow.Workflow;
 import com.kylas.sales.workflow.domain.workflow.action.WorkflowAction.ActionType;
 import java.util.UUID;
@@ -29,8 +27,6 @@ public abstract class AbstractWorkflowAction {
   @ManyToOne
   @JoinColumn(name = "workflow_id")
   private Workflow workflow;
-
-  public abstract Actionable process(Lead entity);
 
   public abstract AbstractWorkflowAction update(ActionResponse action);
 

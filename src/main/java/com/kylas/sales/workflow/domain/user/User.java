@@ -25,6 +25,22 @@ public class User {
   private long tenantId;
   @Transient
   private Set<Permission> permissions = new HashSet<>();
+  @Transient
+  private String firstName;
+  @Transient
+  private String lastName;
+  @Transient
+  private String designation;
+  @Transient
+  private String department;
+  @Transient
+  private String timezone;
+  @Transient
+  private String language;
+  @Transient
+  private String currency;
+  @Transient
+  private String signature;
 
   private User(long id, String name, long tenantId, Set<Permission> permissions) {
     this.id = id;
@@ -47,10 +63,24 @@ public class User {
       @JsonProperty("permissions") Set<Permission> permissions,
       @JsonProperty("firstName") String firstName,
       @JsonProperty("lastName") String lastName,
-      @JsonProperty("name") String name) {
+      @JsonProperty("name") String name,
+      @JsonProperty("department") String department,
+      @JsonProperty("designation") String designation,
+      @JsonProperty("currency") String currency,
+      @JsonProperty("timezone") String timezone,
+      @JsonProperty("language") String language,
+      @JsonProperty("signature") String signature) {
     this.id = id;
     this.tenantId = tenantId;
     this.permissions = permissions;
+    this.firstName = firstName;
+    this.lastName = lastName;
+    this.department = department;
+    this.designation = designation;
+    this.timezone = timezone;
+    this.currency = currency;
+    this.language = language;
+    this.signature = signature;
     this.name =
         StringUtils.isBlank(name)
             ? StringUtils.isBlank(firstName) ? lastName : firstName + " " + lastName

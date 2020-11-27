@@ -37,7 +37,7 @@ INSERT INTO webhook_action (id, workflow_id, name, description, method, authoriz
 ('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a12',301, 'webhookName', 'webhook desc', 'GET', 'NONE', 'some-request-url');
 
 INSERT INTO parameter (id,name,entity, attribute, webhook_action_id) OVERRIDING SYSTEM VALUE VALUES
-(2000, 'param1','Lead', 'firstName', 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a12');
+(2000, 'param1','LEAD', 'firstName', 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a12');
 
 INSERT INTO workflow_executed_event(id, workflow_id, last_triggered_at, trigger_count)
 OVERRIDING SYSTEM VALUE VALUES
