@@ -1,0 +1,115 @@
+{
+  "content": [
+    {
+      "id": 101,
+      "name": "Workflow 1",
+      "description": "Workflow 1",
+      "entityType": "LEAD",
+      "trigger": {
+        "name": "EVENT",
+        "triggerFrequency": "CREATED"
+      },
+      "condition": {
+        "conditionType": "FOR_ALL"
+      },
+      "actions": [
+        {
+          "id": null,
+          "type": "EDIT_PROPERTY",
+          "payload": {
+            "name": "lastName",
+            "value": "Stark"
+          }
+        }
+      ],
+      "createdBy": {
+        "id": 101,
+        "name": "Tony Start"
+      },
+      "updatedBy": {
+        "id": 102,
+        "name": "Steve Roger"
+      },
+      "createdAt": "2020-11-17T08:49:43.754+0000",
+      "updatedAt": "2020-11-17T08:49:43.754+0000",
+      "lastTriggeredAt": null,
+      "triggerCount": 0,
+      "active": true,
+      "recordActions": {
+        "read": true,
+        "update": false,
+        "write": true,
+        "readAll": false,
+        "updateAll": false
+      }
+    },
+    {
+      "id": 102,
+      "name": "Workflow 2",
+      "description": "Workflow 2",
+      "entityType": "LEAD",
+      "trigger": {
+        "name": "EVENT",
+        "triggerFrequency": "CREATED"
+      },
+      "condition": {
+        "conditionType": "FOR_ALL"
+      },
+      "actions": [
+        {
+          "id": null,
+          "type": "EDIT_PROPERTY",
+          "payload": {
+            "name": "firstName",
+            "value": "Tony"
+          }
+        }
+      ],
+      "createdBy": {
+        "id": 101,
+        "name": "Tony Start"
+      },
+      "updatedBy": {
+        "id": 102,
+        "name": "Steve Roger"
+      },
+      "createdAt": "2020-11-17T08:49:43.755+0000",
+      "updatedAt": "2020-11-17T08:49:43.755+0000",
+      "lastTriggeredAt": null,
+      "triggerCount": 0,
+      "active": true,
+      "recordActions": {
+        "read": true,
+        "update": false,
+        "write": true,
+        "readAll": false,
+        "updateAll": false
+      }
+    }
+  ],
+  "pageable": {
+    "sort": {
+      "sorted": true,
+      "unsorted": false,
+      "empty": false
+    },
+    "pageNumber": 0,
+    "pageSize": 10,
+    "offset": 0,
+    "unpaged": false,
+    "paged": true
+  },
+  "totalElements": 12,
+  "totalPages": 2,
+  "last": false,
+  "first": true,
+  "sort": {
+    "sorted": true,
+    "unsorted": false,
+    "empty": false
+  },
+  "number": 0,
+  "numberOfElements": 2,
+  "size": 10,
+  "empty": false
+}

@@ -24,8 +24,13 @@ public class WorkflowFilter {
   }
 
   private Object convertValue(String fieldName, Object value) {
-    if ("entityType".equalsIgnoreCase(fieldName) && value != null) {
-      return EntityType.valueOf(value.toString().toUpperCase());
+    try {
+      if ("entityType".equalsIgnoreCase(fieldName) && value != null) {
+        return EntityType.valueOf(value.toString().toUpperCase());
+      }
+    } catch (Exception e) {
+      log.error(e.getMessage(), e);
+      throw new InvalidFilterException();
     }
     return value;
   }

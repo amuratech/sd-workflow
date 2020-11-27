@@ -44,6 +44,16 @@ class WorkflowFilterTest {
         .withFailMessage("01701006");
   }
 
+  @Test
+  public void givenInvalidEntity_shouldThrow() {
+    assertThatThrownBy(
+        () -> {
+          new WorkflowFilter("equal", "entityType", "string", "lead1");
+        })
+        .isInstanceOf(InvalidFilterException.class)
+        .withFailMessage("01701006");
+  }
+
   @ParameterizedTest(name = "Operator \"{0}\" FieldValue {1}")
   @MethodSource("operatorAndValue")
   public void givenEachOperator_shouldThrow(String operator, Object fieldValue) {

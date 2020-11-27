@@ -196,7 +196,7 @@ class WorkflowFacadeSearchTest {
     Sort sortByLastTriggeredAt = Sort.by(Order.asc("updatedAt"));
     PageRequest pageable = PageRequest.of(0, 10, sortByLastTriggeredAt);
     Set<WorkflowFilter> workflowFilters = new HashSet<>();
-    workflowFilters.add(new WorkflowFilter("equal", "entityType", "string", "LEAD"));
+    workflowFilters.add(new WorkflowFilter("equal", "entityType", "string", "lead"));
     // when
     Page<Workflow> searchResponse = workflowFacade.search(pageable, Optional.of(workflowFilters));
     // then

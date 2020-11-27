@@ -20,6 +20,7 @@ import com.kylas.sales.workflow.common.dto.WorkflowTrigger;
 import com.kylas.sales.workflow.config.TestDatabaseInitializer;
 import com.kylas.sales.workflow.domain.exception.InsufficientPrivilegeException;
 import com.kylas.sales.workflow.domain.exception.InvalidActionException;
+import com.kylas.sales.workflow.domain.exception.InvalidFilterException;
 import com.kylas.sales.workflow.domain.exception.WorkflowNotFoundException;
 import com.kylas.sales.workflow.domain.workflow.ConditionType;
 import com.kylas.sales.workflow.domain.workflow.EntityType;
@@ -32,6 +33,7 @@ import com.kylas.sales.workflow.stubs.WorkflowStub;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Set;
@@ -854,6 +856,47 @@ class WorkflowControllerTest {
                         new Customization("content[1].createdAt", (o1, o2) -> true),
                         new Customization("content[1].updatedAt", (o1, o2) -> true),
                         new Customization("content[1].actions[0].id", (o1, o2) -> true)));
+              } catch (JSONException e) {
+                fail(e.getMessage());
+              }
+            })
+        .expectComplete()
+        .verify();
+  }
+
+
+  @Test
+  public void givenInvalidFilter_shouldThrow() {
+    // given
+    User createdBy = new User(101L, "Tony Start");
+    var updatedBy = new User(102L, "Steve Roger");
+
+
+    Sort sortByLastTriggeredAt = Sort.by(Order.desc("lastUpdatedAt"));
+    List<Filter> filters = new ArrayList<>();
+    filters.add(new Filter("equals", "entityType", "string", "LEAD"));
+    FilterRequest expectedFilter = new FilterRequest(filters);
+    given(
+        workflowService.search(any(),any())).willThrow(new InvalidFilterException());
+    // when
+    var workflowResponse =
+        buildWebClient()
+            .post()
+            .uri("/v1/workflows/search?page=0&size=10&sort=lastUpdatedAt,desc")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(
+                getResourceAsString(
+                    "classpath:contracts/workflow/api/workflow-inValid-filter-request.json"))
+            .exchange().block().bodyToMono(String.class);
+    // then
+    StepVerifier.create(workflowResponse)
+        .assertNext(
+            json -> {
+              try {
+                JSONAssert.assertEquals(
+                    "{\"code\":\"01701006\"}",
+                    json,
+                        JSONCompareMode.LENIENT);
               } catch (JSONException e) {
                 fail(e.getMessage());
               }

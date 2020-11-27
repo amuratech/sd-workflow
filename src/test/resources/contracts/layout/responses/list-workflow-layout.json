@@ -155,7 +155,7 @@
       "entityType",
       "createdAt",
       "createdBy",
-      "status",
+      "active",
       "triggerCount",
       "lastTriggeredAt"
     ]
