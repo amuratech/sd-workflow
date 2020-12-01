@@ -33,9 +33,20 @@
           "isFilterable": true,
           "isSortable": false,
           "isInternal": false,
-          "fieldType": "ENTITY",
+          "fieldType": "ENTITY_PICKLIST",
           "multiValue": false,
-          "picklist": null,
+          "picklist": {
+            "id": 1,
+            "name": "entityType",
+            "picklistValues": [
+              {
+                "id": "LEAD",
+                "name": "LEAD",
+                "displayName": "Lead",
+                "systemDefault": true
+              }
+            ]
+          },
           "lookup": null,
           "values": null
         },
@@ -78,7 +89,24 @@
           "isInternal": true,
           "fieldType": "TOGGLE",
           "multiValue": false,
-          "picklist": null,
+          "picklist": {
+            "id": 1,
+            "name": "active",
+            "picklistValues": [
+              {
+                "id": true,
+                "displayName": "Active",
+                "name": true,
+                "systemDefault": true
+              },
+              {
+                "id": false,
+                "displayName": "Inactive",
+                "name": false,
+                "systemDefault": false
+              }
+            ]
+          },
           "lookup": null,
           "values": null
         },

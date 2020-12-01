@@ -9,6 +9,7 @@ public enum FieldType {
   CHECKBOX("Allows users to create checkbox with option values"),
   RADIO_BUTTON("Allows users to create radio button with option values"),
   PICK_LIST("Allows users to create picklist with option values"),
+  ENTITY_PICKLIST("Picklist for Entity"),
   MULTI_PICKLIST("Allows users to create multi-picklist with option values"),
   DATE_PICKER("Allows users to enter a date or pick a date from a popup calendar"),
   TIME_PICKER("Allows users to enter a time"),
