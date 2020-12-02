@@ -36,4 +36,26 @@ class MetadataTest {
     assertThat(newMetadata.getExecutedWorkflows()).containsExactlyInAnyOrderElementsOf(Arrays.asList("WF_9", "WF_6"));
   }
 
+  @Test
+  public void givenExecutedWorkflowId_tryToCheckProcessed_shouldReturnTrue(){
+    //given
+    Long workflowId = 99L;
+    Set<String> executedWorkflows = new HashSet<>();
+    executedWorkflows.add("WF_99");
+    Metadata metadata = new Metadata(100L, 101L, EntityType.LEAD,"WF_6", executedWorkflows, EntityAction.CREATED);
+    //when & then
+    assertThat(metadata.isProcessed(workflowId)).isTrue();
+  }
+
+  @Test
+  public void givenNonExecutedWorkflowId_tryToCheckProcessed_shouldReturnFalse(){
+    //given
+    Long workflowId = 99L;
+    Set<String> executedWorkflows = new HashSet<>();
+    executedWorkflows.add("WF_9");
+    Metadata metadata = new Metadata(100L, 101L, EntityType.LEAD,"WF_6", executedWorkflows, EntityAction.CREATED);
+    //when & then
+    assertThat(metadata.isProcessed(workflowId)).isFalse();
+  }
+
 }

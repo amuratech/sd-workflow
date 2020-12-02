@@ -5,6 +5,7 @@ import static com.kylas.sales.workflow.domain.WorkflowSpecification.belongToTena
 import static com.kylas.sales.workflow.domain.WorkflowSpecification.belongToUser;
 import static com.kylas.sales.workflow.domain.WorkflowSpecification.withEntityType;
 import static com.kylas.sales.workflow.domain.WorkflowSpecification.withId;
+import static com.kylas.sales.workflow.domain.WorkflowSpecification.withTriggerFrequency;
 
 import com.kylas.sales.workflow.api.request.WorkflowRequest;
 import com.kylas.sales.workflow.common.dto.ActionResponse;
@@ -14,6 +15,7 @@ import com.kylas.sales.workflow.domain.service.UserService;
 import com.kylas.sales.workflow.domain.user.User;
 import com.kylas.sales.workflow.domain.user.UserFacade;
 import com.kylas.sales.workflow.domain.workflow.EntityType;
+import com.kylas.sales.workflow.domain.workflow.TriggerFrequency;
 import com.kylas.sales.workflow.domain.workflow.Workflow;
 import com.kylas.sales.workflow.domain.workflow.WorkflowCondition;
 import com.kylas.sales.workflow.domain.workflow.WorkflowTrigger;
@@ -85,9 +87,10 @@ public class WorkflowFacade {
             });
   }
 
-  public List<Workflow> findActiveBy(long tenantId, EntityType entityType) {
+  public List<Workflow> findActiveBy(long tenantId, EntityType entityType, TriggerFrequency triggerFrequency) {
     var entitySpecification = withEntityType(entityType);
-    var specification = belongToTenant(tenantId).and(entitySpecification.and(active()));
+    var triggerFrequencySpecification = withTriggerFrequency(triggerFrequency);
+    var specification = belongToTenant(tenantId).and(entitySpecification.and(active()).and(triggerFrequencySpecification));
     return workflowRepository.findAll(specification);
   }
 

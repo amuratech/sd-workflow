@@ -57,6 +57,7 @@ public class WorkflowProcessorIntegrationTests {
   static final String SALES_EXCHANGE = "ex.sales";
   static final String WORKFLOW_EXCHANGE = "ex.workflow";
   static final String SALES_LEAD_UPDATE_QUEUE = "q.workflow.lead.update.sales";
+  static final String SALES_LEAD_UPDATE_QUEUE_NEW = "q.workflow.lead.update.sales_new";
   static final String LEAD_UPDATE_COMMAND_QUEUE = "workflow.lead.update";
 
   private static RabbitMQContainer rabbitMQContainer =
@@ -128,6 +129,53 @@ public class WorkflowProcessorIntegrationTests {
     Assertions.assertThat(workflow302.getWorkflowExecutedEvent().getTriggerCount()).isEqualTo(16);
   }
 
+  @Test
+  @Sql("/test-scripts/insert-update-lead-workflow.sql")
+  public void givenLeadUpdatedEvent_shouldUpdatePropertyAndPublishCommand() throws IOException, InterruptedException, JSONException {
+    //given
+    User aUser = UserStub.aUser(12L, 99L, true, true, true, true, true)
+        .withName("user 1");
+    given(authService.getLoggedInUser()).willReturn(aUser);
+
+    String resourceAsString = getResourceAsString("/contracts/mq/events/sales-lead-updated-event-payload.json");
+    LeadEvent leadEvent = objectMapper.readValue(resourceAsString, LeadEvent.class);
+    initializeRabbitMqListener(LEAD_UPDATE_COMMAND_QUEUE, SALES_LEAD_UPDATE_QUEUE_NEW);
+    //when
+    rabbitTemplate.convertAndSend(SALES_EXCHANGE, LeadEvent.getLeadUpdatedEventName(),
+        leadEvent);
+    //then
+    mockMqListener.latch.await(3, TimeUnit.SECONDS);
+    JSONAssert
+        .assertEquals(getResourceAsString("/contracts/mq/command/lead-update-patch-command-3.json"), mockMqListener.actualMessage,
+            JSONCompareMode.STRICT);
+
+    Workflow workflow = workflowFacade.get(301);
+    Assertions.assertThat(workflow.getWorkflowExecutedEvent().getLastTriggeredAt()).isNotNull();
+    Assertions.assertThat(workflow.getWorkflowExecutedEvent().getTriggerCount()).isEqualTo(152);
+  }
+
+  @Test
+  @Sql("/test-scripts/insert-update-lead-workflow.sql")
+  public void givenLeadUpdatedEvent_tryToReProcessSameWorkflow_shouldNotProcess() throws IOException, InterruptedException, JSONException {
+    //given
+    User aUser = UserStub.aUser(12L, 99L, true, true, true, true, true)
+        .withName("user 1");
+    given(authService.getLoggedInUser()).willReturn(aUser);
+
+    String resourceAsString = getResourceAsString("/contracts/mq/events/sales-lead-updated-event-payload-with-executedWorkflow.json");
+    LeadEvent leadEvent = objectMapper.readValue(resourceAsString, LeadEvent.class);
+    initializeRabbitMqListener(LEAD_UPDATE_COMMAND_QUEUE, SALES_LEAD_UPDATE_QUEUE);
+    //when
+    rabbitTemplate.convertAndSend(SALES_EXCHANGE, LeadEvent.getLeadUpdatedEventName(),
+        leadEvent);
+    //then
+    mockMqListener.latch.await(3, TimeUnit.SECONDS);
+
+    Workflow workflow = workflowFacade.get(301);
+    Assertions.assertThat(workflow.getWorkflowExecutedEvent().getLastTriggeredAt()).isNull();
+    Assertions.assertThat(workflow.getWorkflowExecutedEvent().getTriggerCount()).isEqualTo(151);
+  }
+
   static class MockMqListener {
 
     CountDownLatch latch = new CountDownLatch(1);
@@ -170,6 +218,7 @@ public class WorkflowProcessorIntegrationTests {
       var withSales =
           rabbitMQContainer.withExchange(SALES_EXCHANGE, "topic").withQueue(SALES_LEAD_UPDATE_QUEUE);
       rabbitMQContainer.withExchange(WORKFLOW_EXCHANGE, "topic").withQueue(LEAD_UPDATE_COMMAND_QUEUE);
+      rabbitMQContainer.withExchange(WORKFLOW_EXCHANGE, "topic").withQueue(SALES_LEAD_UPDATE_QUEUE_NEW);
 
       withSales.start();
 

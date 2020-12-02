@@ -1,0 +1,14 @@
+{
+  "entity": {
+    "firstName": "Tony 301"
+  },
+  "metadata": {
+    "tenantId": 99,
+    "userId": 12,
+    "entityType": "LEAD",
+    "workflowId": "WF_301",
+    "executedWorkflows": [],
+    "entityAction": "UPDATED",
+    "entityId": 999
+  }
+}

@@ -3,7 +3,9 @@ package com.kylas.sales.workflow.domain;
 import com.kylas.sales.workflow.domain.exception.InvalidFilterException;
 import com.kylas.sales.workflow.domain.user.User_;
 import com.kylas.sales.workflow.domain.workflow.EntityType;
+import com.kylas.sales.workflow.domain.workflow.TriggerFrequency;
 import com.kylas.sales.workflow.domain.workflow.Workflow;
+import com.kylas.sales.workflow.domain.workflow.WorkflowTrigger_;
 import com.kylas.sales.workflow.domain.workflow.Workflow_;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeParseException;
@@ -29,6 +31,10 @@ public class WorkflowSpecification {
 
   static Specification<Workflow> withEntityType(EntityType entityType) {
     return (root, criteria, builder) -> builder.equal(root.get(Workflow_.entityType), entityType);
+  }
+
+  static Specification<Workflow> withTriggerFrequency(TriggerFrequency triggerFrequency) {
+    return (root, criteria, builder) -> builder.equal(root.get(Workflow_.workflowTrigger).get(WorkflowTrigger_.triggerFrequency), triggerFrequency);
   }
 
   static Specification<Workflow> active() {

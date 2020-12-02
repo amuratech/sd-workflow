@@ -1,18 +1,16 @@
 package com.kylas.sales.workflow.domain.processor;
 
-import static com.kylas.sales.workflow.domain.workflow.TriggerFrequency.CREATED;
-
 import com.kylas.sales.workflow.api.WorkflowService;
 import com.kylas.sales.workflow.domain.processor.exception.WorkflowExecutionException;
 import com.kylas.sales.workflow.domain.processor.lead.Lead;
 import com.kylas.sales.workflow.domain.processor.lead.LeadDetail;
+import com.kylas.sales.workflow.domain.workflow.TriggerFrequency;
 import com.kylas.sales.workflow.domain.workflow.action.AbstractWorkflowAction;
 import com.kylas.sales.workflow.domain.workflow.action.EditPropertyAction;
 import com.kylas.sales.workflow.domain.workflow.action.webhook.WebhookAction;
 import com.kylas.sales.workflow.domain.workflow.action.webhook.WebhookService;
 import com.kylas.sales.workflow.error.ErrorCode;
 import com.kylas.sales.workflow.mq.command.LeadUpdatedCommandPublisher;
-import com.kylas.sales.workflow.mq.event.EntityAction;
 import com.kylas.sales.workflow.mq.event.LeadEvent;
 import com.kylas.sales.workflow.mq.event.Metadata;
 import java.util.Set;
@@ -44,10 +42,9 @@ public class WorkflowProcessor {
   public void process(LeadEvent event) {
 
     log.info("Lead {} event received with metadata {}", event.getMetadata().getEntityAction(),event.getMetadata());
-    workflowService.findActiveBy(event.getMetadata().getTenantId(), event.getMetadata().getEntityType())
+    workflowService.findActiveBy(event.getMetadata().getTenantId(), event.getMetadata().getEntityType(), TriggerFrequency.valueOf(event.getMetadata().getEntityAction().name()))
         .stream()
-        .filter(workflow -> event.getMetadata().getEntityAction().equals(EntityAction.CREATED))
-        .filter(workflow -> workflow.getWorkflowTrigger().getTriggerFrequency().equals(CREATED))
+        .filter(workflow -> !event.getMetadata().isProcessed(workflow.getId()))
         .forEach(workflow -> {
           LeadDetail entity = event.getEntity();
           Metadata metadata = event.getMetadata().with(workflow.getId()).withEntityId(entity.getId());

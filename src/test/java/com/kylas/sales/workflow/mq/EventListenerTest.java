@@ -98,6 +98,8 @@ class EventListenerTest {
     latch.await(3, TimeUnit.SECONDS);
     Mockito.verify(workflowProcessor, times(1)).process(leadCreatedEventArgumentCaptor.capture());
     LeadEvent eventReceived = leadCreatedEventArgumentCaptor.getValue();
+    assertThat(eventReceived.getEntity().getOwnerId().getId()).isEqualTo(55);
+    assertThat(eventReceived.getOldEntity().getSalutation().getId()).isEqualTo(473);
     assertThat(eventReceived.getMetadata().getTenantId()).isEqualTo(99L);
     assertThat(eventReceived.getMetadata().getEntityAction()).isEqualTo(EntityAction.UPDATED);
 

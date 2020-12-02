@@ -13,6 +13,7 @@ import com.kylas.sales.workflow.common.dto.WorkflowTrigger;
 import com.kylas.sales.workflow.domain.WorkflowFacade;
 import com.kylas.sales.workflow.domain.WorkflowFilter;
 import com.kylas.sales.workflow.domain.workflow.EntityType;
+import com.kylas.sales.workflow.domain.workflow.TriggerFrequency;
 import com.kylas.sales.workflow.domain.workflow.Workflow;
 import com.kylas.sales.workflow.domain.workflow.WorkflowExecutedEvent;
 import java.util.List;
@@ -42,8 +43,8 @@ public class WorkflowService {
         .map(workflow -> new WorkflowSummary(workflow.getId()));
   }
 
-  public List<Workflow> findActiveBy(long tenantId, EntityType entityType) {
-    return workflowFacade.findActiveBy(tenantId, entityType);
+  public List<Workflow> findActiveBy(long tenantId, EntityType entityType, TriggerFrequency triggerFrequency) {
+    return workflowFacade.findActiveBy(tenantId, entityType, triggerFrequency);
   }
 
   public WorkflowDetail get(long workflowId) {

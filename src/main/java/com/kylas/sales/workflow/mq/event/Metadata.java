@@ -50,4 +50,8 @@ public class Metadata {
   private String getWorkflowId(long workflowId) {
     return String.format("WF_%d", workflowId);
   }
+
+  public boolean isProcessed(Long workflowId) {
+    return executedWorkflows.contains(String.format("WF_%d", workflowId));
+  }
 }

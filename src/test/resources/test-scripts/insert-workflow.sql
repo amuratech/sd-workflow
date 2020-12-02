@@ -23,34 +23,42 @@ OVERRIDING SYSTEM VALUE VALUES
 99, 12, now(), 12, now()),
 
 (303, 'Workflow 3', 'Workflow 3', 'LEAD',
-75, 15, now(), 75, now());
+75, 15, now(), 75, now()),
+
+(304, 'Workflow 4', 'Workflow 4', 'LEAD',
+75, 15, now(), 15, now());
 
 INSERT INTO workflow_trigger (id, trigger_type, trigger_frequency, workflow_id)
 OVERRIDING SYSTEM VALUE VALUES
 (101, 'EVENT', 'CREATED', 301),
 (102, 'EVENT', 'CREATED', 302),
-(103, 'EVENT', 'CREATED', 303);
+(103, 'EVENT', 'CREATED', 303),
+(104, 'EVENT', 'UPDATED', 304);
 
 INSERT INTO workflow_condition (id, type,workflow_id)
 OVERRIDING SYSTEM VALUE VALUES
 (201, 'FOR_ALL', 301),
 (202, 'FOR_ALL', 302),
-(203, 'FOR_ALL', 303);
+(203, 'FOR_ALL', 303),
+(204, 'FOR_ALL', 304);
 
 
 INSERT INTO abstract_workflow_action(id, workflow_id)
 VALUES ('a0eebc55-9c0b-4ef8-bb6d-6bb9bd380a11', 301),
 ('b0eebc55-9c0b-4ef8-bb6d-6bb9bd380a11', 302),
-('c0eebc55-9c0b-4ef8-bb6d-6bb9bd380a11', 303);
+('c0eebc55-9c0b-4ef8-bb6d-6bb9bd380a11', 303),
+('d0eebc55-9c0b-4ef8-bb6d-6bb9bd380a11', 304);
 
 INSERT INTO edit_property_action(id, workflow_id, name, value)
 VALUES ('a0eebc55-9c0b-4ef8-bb6d-6bb9bd380a11', 301, 'firstName', 'Tony 301'),
 ('b0eebc55-9c0b-4ef8-bb6d-6bb9bd380a11', 302, 'firstName', 'Tony 302'),
-('c0eebc55-9c0b-4ef8-bb6d-6bb9bd380a11', 303, 'firstName', 'Tony 303');
+('c0eebc55-9c0b-4ef8-bb6d-6bb9bd380a11', 303, 'firstName', 'Tony 303'),
+('d0eebc55-9c0b-4ef8-bb6d-6bb9bd380a11', 304, 'firstName', 'Tony 304');
 
 
 INSERT INTO workflow_executed_event(id, workflow_id, last_triggered_at, trigger_count)
 OVERRIDING SYSTEM VALUE VALUES
 (401, 301, null, 151),
 (402, 302, '2020-10-21 04:47:59.442', 15),
-(403, 303, '2020-10-21 04:47:59.442', 10);
+(403, 303, '2020-10-21 04:47:59.442', 10),
+(404, 304, '2020-10-21 04:47:59.442', 10);

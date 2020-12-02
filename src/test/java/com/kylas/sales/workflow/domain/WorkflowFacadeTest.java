@@ -1,5 +1,6 @@
 package com.kylas.sales.workflow.domain;
 
+import static com.kylas.sales.workflow.domain.workflow.TriggerFrequency.CREATED;
 import static com.kylas.sales.workflow.domain.workflow.action.WorkflowAction.ActionType.EDIT_PROPERTY;
 import static com.kylas.sales.workflow.domain.workflow.action.WorkflowAction.ActionType.WEBHOOK;
 import static java.util.stream.Collectors.toList;
@@ -76,7 +77,7 @@ class WorkflowFacadeTest {
             Mono.just(
                 aUser));
     var workflowRequest = WorkflowStub
-        .anEditPropertyWorkflowRequest("Edit Lead Property", "Edit Lead Property", EntityType.LEAD, TriggerType.EVENT, TriggerFrequency.CREATED,
+        .anEditPropertyWorkflowRequest("Edit Lead Property", "Edit Lead Property", EntityType.LEAD, TriggerType.EVENT, CREATED,
             ConditionType.FOR_ALL, EDIT_PROPERTY, "lastName", "Stark", true);
     //when
     var workflowMono = workflowFacade.create(workflowRequest);
@@ -87,7 +88,7 @@ class WorkflowFacadeTest {
               .isNotNull()
               .isGreaterThan(0L);
 
-          assertThat(workflow.getWorkflowTrigger().getTriggerFrequency()).isEqualTo(TriggerFrequency.CREATED);
+          assertThat(workflow.getWorkflowTrigger().getTriggerFrequency()).isEqualTo(CREATED);
           assertThat(workflow.getWorkflowTrigger().getTriggerType()).isEqualTo(TriggerType.EVENT);
 
           assertThat(workflow.getWorkflowActions().size()).isEqualTo(1);
@@ -128,7 +129,7 @@ class WorkflowFacadeTest {
             new WebhookAction("name", "desc", HttpMethod.GET, "someUrl", AuthorizationType.NONE, parameters))
     );
     var workflowRequest = WorkflowStub
-        .aWorkflowRequestWithActions("Edit Lead Property", "Edit Lead Property", EntityType.LEAD, TriggerType.EVENT, TriggerFrequency.CREATED,
+        .aWorkflowRequestWithActions("Edit Lead Property", "Edit Lead Property", EntityType.LEAD, TriggerType.EVENT, CREATED,
             ConditionType.FOR_ALL, true, actions);
     //when
     var workflowMono = workflowFacade.create(workflowRequest);
@@ -160,7 +161,7 @@ class WorkflowFacadeTest {
             Mono.just(
                 aUser));
     var workflowRequest = WorkflowStub
-        .anEditPropertyWorkflowRequest("Edit Lead Property", "Edit Lead Property", EntityType.LEAD, TriggerType.EVENT, TriggerFrequency.CREATED,
+        .anEditPropertyWorkflowRequest("Edit Lead Property", "Edit Lead Property", EntityType.LEAD, TriggerType.EVENT, CREATED,
             ConditionType.FOR_ALL, EDIT_PROPERTY, "lastName", "Stark", true);
     //when
     var workflowMono = workflowFacade.update(301L, workflowRequest);
@@ -171,7 +172,7 @@ class WorkflowFacadeTest {
               .isNotNull()
               .isGreaterThan(0L);
 
-          assertThat(workflow.getWorkflowTrigger().getTriggerFrequency()).isEqualTo(TriggerFrequency.CREATED);
+          assertThat(workflow.getWorkflowTrigger().getTriggerFrequency()).isEqualTo(CREATED);
           assertThat(workflow.getWorkflowTrigger().getTriggerType()).isEqualTo(TriggerType.EVENT);
 
           assertThat(workflow.getWorkflowActions().size()).isEqualTo(1);
@@ -205,7 +206,7 @@ class WorkflowFacadeTest {
                 aUser));
     var workflowRequest = WorkflowStub
         .anExistingEditPropertyWorkflowRequest("Edit Lead Property", "Edit Lead Property",
-            EntityType.LEAD, TriggerType.EVENT, TriggerFrequency.CREATED,
+            EntityType.LEAD, TriggerType.EVENT, CREATED,
             ConditionType.FOR_ALL, UUID.fromString("a0eebc55-9c0b-4ef8-bb6d-6bb9bd380a11"), EDIT_PROPERTY, "lastName", "Stark", true);
     //when
     var workflowMono = workflowFacade.update(301L, workflowRequest);
@@ -216,7 +217,7 @@ class WorkflowFacadeTest {
               .isNotNull()
               .isGreaterThan(0L);
 
-          assertThat(workflow.getWorkflowTrigger().getTriggerFrequency()).isEqualTo(TriggerFrequency.CREATED);
+          assertThat(workflow.getWorkflowTrigger().getTriggerFrequency()).isEqualTo(CREATED);
           assertThat(workflow.getWorkflowTrigger().getTriggerType()).isEqualTo(TriggerType.EVENT);
 
           assertThat(workflow.getWorkflowActions().size()).isEqualTo(1);
@@ -243,7 +244,7 @@ class WorkflowFacadeTest {
             Mono.just(
                 aUser));
     var workflowRequest = WorkflowStub
-        .anEditPropertyWorkflowRequest("Edit Lead Property", "Edit Lead Property", EntityType.LEAD, TriggerType.EVENT, TriggerFrequency.CREATED,
+        .anEditPropertyWorkflowRequest("Edit Lead Property", "Edit Lead Property", EntityType.LEAD, TriggerType.EVENT, CREATED,
             ConditionType.FOR_ALL, EDIT_PROPERTY, "lastName", "Stark", false);
     //when
     var workflowMono = workflowFacade.create(workflowRequest);
@@ -273,7 +274,7 @@ class WorkflowFacadeTest {
             Mono.just(
                 aUser));
     var workflowRequest = WorkflowStub
-        .anEditPropertyWorkflowRequest("Edit Lead Property", "Edit Lead Property", EntityType.LEAD, TriggerType.EVENT, TriggerFrequency.CREATED,
+        .anEditPropertyWorkflowRequest("Edit Lead Property", "Edit Lead Property", EntityType.LEAD, TriggerType.EVENT, CREATED,
             ConditionType.FOR_ALL, EDIT_PROPERTY, "lastName", "Stark", true);
     //when
     var workflowMono = workflowFacade.create(workflowRequest);
@@ -294,7 +295,7 @@ class WorkflowFacadeTest {
     given(authService.getLoggedInUser()).willReturn(aUser);
 
     //when
-    var workflows = workflowFacade.findActiveBy(tenantId, EntityType.LEAD);
+    var workflows = workflowFacade.findActiveBy(tenantId, EntityType.LEAD, CREATED);
     //then
     assertThat(workflows.size()).isEqualTo(2);
     List<Long> workflowIds = workflows.stream().map(workflow -> workflow.getId()).collect(toList());
@@ -313,7 +314,7 @@ class WorkflowFacadeTest {
     given(authService.getLoggedInUser()).willReturn(aUser);
 
     //when
-    var workflows = workflowFacade.findActiveBy(tenantId, EntityType.LEAD);
+    var workflows = workflowFacade.findActiveBy(tenantId, EntityType.LEAD, CREATED);
 
     //then
     assertThat(workflows).hasSize(1);
@@ -530,4 +531,22 @@ class WorkflowFacadeTest {
     assertThat(updatedWorkflowExecutedEvent.getWorkflowExecutedEvent().getLastTriggeredAt()).isNotNull();
     assertThat(updatedWorkflowExecutedEvent.getWorkflowExecutedEvent().getTriggerCount()).isEqualTo(152);
   }
+
+  @Transactional
+  @Test
+  @Sql("/test-scripts/insert-workflow.sql")
+  public void givenTriggerFrequencyUpdated_shouldGetWorkflow() {
+    //given
+    long tenantId = 75L;
+    User aUser = UserStub.aUser(15, tenantId, false, true, true, true, true)
+        .withName("user 1");
+    given(authService.getLoggedInUser()).willReturn(aUser);
+    //when
+    List<Workflow> workflows = workflowFacade.findActiveBy(tenantId, EntityType.LEAD, TriggerFrequency.UPDATED);
+    //then
+
+    assertThat(workflows.size()).isEqualTo(1);
+    assertThat(workflows.get(0).getId()).isEqualTo(304);
+  }
+
 }

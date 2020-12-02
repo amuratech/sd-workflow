@@ -1,6 +1,7 @@
 package com.kylas.sales.workflow.api;
 
 import static com.kylas.sales.workflow.domain.workflow.EntityType.LEAD;
+import static com.kylas.sales.workflow.domain.workflow.TriggerFrequency.CREATED;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
@@ -95,10 +96,10 @@ class WorkflowServiceTest {
   public void givenTenantAndEntityType_shouldReturnWorkflows() {
     // given
     long tenantId = 99;
-    given(workflowFacade.findActiveBy(tenantId, LEAD))
+    given(workflowFacade.findActiveBy(tenantId, LEAD, CREATED))
         .willReturn(Arrays.asList(mock(Workflow.class), mock(Workflow.class)));
     // when
-    List<Workflow> workflows = workflowService.findActiveBy(tenantId, LEAD);
+    List<Workflow> workflows = workflowService.findActiveBy(tenantId, LEAD, CREATED);
     // then
     assertThat(workflows.size()).isEqualTo(2);
   }
@@ -111,7 +112,7 @@ class WorkflowServiceTest {
     WorkflowTrigger trigger =
         WorkflowTrigger.createNew(
             new com.kylas.sales.workflow.common.dto.WorkflowTrigger(
-                TriggerType.EVENT, TriggerFrequency.CREATED));
+                TriggerType.EVENT, CREATED));
     WorkflowCondition condition =
         WorkflowCondition.createNew(
             new com.kylas.sales.workflow.common.dto.WorkflowCondition(ConditionType.FOR_ALL));
@@ -139,7 +140,7 @@ class WorkflowServiceTest {
 
     assertThat(workflowDetail.getTrigger().getName()).isEqualTo(TriggerType.EVENT);
     assertThat(workflowDetail.getTrigger().getTriggerFrequency())
-        .isEqualTo(TriggerFrequency.CREATED);
+        .isEqualTo(CREATED);
 
     assertThat(workflowDetail.getActions().size()).isEqualTo(1);
     ActionResponse response = workflowDetail.getActions().iterator().next();
@@ -173,7 +174,7 @@ class WorkflowServiceTest {
     workflow.setWorkflowTrigger(
         WorkflowTrigger.createNew(
             new com.kylas.sales.workflow.common.dto.WorkflowTrigger(
-                TriggerType.EVENT, TriggerFrequency.CREATED)));
+                TriggerType.EVENT, CREATED)));
     workflow.setWorkflowCondition(
         WorkflowCondition.createNew(
             new com.kylas.sales.workflow.common.dto.WorkflowCondition(ConditionType.FOR_ALL)));
@@ -209,7 +210,7 @@ class WorkflowServiceTest {
     WorkflowTrigger trigger =
         WorkflowTrigger.createNew(
             new com.kylas.sales.workflow.common.dto.WorkflowTrigger(
-                TriggerType.EVENT, TriggerFrequency.CREATED));
+                TriggerType.EVENT, CREATED));
     WorkflowCondition condition =
         WorkflowCondition.createNew(
             new com.kylas.sales.workflow.common.dto.WorkflowCondition(ConditionType.FOR_ALL));
@@ -257,7 +258,7 @@ class WorkflowServiceTest {
 
               assertThat(workflowDetail.getTrigger().getName()).isEqualTo(TriggerType.EVENT);
               assertThat(workflowDetail.getTrigger().getTriggerFrequency())
-                  .isEqualTo(TriggerFrequency.CREATED);
+                  .isEqualTo(CREATED);
 
               assertThat(workflowDetail.getActions().size()).isEqualTo(1);
               ActionResponse response = workflowDetail.getActions().iterator().next();
@@ -279,7 +280,7 @@ class WorkflowServiceTest {
     WorkflowTrigger trigger =
         WorkflowTrigger.createNew(
             new com.kylas.sales.workflow.common.dto.WorkflowTrigger(
-                TriggerType.EVENT, TriggerFrequency.CREATED));
+                TriggerType.EVENT, CREATED));
     WorkflowCondition condition =
         WorkflowCondition.createNew(
             new com.kylas.sales.workflow.common.dto.WorkflowCondition(ConditionType.FOR_ALL));
@@ -329,7 +330,7 @@ class WorkflowServiceTest {
 
               assertThat(workflowDetail.getTrigger().getName()).isEqualTo(TriggerType.EVENT);
               assertThat(workflowDetail.getTrigger().getTriggerFrequency())
-                  .isEqualTo(TriggerFrequency.CREATED);
+                  .isEqualTo(CREATED);
 
               assertThat(workflowDetail.getActions().size()).isEqualTo(1);
               ActionResponse response = workflowDetail.getActions().iterator().next();
@@ -351,7 +352,7 @@ class WorkflowServiceTest {
     WorkflowTrigger trigger =
         WorkflowTrigger.createNew(
             new com.kylas.sales.workflow.common.dto.WorkflowTrigger(
-                TriggerType.EVENT, TriggerFrequency.CREATED));
+                TriggerType.EVENT, CREATED));
     WorkflowCondition condition =
         WorkflowCondition.createNew(
             new com.kylas.sales.workflow.common.dto.WorkflowCondition(ConditionType.FOR_ALL));
@@ -380,7 +381,7 @@ class WorkflowServiceTest {
     WorkflowTrigger trigger =
         WorkflowTrigger.createNew(
             new com.kylas.sales.workflow.common.dto.WorkflowTrigger(
-                TriggerType.EVENT, TriggerFrequency.CREATED));
+                TriggerType.EVENT, CREATED));
     WorkflowCondition condition =
         WorkflowCondition.createNew(
             new com.kylas.sales.workflow.common.dto.WorkflowCondition(ConditionType.FOR_ALL));
@@ -435,7 +436,7 @@ class WorkflowServiceTest {
 
               assertThat(workflowDetail.getTrigger().getName()).isEqualTo(TriggerType.EVENT);
               assertThat(workflowDetail.getTrigger().getTriggerFrequency())
-                  .isEqualTo(TriggerFrequency.CREATED);
+                  .isEqualTo(CREATED);
 
               assertThat(workflowDetail.getActions().size()).isEqualTo(1);
               ActionResponse actionResponseResponse = workflowDetail.getActions().iterator().next();
