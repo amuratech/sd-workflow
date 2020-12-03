@@ -1,0 +1,29 @@
+{
+  "createdAt": "2020-09-27T13:48:24.119+0000",
+  "updatedAt": "2020-09-27T13:48:24.341+0000",
+  "metaData": {
+    "idNameStore": {
+      "updatedBy": {},
+      "createdBy": {}
+    }
+  },
+  "id": 16,
+  "accountName": "SomeTenant",
+  "industry": null,
+  "timezone": "Asia/Calcutta",
+  "dateFormat": "MMM D, YYYY [at] h:mm a",
+  "language": "EN",
+  "currency": "INR",
+  "companyName": null,
+  "website": null,
+  "logo": null,
+  "address": null,
+  "city": null,
+  "state": null,
+  "zip": null,
+  "country": "IN",
+  "active": true,
+  "confirmed": false,
+  "confirmedAt": null,
+  "leadWelcomeMailEnabled": false
+}

@@ -8,7 +8,7 @@ import lombok.Getter;
 
 @AllArgsConstructor
 @Getter
-public enum TenantAttribute {
+public enum TenantAttribute implements EntityAttribute {
 
   ACCOUNT_NAME("accountName", "Account Name"),
   INDUSTRY("industry", "Industry"),
@@ -30,5 +30,10 @@ public enum TenantAttribute {
     return Arrays.stream(values())
         .map(attribute -> new Attribute(attribute.name, attribute.displayName))
         .collect(Collectors.toList());
+  }
+
+  @Override
+  public String getPathToField() {
+    return name;
   }
 }

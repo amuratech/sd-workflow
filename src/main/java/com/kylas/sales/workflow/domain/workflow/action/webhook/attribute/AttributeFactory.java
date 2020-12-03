@@ -1,10 +1,11 @@
 package com.kylas.sales.workflow.domain.workflow.action.webhook.attribute;
 
+import static java.util.Arrays.stream;
+
 import com.kylas.sales.workflow.domain.entity.EntityDefinition;
 import com.kylas.sales.workflow.domain.service.ConfigService;
 import com.kylas.sales.workflow.domain.workflow.EntityType;
 import com.kylas.sales.workflow.security.AuthService;
-import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
@@ -32,7 +33,7 @@ public class AttributeFactory {
         .getFields("user", authenticationToken)
         .collectList()
         .map(entityDefinitions ->
-            Arrays.stream(UserAttribute.values())
+            stream(UserAttribute.values())
                 .map(attribute -> new Attribute(attribute.name, getDisplayName(entityDefinitions, attribute.name)))
                 .collect(Collectors.toList()));
   }
@@ -43,7 +44,7 @@ public class AttributeFactory {
         .getFields("lead", authenticationToken)
         .collectList()
         .map(entityDefinitions ->
-            Arrays.stream(LeadAttribute.values())
+            stream(LeadAttribute.values())
                 .map(attribute -> new Attribute(attribute.name, getDisplayName(entityDefinitions, attribute.name)))
                 .collect(Collectors.toList()));
   }
@@ -75,34 +76,66 @@ public class AttributeFactory {
 
   @AllArgsConstructor
   @Getter
-  public enum UserAttribute {
-    FIRST_NAME("firstName"),
-    LAST_NAME("lastName"),
-    DESIGNATION("designation"),
-    DEPARTMENT("department"),
-    CURRENCY("currency"),
-    TIMEZONE("timezone"),
-    SIGNATURE("signature"),
-    LANGUAGE("language");
+  public enum UserAttribute implements EntityAttribute {
+    SALUTATION("salutation", "salutation.name"),
+    FIRST_NAME("firstName", "firstName"),
+    LAST_NAME("lastName", "lastName"),
+    EMAIL("email", "email"),
+    PHONE_NUMBERS("phoneNumbers", "phoneNumbers"),
+    DESIGNATION("designation", "designation"),
+    DEPARTMENT("department", "department"),
+    CURRENCY("currency", "currency"),
+    TIMEZONE("timezone", "timezone"),
+    SIGNATURE("signature", "signature"),
+    LANGUAGE("language", "language"),
+    CREATED_BY("createdBy", "createdBy.name"),
+    UPDATED_BY("updatedBy", "updatedBy.name");
 
     private final String name;
+    private final String pathToField;
   }
 
   @AllArgsConstructor
   @Getter
-  public enum LeadAttribute {
-    ID("id"),
-    SALUTATION("salutation.name"),
-    FIRST_NAME("firstName"),
-    LAST_NAME("lastName"),
-    PIPELINE("pipeline.name"),
-    STATUS("pipelineStage.name"),
-    CREATED_BY("createdBy.name"),
-    CREATED_AT("createdAt"),
-    UPDATED_BY("updatedBy.name"),
-    UPDATED_AT("updatedAt");
+  public enum LeadAttribute implements EntityAttribute {
+    ID("id", "id"),
+    SALUTATION("salutation", "salutation.name"),
+    FIRST_NAME("firstName", "firstName"),
+    LAST_NAME("lastName", "lastName"),
+    EMAILS("emails", "emails"),
+    PHONE_NUMBERS("phoneNumbers", "phoneNumbers"),
+    PIPELINE("pipeline", "pipeline.name"),
+    STATUS("pipelineStage", "pipelineStage.name"),
+    TIMEZONE("timezone", "timezone"),
+    ADDRESS("address", "address"),
+    CITY("city", "city"),
+    STATE("state", "state"),
+    COUNTRY("country", "country"),
+    ZIPCODE("zipcode", "zipcode"),
+    FACEBOOK("facebook", "facebook"),
+    TWITTER("twitter", "twitter"),
+    LINKEDIN("linkedIn", "linkedIn"),
+    COMPANY_NAME("companyName", "companyName"),
+    DEPARTMENT("department", "department"),
+    DESIGNATION("designation", "designation"),
+    COMPANY_INDUSTRY("companyIndustry", "companyIndustry"),
+    COMPANY_BUSINESS_TYPE("companyBusinessType", "companyBusinessType"),
+    COMPANY_EMPLOYEES("companyEmployees", "companyEmployees"),
+    COMPANY_ANNUAL_REVENUE("companyAnnualRevenue", "companyAnnualRevenue"),
+    COMPANY_WEBSITE("companyWebsite", "companyWebsite"),
+    COMPANY_PHONES("companyPhones", "companyPhones"),
+    REQUIREMENT_NAME("requirementName", "requirementName"),
+    REQUIREMENT_PRODUCTS("products", "products"),
+    REQUIREMENT_CURRENCY("requirementCurrency", "requirementCurrency"),
+    REQUIREMENT_BUDGET("requirementBudget", "requirementBudget"),
+    CAMPAIGN("campaign", "campaign.name"),
+    SOURCE("source", "source.name"),
+    CREATED_BY("createdBy", "createdBy.name"),
+    CREATED_AT("createdAt", "createdAt"),
+    UPDATED_BY("updatedBy", "updatedBy.name"),
+    UPDATED_AT("updatedAt", "updatedAt");
 
     private final String name;
-
+    private final String pathToField;
   }
 }

@@ -1,7 +1,7 @@
 [
   {
-    "entityDisplayName": "Lead",
     "entity": "LEAD",
+    "entityDisplayName": "Lead",
     "fields": [
       {
         "name": "id",
@@ -20,12 +20,116 @@
         "displayName": "Last Name"
       },
       {
+        "name": "emails",
+        "displayName": "Emails"
+      },
+      {
+        "name": "phoneNumbers",
+        "displayName": "Phone Numbers"
+      },
+      {
         "name": "pipeline",
         "displayName": "Pipeline"
       },
       {
         "name": "pipelineStage",
         "displayName": "Status"
+      },
+      {
+        "name": "timezone",
+        "displayName": "Timezone"
+      },
+      {
+        "name": "address",
+        "displayName": "Address"
+      },
+      {
+        "name": "city",
+        "displayName": "City"
+      },
+      {
+        "name": "state",
+        "displayName": "State"
+      },
+      {
+        "name": "country",
+        "displayName": "Country"
+      },
+      {
+        "name": "zipcode",
+        "displayName": "Zipcode"
+      },
+      {
+        "name": "facebook",
+        "displayName": "Facebook"
+      },
+      {
+        "name": "twitter",
+        "displayName": "Twitter"
+      },
+      {
+        "name": "linkedIn",
+        "displayName": "Linked In"
+      },
+      {
+        "name": "companyName",
+        "displayName": "Company Name"
+      },
+      {
+        "name": "department",
+        "displayName": "Department"
+      },
+      {
+        "name": "designation",
+        "displayName": "Designation"
+      },
+      {
+        "name": "companyIndustry",
+        "displayName": "Company Industry"
+      },
+      {
+        "name": "companyBusinessType",
+        "displayName": "Company Business Type"
+      },
+      {
+        "name": "companyEmployees",
+        "displayName": "Company Employees"
+      },
+      {
+        "name": "companyAnnualRevenue",
+        "displayName": "Company Annual Revenue"
+      },
+      {
+        "name": "companyWebsite",
+        "displayName": "Company Website"
+      },
+      {
+        "name": "companyPhones",
+        "displayName": "Company Phones"
+      },
+      {
+        "name": "requirementName",
+        "displayName": "Name"
+      },
+      {
+        "name": "products",
+        "displayName": "Products"
+      },
+      {
+        "name": "requirementCurrency",
+        "displayName": "Currency"
+      },
+      {
+        "name": "requirementBudget",
+        "displayName": "Budget"
+      },
+      {
+        "name": "campaign",
+        "displayName": "Campaign"
+      },
+      {
+        "name": "source",
+        "displayName": "Source"
       },
       {
         "name": "createdBy",
@@ -46,8 +150,8 @@
     ]
   },
   {
-    "entityDisplayName": "Lead Owner",
     "entity": "LEAD_OWNER",
+    "entityDisplayName": "Lead Owner",
     "fields": [
       {
         "name": "salutation",
@@ -94,10 +198,6 @@
         "displayName": "Language"
       },
       {
-        "name": "active",
-        "displayName": "Active"
-      },
-      {
         "name": "createdBy",
         "displayName": "Created By"
       },
@@ -108,8 +208,8 @@
     ]
   },
   {
-    "entityDisplayName": "Created By",
     "entity": "CREATED_BY",
+    "entityDisplayName": "Created By",
     "fields": [
       {
         "name": "salutation",
@@ -156,10 +256,6 @@
         "displayName": "Language"
       },
       {
-        "name": "active",
-        "displayName": "Active"
-      },
-      {
         "name": "createdBy",
         "displayName": "Created By"
       },
@@ -170,8 +266,8 @@
     ]
   },
   {
-    "entityDisplayName": "Updated By",
     "entity": "UPDATED_BY",
+    "entityDisplayName": "Updated By",
     "fields": [
       {
         "name": "salutation",
@@ -218,10 +314,6 @@
         "displayName": "Language"
       },
       {
-        "name": "active",
-        "displayName": "Active"
-      },
-      {
         "name": "createdBy",
         "displayName": "Created By"
       },
@@ -232,8 +324,8 @@
     ]
   },
   {
-    "entityDisplayName": "Tenant",
     "entity": "TENANT",
+    "entityDisplayName": "Tenant",
     "fields": [
       {
         "name": "accountName",

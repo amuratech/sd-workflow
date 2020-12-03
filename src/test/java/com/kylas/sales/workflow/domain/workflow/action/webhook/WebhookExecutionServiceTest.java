@@ -10,18 +10,26 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.kylas.sales.workflow.common.dto.ActionDetail.WebhookAction.AuthorizationType;
+import com.kylas.sales.workflow.common.dto.Tenant;
 import com.kylas.sales.workflow.config.TestDatabaseInitializer;
+import com.kylas.sales.workflow.domain.processor.lead.Email;
+import com.kylas.sales.workflow.domain.processor.lead.EmailType;
 import com.kylas.sales.workflow.domain.processor.lead.IdName;
 import com.kylas.sales.workflow.domain.processor.lead.LeadDetail;
+import com.kylas.sales.workflow.domain.processor.lead.PhoneNumber;
+import com.kylas.sales.workflow.domain.processor.lead.PhoneType;
 import com.kylas.sales.workflow.domain.service.UserService;
 import com.kylas.sales.workflow.domain.user.User;
+import com.kylas.sales.workflow.domain.user.User.Metadata;
 import com.kylas.sales.workflow.domain.workflow.action.webhook.attribute.AttributeFactory;
 import com.kylas.sales.workflow.domain.workflow.action.webhook.attribute.AttributeFactory.LeadAttribute;
 import com.kylas.sales.workflow.domain.workflow.action.webhook.attribute.AttributeFactory.UserAttribute;
 import com.kylas.sales.workflow.domain.workflow.action.webhook.attribute.AttributeFactory.WebhookEntity;
+import com.kylas.sales.workflow.domain.workflow.action.webhook.attribute.TenantAttribute;
 import com.kylas.sales.workflow.security.AuthService;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -99,8 +107,14 @@ class WebhookExecutionServiceTest {
     // given
     String authenticationToken = "some-token";
     given(authService.getAuthenticationToken()).willReturn(authenticationToken);
-    User user = new User(12L, 1000L, Collections.emptySet(), "Amit", "Pandit", "Amit Pandit",
-        "dept", "des", "INR", "timezone", "lang", "AP");
+    var idNameStore =
+        Map.of(
+            "salutation", Map.of(200L, "Mr."),
+            "createdBy", Map.of(10L, "Sandeep"),
+            "updatedBy", Map.of(10L, "Sandeep"));
+
+    User user = new User(12L, 1000L, Collections.emptySet(), "Amit", "Pandit", "Amit Pandit", "dept", "des", "INR", "timezone", "lang", "AP", true,
+        "some.email@kylas.io", null, 200L, 10L, 10L, new Metadata(idNameStore));
     given(userService.getUserDetails(eq(12L), eq(authenticationToken)))
         .willReturn(Mono.just(user));
     var mockResponse = Mono.just(ClientResponse.create(HttpStatus.OK).build());
@@ -125,6 +139,79 @@ class WebhookExecutionServiceTest {
             request.url().toString().equals("http://some-random-host:9000/get-webhook?ownerFirstName=Amit&leadFirstName=Tony")));
     verify(userService, times(1))
         .getUserDetails(eq(12L), anyString());
+  }
+
+  @Test
+  public void givenWorkflowRequest_withTenantParameters_shouldCreate() {
+    // given
+    String authenticationToken = "some-token";
+    given(authService.getAuthenticationToken()).willReturn(authenticationToken);
+    Tenant tenant = new Tenant();
+    tenant.setAccountName("TenantAccountName");
+    given(userService.getTenantDetails(eq(authenticationToken)))
+        .willReturn(Mono.just(tenant));
+    var mockResponse = Mono.just(ClientResponse.create(HttpStatus.OK).build());
+    given(exchangeFunction.exchange(any())).willReturn(mockResponse);
+
+    // when
+    LeadDetail lead = getStubbedLead(12L);
+    lead.setFirstName("Tony");
+    lead.setCreatedBy(new IdName(12L, "user"));
+    List<Parameter> parameters = List.of(
+        new Parameter("leadFirstName", WebhookEntity.LEAD, LeadAttribute.FIRST_NAME.getName()),
+        new Parameter("tenantAccountName", WebhookEntity.TENANT, TenantAttribute.ACCOUNT_NAME.getName()));
+    WebhookAction action = new WebhookAction("OwnerWebhook", "some description", HttpMethod.GET, AuthorizationType.NONE,
+        "http://some-random-host:9000/get-webhook", parameters);
+
+    //when
+    webhookService.execute(action, lead);
+
+    //then
+    verify(exchangeFunction).exchange(argThat(request ->
+        request.method().equals(HttpMethod.GET) &&
+            request.url().toString().equals("http://some-random-host:9000/get-webhook?tenantAccountName=TenantAccountName&leadFirstName=Tony")));
+    verify(userService, times(1))
+        .getTenantDetails(anyString());
+  }
+
+  @Test
+  public void givenWorkflowRequest_withCollectionParameters_shouldCreate() {
+    // given
+    String authenticationToken = "some-token";
+    given(authService.getAuthenticationToken()).willReturn(authenticationToken);
+    var mockResponse = Mono.just(ClientResponse.create(HttpStatus.OK).build());
+    given(exchangeFunction.exchange(any())).willReturn(mockResponse);
+
+    // when
+    LeadDetail lead = getStubbedLead(12L);
+    lead.setFirstName("Tony");
+    lead.setCreatedBy(new IdName(12L, "user"));
+    Email[] emails = {
+        new Email(EmailType.OFFICE, "abc@kylas.io", true),
+        new Email(EmailType.PERSONAL, "def@kylas.io", false)};
+
+    PhoneNumber[] phoneNumbers = {
+        new PhoneNumber(PhoneType.PERSONAL, null, "8600990099", "+91", true),
+        new PhoneNumber(PhoneType.HOME, null, "8600990022", "+91", false)};
+
+    lead.setEmails(emails);
+    lead.setPhoneNumbers(phoneNumbers);
+    List<Parameter> parameters = List.of(
+        new Parameter("leadFirstName", WebhookEntity.LEAD, LeadAttribute.FIRST_NAME.getName()),
+        new Parameter("leadEmails", WebhookEntity.LEAD, LeadAttribute.EMAILS.getName()),
+        new Parameter("leadPhones", WebhookEntity.LEAD, LeadAttribute.PHONE_NUMBERS.getName()));
+    WebhookAction action = new WebhookAction("OwnerWebhook", "some description", HttpMethod.GET, AuthorizationType.NONE,
+        "http://some-random-host:9000/get-webhook", parameters);
+
+    //when
+    webhookService.execute(action, lead);
+
+    //then
+    verify(exchangeFunction).exchange(argThat(request ->
+        request.method().equals(HttpMethod.GET) &&
+            request.url().toString()
+                .equals(
+                    "http://some-random-host:9000/get-webhook?leadEmails=abc@kylas.io&leadEmails=def@kylas.io&leadFirstName=Tony&leadPhones=+91%208600990099&leadPhones=+91%208600990022")));
   }
 
   @NotNull

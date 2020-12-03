@@ -2,8 +2,10 @@ package com.kylas.sales.workflow.domain.user;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.kylas.sales.workflow.domain.processor.lead.PhoneNumber;
 import io.micrometer.core.instrument.util.StringUtils;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import javax.persistence.Entity;
 import javax.persistence.Id;
@@ -41,6 +43,20 @@ public class User {
   private String currency;
   @Transient
   private String signature;
+  @Transient
+  private boolean active;
+  @Transient
+  private String email;
+  @Transient
+  private PhoneNumber[] phoneNumbers;
+  @Transient
+  private Long salutation;
+  @Transient
+  private Long createdBy;
+  @Transient
+  private Long updatedBy;
+  @Transient
+  private Metadata metaData;
 
   private User(long id, String name, long tenantId, Set<Permission> permissions) {
     this.id = id;
@@ -69,7 +85,14 @@ public class User {
       @JsonProperty("currency") String currency,
       @JsonProperty("timezone") String timezone,
       @JsonProperty("language") String language,
-      @JsonProperty("signature") String signature) {
+      @JsonProperty("signature") String signature,
+      @JsonProperty("active") boolean active,
+      @JsonProperty("email") String email,
+      @JsonProperty("phoneNumbers") PhoneNumber[] phoneNumbers,
+      @JsonProperty("salutation") long salutation,
+      @JsonProperty("createdBy") long createdBy,
+      @JsonProperty("updatedBy") long updatedBy,
+      @JsonProperty("metaData") Metadata metaData) {
     this.id = id;
     this.tenantId = tenantId;
     this.permissions = permissions;
@@ -81,6 +104,13 @@ public class User {
     this.currency = currency;
     this.language = language;
     this.signature = signature;
+    this.metaData = metaData;
+    this.active = active;
+    this.email = email;
+    this.phoneNumbers = phoneNumbers;
+    this.salutation = salutation;
+    this.createdBy = createdBy;
+    this.updatedBy = updatedBy;
     this.name =
         StringUtils.isBlank(name)
             ? StringUtils.isBlank(firstName) ? lastName : firstName + " " + lastName
@@ -142,5 +172,16 @@ public class User {
             permission ->
                 permission.getName().equalsIgnoreCase(WORKFLOW_PERMISSION_NAME)
                     && permission.getAction().canUpdateAll());
+  }
+
+  @Getter
+  public static class Metadata {
+
+    private final Map<String, Map<Long, String>> idNameStore;
+
+    @JsonCreator
+    public Metadata(@JsonProperty("idNameStore") Map<String, Map<Long, String>> idNameStore) {
+      this.idNameStore = idNameStore;
+    }
   }
 }

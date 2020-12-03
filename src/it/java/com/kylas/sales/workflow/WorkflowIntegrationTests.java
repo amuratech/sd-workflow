@@ -15,7 +15,6 @@ import org.apache.commons.io.FileUtils;
 import org.jetbrains.annotations.NotNull;
 import org.json.JSONException;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.skyscreamer.jsonassert.Customization;
 import org.skyscreamer.jsonassert.JSONAssert;
 import org.skyscreamer.jsonassert.JSONCompareMode;
@@ -32,12 +31,9 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.jdbc.Sql;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.web.reactive.function.client.WebClient;
-import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
-@ExtendWith(SpringExtension.class)
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 @AutoConfigureTestDatabase(replace = Replace.NONE)
 @AutoConfigureWireMock(port = 9090)
@@ -240,23 +236,17 @@ public class WorkflowIntegrationTests {
                     .withStatus(200)
                     .withBody(getResourceAsString("/contracts/config/response/get-all-lead-fields.json"))));
     //when
-    Mono<String> response = buildWebClient()
+    String response = buildWebClient()
         .get()
         .uri("/v1/workflows/webhook/config")
         .retrieve()
-        .bodyToMono(String.class);
+        .bodyToMono(String.class)
+        .block();
     //then
     var expectedResponse =
         getResourceAsString("/contracts/workflow/api/integration/webhook-configuration.json");
+    JSONAssert.assertEquals(expectedResponse, response, JSONCompareMode.STRICT);
 
-    StepVerifier.create(response)
-        .assertNext(json -> {
-          try {
-            JSONAssert.assertEquals(expectedResponse, json, false);
-          } catch (JSONException e) {
-            fail(e.getMessage());
-          }
-        }).expectComplete();
   }
 
   @Test

@@ -1,6 +1,11 @@
 package com.kylas.sales.workflow;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.matching;
+import static com.github.tomakehurst.wiremock.client.WireMock.okForContentType;
+import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static org.mockito.BDDMockito.given;
+import static org.springframework.http.HttpHeaders.AUTHORIZATION;
 import static org.springframework.test.context.support.TestPropertySourceUtils.addInlinedPropertiesToEnvironment;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -18,8 +23,9 @@ import java.util.concurrent.TimeUnit;
 import org.apache.commons.io.FileUtils;
 import org.assertj.core.api.Assertions;
 import org.json.JSONException;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.skyscreamer.jsonassert.JSONAssert;
 import org.skyscreamer.jsonassert.JSONCompareMode;
 import org.springframework.amqp.core.AmqpAdmin;
@@ -41,17 +47,15 @@ import org.springframework.cloud.contract.wiremock.AutoConfigureWireMock;
 import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.http.MediaType;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.jdbc.Sql;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.testcontainers.containers.RabbitMQContainer;
 
-@ExtendWith(SpringExtension.class)
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 @AutoConfigureTestDatabase(replace = Replace.NONE)
 @AutoConfigureWireMock(port = 9090)
 @ContextConfiguration(initializers = {TestMqSetup.class, TestDatabaseInitializer.class})
-
 public class WorkflowProcessorIntegrationTests {
 
   static final String SALES_EXCHANGE = "ex.sales";
@@ -81,9 +85,11 @@ public class WorkflowProcessorIntegrationTests {
   @Sql("/test-scripts/insert-create-lead-workflow.sql")
   public void givenLeadCreateEvent_shouldUpdatePropertyAndPublishCommand() throws IOException, InterruptedException, JSONException {
     //given
+    String authenticationToken = "some-token";
     User aUser = UserStub.aUser(12L, 99L, true, true, true, true, true)
         .withName("user 1");
     given(authService.getLoggedInUser()).willReturn(aUser);
+    given(authService.getAuthenticationToken()).willReturn(authenticationToken);
 
     String resourceAsString = getResourceAsString("/contracts/mq/events/lead-created-event.json");
     LeadEvent leadEvent = objectMapper.readValue(resourceAsString, LeadEvent.class);
@@ -118,7 +124,6 @@ public class WorkflowProcessorIntegrationTests {
         leadEvent);
     //then
     mockMqListener.latch.await(3, TimeUnit.SECONDS);
-
 
     Workflow workflow301 = workflowFacade.get(301);
     Assertions.assertThat(workflow301.getWorkflowExecutedEvent().getLastTriggeredAt()).isNotNull();
@@ -175,6 +180,53 @@ public class WorkflowProcessorIntegrationTests {
     Assertions.assertThat(workflow.getWorkflowExecutedEvent().getLastTriggeredAt()).isNull();
     Assertions.assertThat(workflow.getWorkflowExecutedEvent().getTriggerCount()).isEqualTo(151);
   }
+
+  @Nested
+  @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
+  @AutoConfigureTestDatabase(replace = Replace.NONE)
+  @ContextConfiguration(initializers = {TestMqSetup.class, TestDatabaseInitializer.class})
+  @DisplayName("For tests that execute webhooks on event")
+  class WebhookIntegrationTests {
+
+    @Test
+    @Sql("/test-scripts/create-webhook-workflow.sql")
+    public void givenLeadCreateEvent_shouldExecuteWebhook() throws IOException, InterruptedException {
+      //given
+      String authenticationToken = "some-token";
+      User aUser = UserStub.aUser(12L, 99L, true, true, true, true, true)
+          .withName("user 1");
+      given(authService.getLoggedInUser()).willReturn(aUser);
+      given(authService.getAuthenticationToken()).willReturn(authenticationToken);
+
+      stubFor(
+          get("/iam/v1/users/10")
+              .withHeader(AUTHORIZATION, matching("Bearer " + authenticationToken))
+              .willReturn(
+                  okForContentType(
+                      MediaType.APPLICATION_JSON_VALUE,
+                      getResourceAsString("/contracts/user/responses/user-details-by-id.json"))));
+
+      stubFor(
+          get("/iam/v1/tenants")
+              .withHeader(AUTHORIZATION, matching("Bearer " + authenticationToken))
+              .willReturn(
+                  okForContentType(
+                      MediaType.APPLICATION_JSON_VALUE,
+                      getResourceAsString("/contracts/user/responses/tenant-details.json"))));
+
+      String resourceAsString = getResourceAsString("/contracts/mq/events/lead-created-v2-event.json");
+      LeadEvent leadEvent = objectMapper.readValue(resourceAsString, LeadEvent.class);
+      initializeRabbitMqListener(LEAD_UPDATE_COMMAND_QUEUE, SALES_LEAD_UPDATE_QUEUE);
+      //when
+      rabbitTemplate.convertAndSend(SALES_EXCHANGE, LeadEvent.getLeadCreatedEventName(), leadEvent);
+      mockMqListener.latch.await(3, TimeUnit.SECONDS);
+      //then
+      Workflow workflow = workflowFacade.get(301);
+      Assertions.assertThat(workflow.getWorkflowExecutedEvent().getLastTriggeredAt()).isNotNull();
+      Assertions.assertThat(workflow.getWorkflowExecutedEvent().getTriggerCount()).isEqualTo(152);
+    }
+  }
+
 
   static class MockMqListener {
 
