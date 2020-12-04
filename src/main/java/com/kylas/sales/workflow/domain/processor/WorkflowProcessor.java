@@ -44,7 +44,7 @@ public class WorkflowProcessor {
     log.info("Lead {} event received with metadata {}", event.getMetadata().getEntityAction(),event.getMetadata());
     workflowService.findActiveBy(event.getMetadata().getTenantId(), event.getMetadata().getEntityType(), TriggerFrequency.valueOf(event.getMetadata().getEntityAction().name()))
         .stream()
-        .filter(workflow -> !event.getMetadata().isProcessed(workflow.getId()))
+        .filter(workflow -> !event.getMetadata().isProcessed(event.getMetadata().getWorkflowId(),workflow.getId()))
         .forEach(workflow -> {
           LeadDetail entity = event.getEntity();
           Metadata metadata = event.getMetadata().with(workflow.getId()).withEntityId(entity.getId());

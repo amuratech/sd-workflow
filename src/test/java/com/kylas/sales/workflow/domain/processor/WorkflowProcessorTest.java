@@ -198,6 +198,7 @@ class WorkflowProcessorTest {
   public void givenLeadUpdatedEvent_tryExecuteSameWorkflow_shouldNotProcess() {
     // given
     long tenantId = 101;
+    long userId = 102;
     long workflowId99 = 99L;
     long workflowId100 = 99L;
 
@@ -211,18 +212,13 @@ class WorkflowProcessorTest {
     old.setFirstName("Steve");
     old.setLastName("Roger");
 
-    var metadata = mock(Metadata.class);
+    var metadata = new Metadata(tenantId,userId,LEAD,"WF_99",null,EntityAction.UPDATED);
     var updatedMetadata = mock(Metadata.class);
-    given(metadata.getTenantId()).willReturn(tenantId);
-    given(metadata.getEntityType()).willReturn(LEAD);
     var updatedMetadataWithEntityId = mock(Metadata.class);
     given(updatedMetadataWithEntityId.getTenantId()).willReturn(tenantId);
     given(updatedMetadataWithEntityId.getEntityType()).willReturn(LEAD);
 
-    given(metadata.with(workflowId99)).willReturn(updatedMetadata);
-    given(metadata.isProcessed(workflowId99)).willReturn(true);
     given(updatedMetadata.withEntityId(55L)).willReturn(updatedMetadataWithEntityId);
-    given(metadata.getEntityAction()).willReturn(EntityAction.UPDATED);
 
     var leadUpdatedEvent = new LeadEvent(lead, old, metadata);
 

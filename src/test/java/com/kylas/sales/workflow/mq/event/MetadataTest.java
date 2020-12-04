@@ -44,7 +44,7 @@ class MetadataTest {
     executedWorkflows.add("WF_99");
     Metadata metadata = new Metadata(100L, 101L, EntityType.LEAD,"WF_6", executedWorkflows, EntityAction.CREATED);
     //when & then
-    assertThat(metadata.isProcessed(workflowId)).isTrue();
+    assertThat(metadata.isProcessed("",workflowId)).isTrue();
   }
 
   @Test
@@ -55,7 +55,16 @@ class MetadataTest {
     executedWorkflows.add("WF_9");
     Metadata metadata = new Metadata(100L, 101L, EntityType.LEAD,"WF_6", executedWorkflows, EntityAction.CREATED);
     //when & then
-    assertThat(metadata.isProcessed(workflowId)).isFalse();
+    assertThat(metadata.isProcessed("",workflowId)).isFalse();
+  }
+  @Test
+  public void givenPreviousExecutedWorkflow_tryToCheckWithCurrentWorkflowId_shouldReturnTrue(){
+    //given
+    Long workflowId = 99L;
+    Set<String> executedWorkflows = new HashSet<>();
+    Metadata metadata = new Metadata(100L, 101L, EntityType.LEAD,"WF_6", executedWorkflows, EntityAction.CREATED);
+    //when & then
+    assertThat(metadata.isProcessed("WF_99",workflowId)).isTrue();
   }
 
 }

@@ -7,9 +7,11 @@ import java.util.HashSet;
 import java.util.Set;
 import lombok.Getter;
 import lombok.ToString;
+import lombok.extern.slf4j.Slf4j;
 
 @Getter
 @ToString
+@Slf4j
 public class Metadata {
 
   private long tenantId;
@@ -19,8 +21,10 @@ public class Metadata {
   private String workflowId;
   private Set<String> executedWorkflows;
   private long entityId;
+
   @JsonCreator
-  public Metadata(@JsonProperty("tenantId") long tenantId,
+  public Metadata(
+      @JsonProperty("tenantId") long tenantId,
       @JsonProperty("userId") long userId,
       @JsonProperty("entityType") EntityType entityType,
       @JsonProperty("workflowId") String workflowId,
@@ -41,17 +45,32 @@ public class Metadata {
     }
     return new Metadata(this.tenantId, this.userId, this.entityType, getWorkflowId(id), workflows, this.entityAction);
   }
-  public Metadata withEntityId(long entityId){
-    Metadata metadata = new Metadata(this.tenantId, this.userId, this.entityType, workflowId, executedWorkflows, this.entityAction);
+
+  public Metadata withEntityId(long entityId) {
+    Metadata metadata =
+        new Metadata(
+            this.tenantId,
+            this.userId,
+            this.entityType,
+            workflowId,
+            executedWorkflows,
+            this.entityAction);
     metadata.entityId = entityId;
     return metadata;
   }
 
   private String getWorkflowId(long workflowId) {
-    return String.format("WF_%d", workflowId);
+    return toWorkflowId(workflowId);
   }
 
-  public boolean isProcessed(Long workflowId) {
-    return executedWorkflows.contains(String.format("WF_%d", workflowId));
+  public boolean isProcessed(String previousWorkflowId, Long workflowId) {
+    String currentWorkflowIdToBeExecute = toWorkflowId(workflowId);
+    log.info("Current workflowId {} is already processed", currentWorkflowIdToBeExecute);
+    return (currentWorkflowIdToBeExecute.equalsIgnoreCase(previousWorkflowId)
+        || executedWorkflows.contains(currentWorkflowIdToBeExecute));
+  }
+
+  private String toWorkflowId(long workflowId) {
+    return String.format("WF_%d", workflowId);
   }
 }
