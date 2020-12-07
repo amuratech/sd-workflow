@@ -8,6 +8,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.springframework.http.HttpMethod.GET;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kylas.sales.workflow.domain.processor.lead.IdName;
 import com.kylas.sales.workflow.domain.processor.lead.LeadDetail;
 import com.kylas.sales.workflow.domain.service.UserService;
@@ -41,12 +42,16 @@ class WebhookServiceTest {
   private UserService userService;
   @Mock
   private ExchangeFunction exchangeFunction;
+  @Mock
+  private CryptoService cryptoService;
+  @Mock
+  private ObjectMapper objectMapper;
 
   @BeforeEach
   void init() {
     WebClient webClient =
         WebClient.builder().exchangeFunction(exchangeFunction).build();
-    webhookService = new WebhookService(attributeFactory, userService, authService, webClient);
+    webhookService = new WebhookService(attributeFactory, userService, authService, webClient, cryptoService, objectMapper);
   }
 
   @Test
@@ -61,12 +66,12 @@ class WebhookServiceTest {
     List<EntityConfig> configurations = webhookService.getConfigurations().collectList().block();
 
     //then
-    assertThat(configurations).isNotNull().hasSize(5);
+    assertThat(configurations).isNotNull().hasSize(6);
     assertThat(configurations.stream().map(EntityConfig::getEntityDisplayName))
-        .containsExactly("Lead", "Lead Owner", "Created By", "Updated By", "Tenant");
+        .containsExactly("Custom Parameter", "Lead", "Lead Owner", "Created By", "Updated By", "Tenant");
 
     assertThat(configurations.stream().map(EntityConfig::getEntity))
-        .containsExactly("LEAD", "LEAD_OWNER", "CREATED_BY", "UPDATED_BY", "TENANT");
+        .containsExactly("CUSTOM", "LEAD", "LEAD_OWNER", "CREATED_BY", "UPDATED_BY", "TENANT");
 
     var leadConfig = configurations.stream()
         .filter(config -> config.getEntityDisplayName().equals("Lead")).findFirst();
@@ -103,7 +108,7 @@ class WebhookServiceTest {
     lead.setOwnerId(new IdName(1000L, "user"));
     lead.setCreatedBy(new IdName(1000L, "user"));
     lead.setUpdatedBy(new IdName(1000L, "user"));
-    var action = new WebhookAction("LeadCityWebhook", "desc", GET, NONE, "https://reqres.in/api/users", emptyList());
+    var action = new WebhookAction("LeadCityWebhook", "desc", GET, NONE, "https://reqres.in/api/users", emptyList(), null);
     action.setId(UUID.randomUUID());
 
     //when

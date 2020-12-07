@@ -1,5 +1,10 @@
 package com.kylas.sales.workflow.domain.workflow.action.webhook;
 
+import static com.kylas.sales.workflow.common.dto.ActionDetail.WebhookAction.AuthorizationType.API_KEY;
+import static com.kylas.sales.workflow.common.dto.ActionDetail.WebhookAction.AuthorizationType.BASIC_AUTH;
+import static com.kylas.sales.workflow.common.dto.ActionDetail.WebhookAction.AuthorizationType.BEARER_TOKEN;
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
@@ -8,7 +13,10 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.springframework.http.HttpHeaders.AUTHORIZATION;
+import static org.springframework.http.HttpMethod.GET;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kylas.sales.workflow.common.dto.ActionDetail.WebhookAction.AuthorizationType;
 import com.kylas.sales.workflow.common.dto.Tenant;
 import com.kylas.sales.workflow.config.TestDatabaseInitializer;
@@ -27,20 +35,24 @@ import com.kylas.sales.workflow.domain.workflow.action.webhook.attribute.Attribu
 import com.kylas.sales.workflow.domain.workflow.action.webhook.attribute.AttributeFactory.WebhookEntity;
 import com.kylas.sales.workflow.domain.workflow.action.webhook.attribute.TenantAttribute;
 import com.kylas.sales.workflow.security.AuthService;
+import java.io.IOException;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import org.apache.commons.io.FileUtils;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase.Replace;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.http.HttpMethod;
+import org.springframework.core.io.ResourceLoader;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
@@ -64,12 +76,18 @@ class WebhookExecutionServiceTest {
   private ExchangeFunction exchangeFunction;
   @MockBean
   private AttributeFactory attributeFactory;
+  @Autowired
+  private CryptoService cryptoService;
+  @Autowired
+  private ObjectMapper objectMapper;
+  @Autowired
+  ResourceLoader resourceLoader;
 
   @BeforeEach
   void init() {
     WebClient webClient =
         WebClient.builder().exchangeFunction(exchangeFunction).build();
-    webhookService = new WebhookService(attributeFactory, userService, authService, webClient);
+    webhookService = new WebhookService(attributeFactory, userService, authService, webClient, cryptoService, objectMapper);
   }
 
   @Test
@@ -89,15 +107,15 @@ class WebhookExecutionServiceTest {
     List<Parameter> parameters = List.of(
         new Parameter("leadFirstName", WebhookEntity.LEAD, LeadAttribute.FIRST_NAME.getName()),
         new Parameter("leadCreator", WebhookEntity.LEAD, LeadAttribute.CREATED_BY.getName()));
-    WebhookAction action = new WebhookAction("LeadCityWebhook", "some description", HttpMethod.GET, AuthorizationType.NONE,
-        "http://some-random-host:9000/get-webhook", parameters);
+    WebhookAction action = new WebhookAction("LeadCityWebhook", "some description", GET, AuthorizationType.NONE,
+        "http://some-random-host:9000/get-webhook", parameters, null);
 
     //when
     webhookService.execute(action, lead);
 
     //then
     verify(exchangeFunction).exchange(argThat(request ->
-        request.method().equals(HttpMethod.GET) &&
+        request.method().equals(GET) &&
             request.url().toString().equals("http://some-random-host:9000/get-webhook?leadFirstName=Tony&leadCreator=user")));
     verifyNoInteractions(userService);
   }
@@ -127,15 +145,15 @@ class WebhookExecutionServiceTest {
     List<Parameter> parameters = List.of(
         new Parameter("leadFirstName", WebhookEntity.LEAD, LeadAttribute.FIRST_NAME.getName()),
         new Parameter("ownerFirstName", WebhookEntity.LEAD_OWNER, UserAttribute.FIRST_NAME.getName()));
-    WebhookAction action = new WebhookAction("OwnerWebhook", "some description", HttpMethod.GET, AuthorizationType.NONE,
-        "http://some-random-host:9000/get-webhook", parameters);
+    WebhookAction action = new WebhookAction("OwnerWebhook", "some description", GET, AuthorizationType.NONE,
+        "http://some-random-host:9000/get-webhook", parameters, null);
 
     //when
     webhookService.execute(action, lead);
 
     //then
     verify(exchangeFunction).exchange(argThat(request ->
-        request.method().equals(HttpMethod.GET) &&
+        request.method().equals(GET) &&
             request.url().toString().equals("http://some-random-host:9000/get-webhook?ownerFirstName=Amit&leadFirstName=Tony")));
     verify(userService, times(1))
         .getUserDetails(eq(12L), anyString());
@@ -160,18 +178,148 @@ class WebhookExecutionServiceTest {
     List<Parameter> parameters = List.of(
         new Parameter("leadFirstName", WebhookEntity.LEAD, LeadAttribute.FIRST_NAME.getName()),
         new Parameter("tenantAccountName", WebhookEntity.TENANT, TenantAttribute.ACCOUNT_NAME.getName()));
-    WebhookAction action = new WebhookAction("OwnerWebhook", "some description", HttpMethod.GET, AuthorizationType.NONE,
-        "http://some-random-host:9000/get-webhook", parameters);
+    WebhookAction action = new WebhookAction("OwnerWebhook", "some description", GET, AuthorizationType.NONE,
+        "http://some-random-host:9000/get-webhook", parameters, null);
 
     //when
     webhookService.execute(action, lead);
 
     //then
     verify(exchangeFunction).exchange(argThat(request ->
-        request.method().equals(HttpMethod.GET) &&
+        request.method().equals(GET) &&
             request.url().toString().equals("http://some-random-host:9000/get-webhook?tenantAccountName=TenantAccountName&leadFirstName=Tony")));
     verify(userService, times(1))
         .getTenantDetails(anyString());
+  }
+
+  @Test
+  public void givenWorkflowRequest_withCustomParameter_shouldExecuteIt() {
+    // given
+    String authenticationToken = "some-token";
+    given(authService.getAuthenticationToken()).willReturn(authenticationToken);
+    var mockResponse = Mono.just(ClientResponse.create(HttpStatus.OK).build());
+    given(exchangeFunction.exchange(any())).willReturn(mockResponse);
+
+    // when
+    LeadDetail lead = getStubbedLead(12L);
+    lead.setFirstName("Tony");
+    lead.setCreatedBy(new IdName(12L, "user"));
+    List<Parameter> parameters = List.of(
+        new Parameter("leadFirstName", WebhookEntity.LEAD, LeadAttribute.FIRST_NAME.getName()),
+        new Parameter("doctorStrange", WebhookEntity.CUSTOM, "Stephen"));
+    WebhookAction action = new WebhookAction("OwnerWebhook", "some description", GET, AuthorizationType.NONE,
+        "http://some-random-host:9000/get-webhook", parameters, null);
+
+    //when
+    webhookService.execute(action, lead);
+
+    //then
+    verify(exchangeFunction).exchange(argThat(request ->
+        request.method().equals(GET) &&
+            request.url().toString().equals("http://some-random-host:9000/get-webhook?doctorStrange=Stephen&leadFirstName=Tony")));
+  }
+
+  @Test
+  public void givenWorkflowRequest_withBearerToken_shouldExecuteIt() throws IOException {
+    // given
+    String authenticationToken = "some-token";
+    given(authService.getAuthenticationToken()).willReturn(authenticationToken);
+    Tenant tenant = new Tenant();
+    given(userService.getTenantDetails(eq(authenticationToken)))
+        .willReturn(Mono.just(tenant));
+    var mockResponse = Mono.just(ClientResponse.create(HttpStatus.OK).build());
+    given(exchangeFunction.exchange(any())).willReturn(mockResponse);
+
+    // when
+    LeadDetail lead = getStubbedLead(12L);
+    lead.setFirstName("Tony");
+    lead.setCreatedBy(new IdName(12L, "user"));
+    List<Parameter> parameters = List.of(
+        new Parameter("leadFirstName", WebhookEntity.LEAD, LeadAttribute.FIRST_NAME.getName()));
+    var authorization = getResourceAsString("classpath:contracts/webhook/create-with-bearer-token.json");
+
+    var authParam = cryptoService.encrypt(Base64.getEncoder().encodeToString(authorization.getBytes(UTF_8)));
+    WebhookAction action = new WebhookAction("OwnerWebhook", "some description", GET, BEARER_TOKEN,
+        "http://some-random-host:9000/get-webhook", parameters, authParam);
+
+    //when
+    webhookService.execute(action, lead);
+
+    //then
+    verify(exchangeFunction).exchange(argThat(request -> {
+      assertThat(request.method()).isEqualTo(GET);
+      assertThat(request.headers()).containsEntry(AUTHORIZATION, List.of("Bearer some-bearer-token"));
+      return true;
+    }));
+  }
+
+  @Test
+  public void givenWorkflowRequest_withBasicAuthorization_shouldExecuteIt() throws IOException {
+    // given
+    String authenticationToken = "some-token";
+    given(authService.getAuthenticationToken()).willReturn(authenticationToken);
+    Tenant tenant = new Tenant();
+    given(userService.getTenantDetails(eq(authenticationToken)))
+        .willReturn(Mono.just(tenant));
+    var mockResponse = Mono.just(ClientResponse.create(HttpStatus.OK).build());
+    given(exchangeFunction.exchange(any())).willReturn(mockResponse);
+
+    // when
+    LeadDetail lead = getStubbedLead(12L);
+    lead.setFirstName("Tony");
+    lead.setCreatedBy(new IdName(12L, "user"));
+    List<Parameter> parameters = List.of(
+        new Parameter("leadFirstName", WebhookEntity.LEAD, LeadAttribute.FIRST_NAME.getName()));
+    var authorization = getResourceAsString("classpath:contracts/webhook/create-with-basic-auth.json");
+
+    var authParam = cryptoService.encrypt(Base64.getEncoder().encodeToString(authorization.getBytes(UTF_8)));
+    WebhookAction action = new WebhookAction("OwnerWebhook", "some description", GET, BASIC_AUTH,
+        "http://some-random-host:9000/get-webhook", parameters, authParam);
+
+    //when
+    webhookService.execute(action, lead);
+
+    //then
+    verify(exchangeFunction).exchange(argThat(request -> {
+      assertThat(request.method()).isEqualTo(GET);
+      var encoded = Base64.getEncoder().encodeToString("tony.stark:IAmIronman".getBytes(UTF_8));
+      assertThat(request.headers()).containsEntry(AUTHORIZATION, List.of("Basic " + encoded));
+      return true;
+    }));
+  }
+
+  @Test
+  public void givenWorkflowRequest_withApiKeyAuthorization_shouldExecuteIt() throws IOException {
+    // given
+    String authenticationToken = "some-token";
+    given(authService.getAuthenticationToken()).willReturn(authenticationToken);
+    Tenant tenant = new Tenant();
+    given(userService.getTenantDetails(eq(authenticationToken)))
+        .willReturn(Mono.just(tenant));
+    var mockResponse = Mono.just(ClientResponse.create(HttpStatus.OK).build());
+    given(exchangeFunction.exchange(any())).willReturn(mockResponse);
+
+    // when
+    LeadDetail lead = getStubbedLead(12L);
+    lead.setFirstName("Tony");
+    lead.setCreatedBy(new IdName(12L, "user"));
+    List<Parameter> parameters = List.of(
+        new Parameter("leadFirstName", WebhookEntity.LEAD, LeadAttribute.FIRST_NAME.getName()));
+    var authorization = getResourceAsString("classpath:contracts/webhook/create-with-api-key-auth.json");
+
+    var authParam = cryptoService.encrypt(Base64.getEncoder().encodeToString(authorization.getBytes(UTF_8)));
+    WebhookAction action = new WebhookAction("OwnerWebhook", "some description", GET, API_KEY,
+        "http://some-random-host:9000/get-webhook", parameters, authParam);
+
+    //when
+    webhookService.execute(action, lead);
+
+    //then
+    verify(exchangeFunction).exchange(argThat(request -> {
+      assertThat(request.method()).isEqualTo(GET);
+      assertThat(request.headers()).containsEntry("captain.america", List.of("JustAnotherBottleExperiment"));
+      return true;
+    }));
   }
 
   @Test
@@ -200,15 +348,15 @@ class WebhookExecutionServiceTest {
         new Parameter("leadFirstName", WebhookEntity.LEAD, LeadAttribute.FIRST_NAME.getName()),
         new Parameter("leadEmails", WebhookEntity.LEAD, LeadAttribute.EMAILS.getName()),
         new Parameter("leadPhones", WebhookEntity.LEAD, LeadAttribute.PHONE_NUMBERS.getName()));
-    WebhookAction action = new WebhookAction("OwnerWebhook", "some description", HttpMethod.GET, AuthorizationType.NONE,
-        "http://some-random-host:9000/get-webhook", parameters);
+    WebhookAction action = new WebhookAction("OwnerWebhook", "some description", GET, AuthorizationType.NONE,
+        "http://some-random-host:9000/get-webhook", parameters, null);
 
     //when
     webhookService.execute(action, lead);
 
     //then
     verify(exchangeFunction).exchange(argThat(request ->
-        request.method().equals(HttpMethod.GET) &&
+        request.method().equals(GET) &&
             request.url().toString()
                 .equals(
                     "http://some-random-host:9000/get-webhook?leadEmails=abc@kylas.io&leadEmails=def@kylas.io&leadFirstName=Tony&leadPhones=+91%208600990099&leadPhones=+91%208600990022")));
@@ -221,5 +369,10 @@ class WebhookExecutionServiceTest {
     lead.setCreatedBy(new IdName(userId, "user"));
     lead.setUpdatedBy(new IdName(userId, "user"));
     return lead;
+  }
+
+  private String getResourceAsString(String path) throws IOException {
+    var resource = resourceLoader.getResource(path);
+    return FileUtils.readFileToString(resource.getFile(), "UTF-8");
   }
 }

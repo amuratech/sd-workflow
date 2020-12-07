@@ -64,6 +64,7 @@ public class AttributeFactory {
   @AllArgsConstructor
   @Getter
   public enum WebhookEntity {
+    CUSTOM("Custom Parameter", EntityType.CUSTOM),
     LEAD("Lead", EntityType.LEAD),
     LEAD_OWNER("Lead Owner", EntityType.USER),
     CREATED_BY("Created By", EntityType.USER),

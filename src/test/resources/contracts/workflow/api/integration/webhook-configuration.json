@@ -1,5 +1,10 @@
 [
   {
+    "entity": "CUSTOM",
+    "entityDisplayName": "Custom Parameter",
+    "fields": []
+  },
+  {
     "entity": "LEAD",
     "entityDisplayName": "Lead",
     "fields": [

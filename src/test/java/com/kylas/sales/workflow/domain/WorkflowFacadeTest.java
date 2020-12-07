@@ -23,11 +23,13 @@ import com.kylas.sales.workflow.domain.workflow.TriggerFrequency;
 import com.kylas.sales.workflow.domain.workflow.TriggerType;
 import com.kylas.sales.workflow.domain.workflow.Workflow;
 import com.kylas.sales.workflow.domain.workflow.action.EditPropertyAction;
+import com.kylas.sales.workflow.domain.workflow.action.webhook.CryptoService;
 import com.kylas.sales.workflow.domain.workflow.action.webhook.Parameter;
 import com.kylas.sales.workflow.domain.workflow.action.webhook.attribute.AttributeFactory.WebhookEntity;
 import com.kylas.sales.workflow.security.AuthService;
 import com.kylas.sales.workflow.stubs.UserStub;
 import com.kylas.sales.workflow.stubs.WorkflowStub;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Set;
@@ -62,6 +64,8 @@ class WorkflowFacadeTest {
   UserService userService;
   @Autowired
   WorkflowFacade workflowFacade;
+  @Autowired
+  CryptoService cryptoService;
 
   @Transactional
   @Test
@@ -126,7 +130,7 @@ class WorkflowFacadeTest {
         new ActionResponse(EDIT_PROPERTY,
             new ActionDetail.EditPropertyAction("city", "Pune")),
         new ActionResponse(WEBHOOK,
-            new WebhookAction("name", "desc", HttpMethod.GET, "someUrl", AuthorizationType.NONE, parameters))
+            new WebhookAction("name", "desc", HttpMethod.GET, "someUrl", AuthorizationType.NONE, parameters, null))
     );
     var workflowRequest = WorkflowStub
         .aWorkflowRequestWithActions("Edit Lead Property", "Edit Lead Property", EntityType.LEAD, TriggerType.EVENT, CREATED,
@@ -140,8 +144,10 @@ class WorkflowFacadeTest {
               .isNotNull()
               .isGreaterThan(0L);
           assertThat(workflow.getWorkflowActions()).isNotEmpty().hasSize(2);
-          assertThat(workflow.getWorkflowActions().stream().anyMatch(action -> action.getType().equals(EDIT_PROPERTY)));
-          assertThat(workflow.getWorkflowActions().stream().anyMatch(action -> action.getType().equals(WEBHOOK)));
+          assertThat(workflow.getWorkflowActions().stream().anyMatch(action -> action.getType().equals(EDIT_PROPERTY)))
+              .isTrue();
+          assertThat(workflow.getWorkflowActions().stream().anyMatch(action -> action.getType().equals(WEBHOOK)))
+              .isTrue();
           return true;
         })
         .verifyComplete();
@@ -186,6 +192,54 @@ class WorkflowFacadeTest {
           assertThat(workflow.getWorkflowExecutedEvent().getId()).isGreaterThan(0);
 
           assertThat(workflow.isActive()).isTrue();
+          return true;
+        })
+        .verifyComplete();
+  }
+
+  @Transactional
+  @Test
+  @Sql("/test-scripts/create-webhook-workflow.sql")
+  public void givenWorkflowUpdateRequest_updatingWebhook_shouldUpdateIt() {
+    //given
+    User aUser = UserStub.aUser(11L, 99L, true, true, true, true, true)
+        .withName("user 1");
+    given(authService.getLoggedInUser()).willReturn(aUser);
+
+    given(userService.getUserDetails(11L, authService.getAuthenticationToken()))
+        .willReturn(Mono.just(aUser));
+
+    var actionRequest = new ActionResponse(UUID.fromString("a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a12"), WEBHOOK,
+        new ActionDetail.WebhookAction("UpdatedName", "UpdatedDescription", HttpMethod.GET, "updatedUrl", AuthorizationType.NONE,
+            Collections.emptyList(), "someAuthParameter"));
+    Set<ActionResponse> actions = Set.of(actionRequest);
+
+    var workflowRequest = WorkflowStub
+        .aWorkflowRequestWithActions("UpdatedWorkflowName", "UpdatedWorkflowProperty", EntityType.LEAD, TriggerType.EVENT, CREATED,
+            ConditionType.FOR_ALL, actions);
+    //when
+    var updatedWorkflow = workflowFacade.update(301L, workflowRequest);
+    //then
+    StepVerifier.create(updatedWorkflow)
+        .expectNextMatches(workflow -> {
+          assertThat(workflow.getId())
+              .isNotNull()
+              .isGreaterThan(0L);
+
+          assertThat(workflow.getWorkflowTrigger().getTriggerFrequency()).isEqualTo(CREATED);
+          assertThat(workflow.getWorkflowTrigger().getTriggerType()).isEqualTo(TriggerType.EVENT);
+
+          assertThat(workflow.getWorkflowActions().size()).isEqualTo(1);
+          assertThat(workflow.getWorkflowActions()).hasSize(1);
+          var webhookAction = workflow.getWorkflowActions().stream()
+              .filter(action -> action.getType().equals(WEBHOOK))
+              .findFirst();
+          assertThat(webhookAction).isPresent();
+          var actionDetail = (com.kylas.sales.workflow.domain.workflow.action.webhook.WebhookAction) webhookAction.get();
+
+          assertThat(actionDetail.getId()).isEqualTo(UUID.fromString("a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a12"));
+          assertThat(actionDetail.getName()).isEqualTo("UpdatedName");
+          assertThat(actionDetail.getDescription()).isEqualTo("UpdatedDescription");
           return true;
         })
         .verifyComplete();

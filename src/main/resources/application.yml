@@ -27,6 +27,8 @@ spring:
 security:
   jwt:
     key: test
+  crypto:
+    key: secret
 
 server:
   port: 9002

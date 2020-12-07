@@ -16,6 +16,8 @@ server:
 security:
   jwt:
     key: test
+  crypto:
+    key: secret
 client:
   iam:
     basePath: http://localhost:9090/iam

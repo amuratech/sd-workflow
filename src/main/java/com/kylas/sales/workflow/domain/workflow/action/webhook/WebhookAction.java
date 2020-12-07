@@ -1,6 +1,7 @@
 package com.kylas.sales.workflow.domain.workflow.action.webhook;
 
 import static com.kylas.sales.workflow.domain.workflow.action.WorkflowAction.ActionType.WEBHOOK;
+import static java.util.Objects.nonNull;
 
 import com.kylas.sales.workflow.common.dto.ActionDetail;
 import com.kylas.sales.workflow.common.dto.ActionDetail.WebhookAction.AuthorizationType;
@@ -9,6 +10,7 @@ import com.kylas.sales.workflow.domain.workflow.Workflow;
 import com.kylas.sales.workflow.domain.workflow.action.AbstractWorkflowAction;
 import com.kylas.sales.workflow.domain.workflow.action.WorkflowAction;
 import java.util.List;
+import java.util.UUID;
 import javax.persistence.CascadeType;
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
@@ -21,7 +23,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpMethod;
+import org.springframework.stereotype.Component;
 
 @Entity
 @Getter
@@ -41,6 +45,8 @@ public class WebhookAction extends AbstractWorkflowAction implements WorkflowAct
   @Enumerated(value = EnumType.STRING)
   private AuthorizationType authorizationType;
 
+  private String authorizationParameter;
+
   @NotBlank
   private String requestUrl;
 
@@ -50,31 +56,22 @@ public class WebhookAction extends AbstractWorkflowAction implements WorkflowAct
 
   public WebhookAction(@NotBlank String name, String description, HttpMethod method,
       AuthorizationType authorizationType, @NotBlank String requestUrl,
-      List<Parameter> parameters) {
+      List<Parameter> parameters, String authorizationParameter) {
     this.name = name;
     this.description = description;
     this.method = method;
     this.authorizationType = authorizationType;
     this.requestUrl = requestUrl;
     this.parameters = parameters;
+    this.authorizationParameter = authorizationParameter;
   }
 
   public static AbstractWorkflowAction createNew(ActionResponse action) {
-    var payload = (ActionDetail.WebhookAction) action.getPayload();
-    return new WebhookAction(
-        payload.getName(),
-        payload.getDescription(),
-        payload.getMethod(),
-        payload.getAuthorizationType(),
-        payload.getRequestUrl(),
-        payload.getParameters());
+    return WebhookActionMapper.fromActionResponse(action);
   }
 
   public static ActionResponse toActionResponse(WebhookAction action) {
-    var webhook =
-        new ActionDetail.WebhookAction(action.name, action.description,
-            action.method, action.requestUrl, action.authorizationType, action.parameters);
-    return new ActionResponse(action.getId(), WEBHOOK, webhook);
+    return WebhookActionMapper.toActionResponse(action);
   }
 
   @Override
@@ -84,11 +81,51 @@ public class WebhookAction extends AbstractWorkflowAction implements WorkflowAct
 
   @Override
   public WebhookAction update(ActionResponse action) {
-    return null;
+    return WebhookActionMapper.fromActionResponse(action).withId(getId());
+  }
+
+  private WebhookAction withId(UUID id) {
+    this.setId(id);
+    return this;
   }
 
   @Override
   public ActionType getType() {
     return WEBHOOK;
+  }
+
+  @Component
+  private static class WebhookActionMapper {
+
+    private static CryptoService cryptoService;
+
+    @Autowired
+    public void setCryptoService(CryptoService cryptoService) {
+      WebhookActionMapper.cryptoService = cryptoService;
+    }
+
+    public static ActionResponse toActionResponse(WebhookAction action) {
+      var authParameter = nonNull(action.authorizationParameter)
+          ? cryptoService.decrypt(action.authorizationParameter)
+          : null;
+      var webhook = new ActionDetail.WebhookAction(action.name, action.description,
+          action.method, action.requestUrl, action.authorizationType, action.parameters, authParameter);
+      return new ActionResponse(action.getId(), WEBHOOK, webhook);
+    }
+
+    public static WebhookAction fromActionResponse(ActionResponse action) {
+      var payload = (ActionDetail.WebhookAction) action.getPayload();
+      var encrypted = nonNull(payload.getAuthorizationParameter())
+          ? cryptoService.encrypt(payload.getAuthorizationParameter())
+          : null;
+      return new WebhookAction(
+          payload.getName(),
+          payload.getDescription(),
+          payload.getMethod(),
+          payload.getAuthorizationType(),
+          payload.getRequestUrl(),
+          payload.getParameters(),
+          encrypted);
+    }
   }
 }

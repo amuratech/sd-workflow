@@ -47,6 +47,19 @@ public class WorkflowStub {
       TriggerType triggerType,
       TriggerFrequency triggerFrequency,
       ConditionType conditionType,
+      Set<ActionResponse> actionRequests) {
+    var triggerRequest = new WorkflowTrigger(triggerType, triggerFrequency);
+    var conditionRequest = new WorkflowCondition(conditionType);
+    return new WorkflowRequest(name, description, entityType, triggerRequest, conditionRequest, actionRequests, true);
+  }
+
+  public static WorkflowRequest aWorkflowRequestWithActions(
+      String name,
+      String description,
+      EntityType entityType,
+      TriggerType triggerType,
+      TriggerFrequency triggerFrequency,
+      ConditionType conditionType,
       boolean active,
       Set<ActionResponse> actions) {
     var triggerRequest = new WorkflowTrigger(triggerType, triggerFrequency);

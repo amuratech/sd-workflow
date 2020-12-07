@@ -20,9 +20,10 @@ public interface ActionDetail {
     private final String requestUrl;
     private final AuthorizationType authorizationType;
     private final List<Parameter> parameters;
+    private final String authorizationParameter;
 
     public enum AuthorizationType {
-      NONE
+      NONE, API_KEY, BEARER_TOKEN, BASIC_AUTH
     }
   }
 

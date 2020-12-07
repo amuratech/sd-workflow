@@ -1,5 +1,7 @@
 package com.kylas.sales.workflow.domain.workflow.action.webhook;
 
+import static com.kylas.sales.workflow.common.dto.ActionDetail.WebhookAction.AuthorizationType.NONE;
+import static com.kylas.sales.workflow.domain.workflow.EntityType.CUSTOM;
 import static com.kylas.sales.workflow.domain.workflow.EntityType.LEAD;
 import static com.kylas.sales.workflow.domain.workflow.EntityType.USER;
 import static com.kylas.sales.workflow.domain.workflow.action.webhook.attribute.AttributeFactory.LeadAttribute.COMPANY_PHONES;
@@ -11,9 +13,11 @@ import static com.kylas.sales.workflow.domain.workflow.action.webhook.attribute.
 import static com.kylas.sales.workflow.domain.workflow.action.webhook.attribute.AttributeFactory.WebhookEntity.TENANT;
 import static com.kylas.sales.workflow.domain.workflow.action.webhook.attribute.AttributeFactory.WebhookEntity.UPDATED_BY;
 import static java.util.Arrays.stream;
+import static java.util.Collections.emptyList;
 import static java.util.Objects.nonNull;
 import static java.util.stream.Collectors.toList;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kylas.sales.workflow.common.dto.Tenant;
 import com.kylas.sales.workflow.domain.processor.exception.WorkflowExecutionException;
 import com.kylas.sales.workflow.domain.processor.lead.Email;
@@ -32,14 +36,18 @@ import com.kylas.sales.workflow.domain.workflow.action.webhook.attribute.Attribu
 import com.kylas.sales.workflow.domain.workflow.action.webhook.attribute.TenantAttribute;
 import com.kylas.sales.workflow.error.ErrorCode;
 import com.kylas.sales.workflow.security.AuthService;
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.AbstractMap.SimpleEntry;
+import java.util.Base64;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.beanutils.PropertyUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -52,18 +60,25 @@ import reactor.util.function.Tuple2;
 @Slf4j
 public class WebhookService {
 
+  private static final Consumer<HttpHeaders> NO_HEADER_CONSUMER = headers -> {
+  };
+
   private final AttributeFactory attributeFactory;
   private final UserService userService;
   private final AuthService authService;
   private final WebClient webClient;
+  private final CryptoService cryptoService;
+  private final ObjectMapper objectMapper;
 
   @Autowired
   public WebhookService(AttributeFactory attributeFactory, UserService userService, AuthService authService,
-      WebClient webClient) {
+      WebClient webClient, CryptoService cryptoService, ObjectMapper objectMapper) {
     this.attributeFactory = attributeFactory;
     this.userService = userService;
     this.authService = authService;
     this.webClient = webClient;
+    this.cryptoService = cryptoService;
+    this.objectMapper = objectMapper;
   }
 
   public Flux<EntityConfig> getConfigurations() {
@@ -79,7 +94,7 @@ public class WebhookService {
   private List<Attribute> getAttributesFor(Tuple2<List<Attribute>, List<Attribute>> tuples, WebhookEntity webhookEntity) {
     return webhookEntity.getType().equals(USER) ? tuples.getT1() :
         webhookEntity.getType().equals(LEAD) ? tuples.getT2() :
-            TenantAttribute.getAttributes();
+            webhookEntity.getType().equals(EntityType.TENANT) ? TenantAttribute.getAttributes() : emptyList();
   }
 
   public void execute(WebhookAction webhookAction, LeadDetail entity) {
@@ -93,10 +108,39 @@ public class WebhookService {
     webClient
         .method(webhookAction.getMethod())
         .uri(uri)
+        .headers(setAuthorizationHeader(webhookAction))
         .retrieve()
         .bodyToMono(String.class)
         .subscribe(s -> log.debug("Received webhook response {}", s));
     log.info("Executed webhook action with name {} & Id {}", webhookAction.getName(), webhookAction.getId());
+  }
+
+  private Consumer<HttpHeaders> setAuthorizationHeader(WebhookAction action) {
+    if (action.getAuthorizationType().equals(NONE)) {
+      return NO_HEADER_CONSUMER;
+    }
+    AuthorizationParameter auth;
+    try {
+      auth = objectMapper.readValue(
+          Base64.getDecoder().decode(cryptoService.decrypt(action.getAuthorizationParameter())),
+          AuthorizationParameter.class);
+    } catch (IOException e) {
+      log.error("Exception while setting authorization header for webhook action {}", action.getId(), e);
+      throw new WorkflowExecutionException(ErrorCode.INVALID_PARAMETER);
+    }
+
+    return httpHeaders -> {
+      switch (action.getAuthorizationType()) {
+        case API_KEY:
+          httpHeaders.add(auth.getKeyName(), auth.getValue());
+          break;
+        case BASIC_AUTH:
+          httpHeaders.setBasicAuth(auth.getUsername(), auth.getPassword());
+          break;
+        case BEARER_TOKEN:
+          httpHeaders.setBearerAuth(auth.getToken());
+      }
+    };
   }
 
   private Map<String, List<String>> buildLeadParameters(WebhookAction webhookAction, LeadDetail lead) {
@@ -144,7 +188,9 @@ public class WebhookService {
     try {
       EntityType type = parameter.getEntity().getType();
       String attribute = parameter.getAttribute();
-      if (type.equals(LEAD) && attribute.equalsIgnoreCase(EMAILS.getName())) {
+      if (type.equals(CUSTOM)) {
+        return List.of(parameter.getAttribute());
+      } else if (type.equals(LEAD) && attribute.equalsIgnoreCase(EMAILS.getName())) {
         return stream(((LeadDetail) entity).getEmails())
             .map(Email::getValue)
             .collect(toList());
