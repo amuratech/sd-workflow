@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.kylas.sales.workflow.domain.workflow.EntityType;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
@@ -43,7 +44,13 @@ public class Metadata {
     if (workflowId != null) {
       workflows.add(workflowId);
     }
-    return new Metadata(this.tenantId, this.userId, this.entityType, getWorkflowId(id), workflows, this.entityAction);
+    return new Metadata(
+        this.tenantId,
+        this.userId,
+        this.entityType,
+        getWorkflowId(id),
+        workflows,
+        this.entityAction);
   }
 
   public Metadata withEntityId(long entityId) {
@@ -63,14 +70,28 @@ public class Metadata {
     return toWorkflowId(workflowId);
   }
 
-  public boolean isProcessed(String previousWorkflowId, Long workflowId) {
+  public boolean isProcessed(Long workflowId) {
     String currentWorkflowIdToBeExecute = toWorkflowId(workflowId);
-    log.info("Current workflowId {} is already processed", currentWorkflowIdToBeExecute);
-    return (currentWorkflowIdToBeExecute.equalsIgnoreCase(previousWorkflowId)
-        || executedWorkflows.contains(currentWorkflowIdToBeExecute));
+    boolean isProcessed =
+        executedWorkflows.contains(currentWorkflowIdToBeExecute);
+    log.info(
+        "Current workflowId {} is already processed {}", currentWorkflowIdToBeExecute, isProcessed);
+    return isProcessed;
   }
 
   private String toWorkflowId(long workflowId) {
     return String.format("WF_%d", workflowId);
+  }
+
+  public Metadata withAllWorkflowIds(Set<Long> workflowIds) {
+    Set<String> collect = workflowIds.stream().map(this::toWorkflowId).collect(Collectors.toSet());
+    this.executedWorkflows.addAll(collect);
+    return new Metadata(
+        this.tenantId,
+        this.userId,
+        this.entityType,
+        this.workflowId,
+        this.executedWorkflows,
+        this.entityAction);
   }
 }

@@ -5,6 +5,7 @@ import com.kylas.sales.workflow.domain.processor.exception.WorkflowExecutionExce
 import com.kylas.sales.workflow.domain.processor.lead.Lead;
 import com.kylas.sales.workflow.domain.processor.lead.LeadDetail;
 import com.kylas.sales.workflow.domain.workflow.TriggerFrequency;
+import com.kylas.sales.workflow.domain.workflow.Workflow;
 import com.kylas.sales.workflow.domain.workflow.action.AbstractWorkflowAction;
 import com.kylas.sales.workflow.domain.workflow.action.EditPropertyAction;
 import com.kylas.sales.workflow.domain.workflow.action.webhook.WebhookAction;
@@ -13,7 +14,9 @@ import com.kylas.sales.workflow.error.ErrorCode;
 import com.kylas.sales.workflow.mq.command.LeadUpdatedCommandPublisher;
 import com.kylas.sales.workflow.mq.event.LeadEvent;
 import com.kylas.sales.workflow.mq.event.Metadata;
+import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.expression.EvaluationContext;
@@ -42,12 +45,16 @@ public class WorkflowProcessor {
   public void process(LeadEvent event) {
 
     log.info("Lead {} event received with metadata {}", event.getMetadata().getEntityAction(),event.getMetadata());
-    workflowService.findActiveBy(event.getMetadata().getTenantId(), event.getMetadata().getEntityType(), TriggerFrequency.valueOf(event.getMetadata().getEntityAction().name()))
+    List<Workflow> workflows = workflowService.findActiveBy(event.getMetadata().getTenantId(), event.getMetadata().getEntityType(),
+        TriggerFrequency.valueOf(event.getMetadata().getEntityAction().name()))
         .stream()
-        .filter(workflow -> !event.getMetadata().isProcessed(event.getMetadata().getWorkflowId(),workflow.getId()))
-        .forEach(workflow -> {
+        .filter(workflow -> !event.getMetadata().isProcessed(workflow.getId())).collect(Collectors.toList());
+
+      Set<Long> workflowIds = workflows.stream().map(Workflow::getId).collect(Collectors.toSet());
+
+        workflows.forEach(workflow -> {
           LeadDetail entity = event.getEntity();
-          Metadata metadata = event.getMetadata().with(workflow.getId()).withEntityId(entity.getId());
+          Metadata metadata = event.getMetadata().with(workflow.getId()).withAllWorkflowIds(workflowIds).withEntityId(entity.getId());
           Set<AbstractWorkflowAction> workflowActions = workflow.getWorkflowActions();
           log.info("Workflow execution start for workflowId {} and prev metadata {}", workflow.getId(), event.getMetadata());
           workflowActions.stream()

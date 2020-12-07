@@ -46,24 +46,14 @@ class WorkflowProcessorTest {
   public void givenLeadEvent_shouldPublishPatchCommand() {
     // given
     long tenantId = 101;
+    long userId = 10L;
     long workflowId = 99L;
 
     var lead = new LeadDetail();
     lead.setId(55L);
     lead.setFirstName("Tony");
     lead.setLastName("Stark");
-    var metadata = mock(Metadata.class);
-    var updatedMetadata = mock(Metadata.class);
-    given(metadata.getTenantId()).willReturn(tenantId);
-    given(metadata.getEntityType()).willReturn(LEAD);
-
-    var updatedMetadataWithEntityId = mock(Metadata.class);
-    given(updatedMetadataWithEntityId.getTenantId()).willReturn(tenantId);
-    given(updatedMetadataWithEntityId.getEntityType()).willReturn(LEAD);
-
-    given(metadata.with(workflowId)).willReturn(updatedMetadata);
-    given(updatedMetadata.withEntityId(55L)).willReturn(updatedMetadataWithEntityId);
-    given(metadata.getEntityAction()).willReturn(EntityAction.CREATED);
+    Metadata metadata = new Metadata(tenantId, userId, LEAD, null, null, EntityAction.CREATED);
 
     var leadCreatedEvent = new LeadEvent(lead, null, metadata);
 
@@ -86,25 +76,14 @@ class WorkflowProcessorTest {
   public void givenMultipleWorkflow_whereOneIsFailing_otherShouldBeExecute() {
     // given
     long tenantId = 101;
+    long userId = 10L;
     long workflowId = 99L;
 
     var lead = new LeadDetail();
     lead.setFirstName("Tony");
     lead.setLastName("Stark");
     lead.setId(55L);
-    var metadata = mock(Metadata.class);
-    var updatedMetadata = mock(Metadata.class);
-    given(metadata.getTenantId()).willReturn(tenantId);
-    given(metadata.getEntityType()).willReturn(LEAD);
-
-    var updatedMetadataWithEntityId = mock(Metadata.class);
-    given(updatedMetadataWithEntityId.getTenantId()).willReturn(tenantId);
-    given(updatedMetadataWithEntityId.getEntityType()).willReturn(LEAD);
-
-    given(metadata.with(workflowId)).willReturn(updatedMetadata);
-    given(updatedMetadata.withEntityId(55L)).willReturn(updatedMetadataWithEntityId);
-
-    given(metadata.getEntityAction()).willReturn(EntityAction.CREATED);
+    Metadata metadata = new Metadata(tenantId, userId, LEAD, null, null, EntityAction.CREATED);
 
     var leadCreatedEvent = new LeadEvent(lead, null, metadata);
 
@@ -117,7 +96,6 @@ class WorkflowProcessorTest {
     given(updateFirstNameAction.getName()).willReturn("firstName");
     given(updateFirstNameAction.getValue()).willReturn("Steve");
     given(updateFirstNameAction.getType()).willReturn(ActionType.EDIT_PROPERTY);
-    Actionable actionableMock = mock(Actionable.class);
     actions.add(updateFirstNameAction);
 
     EditPropertyAction failedAction = mock(EditPropertyAction.class);
@@ -147,6 +125,7 @@ class WorkflowProcessorTest {
   public void givenLeadUpdatedEvent_tryToProcess_shouldExecuteWorkflowWithUpdatedFrequency() {
     // given
     long tenantId = 101;
+    long userId = 10L;
     long workflowId99 = 99L;
     long workflowId100 = 99L;
 
@@ -160,19 +139,7 @@ class WorkflowProcessorTest {
     old.setFirstName("Steve");
     old.setLastName("Roger");
 
-    var metadata = mock(Metadata.class);
-    var updatedMetadata = mock(Metadata.class);
-    given(metadata.getTenantId()).willReturn(tenantId);
-    given(metadata.getEntityType()).willReturn(LEAD);
-
-    var updatedMetadataWithEntityId = mock(Metadata.class);
-    given(updatedMetadataWithEntityId.getTenantId()).willReturn(tenantId);
-    given(updatedMetadataWithEntityId.getEntityType()).willReturn(LEAD);
-
-    given(metadata.with(workflowId99)).willReturn(updatedMetadata);
-    given(updatedMetadata.withEntityId(55L)).willReturn(updatedMetadataWithEntityId);
-    given(metadata.getEntityAction()).willReturn(EntityAction.UPDATED);
-
+    var metadata = new Metadata(tenantId, userId, LEAD, null, null, EntityAction.UPDATED);
     var leadUpdatedEvent = new LeadEvent(lead, old, metadata);
 
     Workflow workflowMockUpdate =
@@ -199,8 +166,7 @@ class WorkflowProcessorTest {
     // given
     long tenantId = 101;
     long userId = 102;
-    long workflowId99 = 99L;
-    long workflowId100 = 99L;
+    long workflowId100 = 100L;
 
     var lead = new LeadDetail();
     lead.setId(55L);
@@ -212,7 +178,9 @@ class WorkflowProcessorTest {
     old.setFirstName("Steve");
     old.setLastName("Roger");
 
-    var metadata = new Metadata(tenantId,userId,LEAD,"WF_99",null,EntityAction.UPDATED);
+    Set<String> executedWorkflows = new HashSet<>();
+    executedWorkflows.add("WF_100");
+    var metadata = new Metadata(tenantId,userId,LEAD,"WF_99",executedWorkflows,EntityAction.UPDATED);
     var updatedMetadata = mock(Metadata.class);
     var updatedMetadataWithEntityId = mock(Metadata.class);
     given(updatedMetadataWithEntityId.getTenantId()).willReturn(tenantId);
@@ -234,6 +202,49 @@ class WorkflowProcessorTest {
     // then
     verifyNoInteractions(leadUpdatedCommandPublisher);
     verify(workflowService, times(0)).updateExecutedEventDetails(any(Workflow.class));
+  }
+
+  @Test
+  public void givenLeadUpdatedEvent_tryExecuteMultipleWorkflowWithSameCondition_shouldSendAllWorkflowIdsAsExcuted() {
+    // given
+    long tenantId = 101;
+    long userId = 102;
+    long workflowId99 = 99L;
+    long workflowId100 = 100L;
+
+    var lead = new LeadDetail();
+    lead.setId(55L);
+    lead.setFirstName("Johny");
+    lead.setLastName("Stark");
+
+    var old = new LeadDetail();
+    old.setId(55L);
+    old.setFirstName("Steve");
+    old.setLastName("Roger");
+
+    var metadata = new Metadata(tenantId,userId,LEAD,null,null,EntityAction.UPDATED);
+
+    var leadUpdatedEvent = new LeadEvent(lead, old, metadata);
+
+    Workflow workflowMockUpdate99 =
+        getMockEditPropertyWorkflow(workflowId99, TriggerFrequency.UPDATED, "firstName", "tony");
+
+    Workflow workflowMockUpdate100 =
+        getMockEditPropertyWorkflow(workflowId100, TriggerFrequency.UPDATED, "lastName", "stark");
+
+    List<Workflow> workflows = Arrays.asList(workflowMockUpdate99,workflowMockUpdate100);
+
+    given(workflowService.findActiveBy(tenantId, LEAD, TriggerFrequency.UPDATED)).willReturn(workflows);
+    doNothing().when(leadUpdatedCommandPublisher).execute(any(Metadata.class), any(Lead.class));
+    // when
+    workflowProcessor.process(leadUpdatedEvent);
+    // then
+    ArgumentCaptor<Metadata> metadataArgumentCaptor = ArgumentCaptor.forClass(Metadata.class);
+    verify(leadUpdatedCommandPublisher, times(2)).execute(metadataArgumentCaptor.capture(),any(Lead.class));
+    List<Metadata> allValues = metadataArgumentCaptor.getAllValues();
+    Assertions.assertThat(allValues.size()).isEqualTo(2);
+    Assertions.assertThat(allValues.get(0).getExecutedWorkflows()).containsExactlyInAnyOrder("WF_99","WF_100");
+    Assertions.assertThat(allValues.get(1).getExecutedWorkflows()).containsExactlyInAnyOrder("WF_99","WF_100");
   }
 
   private Workflow getMockEditPropertyWorkflow(

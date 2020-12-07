@@ -7,7 +7,7 @@
     "userId": 12,
     "entityType": "LEAD",
     "workflowId": "WF_301",
-    "executedWorkflows": [],
+    "executedWorkflows": ["WF_301"],
     "entityAction": "UPDATED",
     "entityId": 999
   }
