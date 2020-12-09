@@ -1,5 +1,7 @@
 package com.kylas.sales.workflow.domain.workflow.action.webhook;
 
+import static java.util.Objects.isNull;
+
 import com.kylas.sales.workflow.domain.processor.exception.WorkflowExecutionException;
 import com.kylas.sales.workflow.domain.workflow.EntityType;
 import com.kylas.sales.workflow.domain.workflow.action.webhook.attribute.AttributeFactory.LeadAttribute;
@@ -45,9 +47,11 @@ public class Parameter {
   public String getPathToField() {
     EntityAttribute[] values =
         entity.getType().equals(EntityType.LEAD) ? LeadAttribute.values()
-            : entity.getType().equals(EntityType.USER) ? UserAttribute.values() : TenantAttribute.values();
-    return
-        Arrays.stream(values)
+            : entity.getType().equals(EntityType.USER) ? UserAttribute.values() :
+                entity.getType().equals(EntityType.TENANT) ? TenantAttribute.values() : null;
+
+    return isNull(values) ? this.name
+        : Arrays.stream(values)
             .filter(entityAttribute -> entityAttribute.getName().equals(attribute))
             .findFirst()
             .orElseThrow(() -> new WorkflowExecutionException(ErrorCode.INVALID_PARAMETER))

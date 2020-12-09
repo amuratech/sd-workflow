@@ -169,6 +169,37 @@ public class WorkflowIntegrationTests {
   }
 
   @Test
+  @Sql("/test-scripts/integration/custom-param-webhook-workflow.sql")
+  public void givenWorkflowId_withCustomWebhookParam_shouldGetIt() throws IOException {
+    // given
+    stubFor(
+        get("/iam/v1/users/12")
+            .withHeader(AUTHORIZATION, matching("Bearer " + authenticationToken))
+            .willReturn(
+                aResponse()
+                    .withHeader("Content-Type", "application/json")
+                    .withStatus(200)
+                    .withBody(
+                        getResourceAsString("/contracts/user/responses/user-details-by-id.json"))));
+    // when
+    var workflowResponse =
+        buildWebClient().get().uri("/v1/workflows/301").retrieve().bodyToMono(String.class);
+    // then
+    var expectedResponse =
+        getResourceAsString("/contracts/workflow/api/integration/custom-param-response.json");
+    StepVerifier.create(workflowResponse)
+        .assertNext(
+            json -> {
+              try {
+                JSONAssert.assertEquals(expectedResponse, json, JSONCompareMode.LENIENT);
+              } catch (JSONException e) {
+                fail(e.getMessage());
+              }
+            })
+        .verifyComplete();
+  }
+
+  @Test
   @Sql("/test-scripts/integration/insert-lead-workflow-for-integration-test.sql")
   public void givenSearchRequest_tryToSortOnLastTriggeredAt_shouldSortAndGet() throws IOException {
     // given

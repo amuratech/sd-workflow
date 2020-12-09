@@ -1,0 +1,45 @@
+{
+  "id": 301,
+  "name": "Workflow 1",
+  "description": "Workflow 1",
+  "entityType": "LEAD",
+  "trigger": {
+    "name": "EVENT",
+    "triggerFrequency": "CREATED"
+  },
+  "condition": {
+    "conditionType": "FOR_ALL"
+  },
+  "actions": [
+    {
+      "id": "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a12",
+      "type": "WEBHOOK",
+      "payload": {
+        "name": "webhookName",
+        "description": "webhook desc",
+        "method": "GET",
+        "requestUrl": "some-request-url",
+        "authorizationType": "NONE",
+        "parameters": [
+          {
+            "id": 2000,
+            "name": "param1",
+            "entity": "CUSTOM",
+            "attribute": "someCustomValue",
+            "pathToField": "param1"
+          }
+        ]
+      }
+    }
+  ],
+  "createdBy": {
+    "id": 12,
+    "name": "Steve"
+  },
+  "updatedBy": {
+    "id": 12,
+    "name": "Steve"
+  },
+  "triggerCount": 151,
+  "active": true
+}
