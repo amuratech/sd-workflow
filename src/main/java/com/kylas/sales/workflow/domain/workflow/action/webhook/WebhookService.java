@@ -14,6 +14,7 @@ import static com.kylas.sales.workflow.domain.workflow.action.webhook.attribute.
 import static com.kylas.sales.workflow.domain.workflow.action.webhook.attribute.AttributeFactory.WebhookEntity.UPDATED_BY;
 import static java.util.Arrays.stream;
 import static java.util.Collections.emptyList;
+import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static java.util.stream.Collectors.toList;
 
@@ -46,6 +47,7 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.beanutils.PropertyUtils;
+import org.apache.commons.collections.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Service;
@@ -166,6 +168,7 @@ public class WebhookService {
                   }
                   return new SimpleEntry<>(parameter.getName(), getParameterValue(parameter, entity));
                 })
+                .filter(entry -> CollectionUtils.isNotEmpty(entry.getValue()))
                 .collect(Collectors.toMap(SimpleEntry::getKey, SimpleEntry::getValue))
         ).block();
   }
@@ -191,25 +194,30 @@ public class WebhookService {
       if (type.equals(CUSTOM)) {
         return List.of(parameter.getAttribute());
       } else if (type.equals(LEAD) && attribute.equalsIgnoreCase(EMAILS.getName())) {
-        return stream(((LeadDetail) entity).getEmails())
-            .map(Email::getValue)
-            .collect(toList());
+        return isNull(((LeadDetail) entity).getEmails()) ? emptyList()
+            : stream(((LeadDetail) entity).getEmails())
+                .map(Email::getValue)
+                .collect(toList());
       } else if (type.equals(LEAD) && attribute.equalsIgnoreCase(PHONE_NUMBERS.getName())) {
-        return stream(((LeadDetail) entity).getPhoneNumbers())
-            .map(this::buildPhoneNumber)
-            .collect(toList());
+        return isNull(((LeadDetail) entity).getPhoneNumbers()) ? emptyList()
+            : stream(((LeadDetail) entity).getPhoneNumbers())
+                .map(this::buildPhoneNumber)
+                .collect(toList());
       } else if (type.equals(LEAD) && attribute.equalsIgnoreCase(COMPANY_PHONES.getName())) {
-        return stream(((LeadDetail) entity).getCompanyPhones())
-            .map(this::buildPhoneNumber)
-            .collect(toList());
+        return isNull(((LeadDetail) entity).getCompanyPhones()) ? emptyList()
+            : stream(((LeadDetail) entity).getCompanyPhones())
+                .map(this::buildPhoneNumber)
+                .collect(toList());
       } else if (type.equals(LEAD) && attribute.equalsIgnoreCase(REQUIREMENT_PRODUCTS.getName())) {
-        return ((LeadDetail) entity).getProducts().stream()
-            .map(Product::getName)
-            .collect(toList());
+        return isNull(((LeadDetail) entity).getProducts()) ? emptyList()
+            : ((LeadDetail) entity).getProducts().stream()
+                .map(Product::getName)
+                .collect(toList());
       } else if (type.equals(USER) && attribute.equalsIgnoreCase(UserAttribute.PHONE_NUMBERS.getName())) {
-        return stream(((UserDetails) entity).getPhoneNumbers())
-            .map(this::buildPhoneNumber)
-            .collect(toList());
+        return isNull(((UserDetails) entity).getPhoneNumbers()) ? emptyList()
+            : stream(((UserDetails) entity).getPhoneNumbers())
+                .map(this::buildPhoneNumber)
+                .collect(toList());
       }
       var property = PropertyUtils.getNestedProperty(entity, parameter.getPathToField());
       return List.of(nonNull(property) ? property.toString() : "");

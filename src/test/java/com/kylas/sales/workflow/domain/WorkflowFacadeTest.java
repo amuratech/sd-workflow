@@ -14,6 +14,7 @@ import com.kylas.sales.workflow.common.dto.ActionDetail.WebhookAction.Authorizat
 import com.kylas.sales.workflow.common.dto.ActionResponse;
 import com.kylas.sales.workflow.config.TestDatabaseInitializer;
 import com.kylas.sales.workflow.domain.exception.InsufficientPrivilegeException;
+import com.kylas.sales.workflow.domain.exception.InvalidActionException;
 import com.kylas.sales.workflow.domain.exception.WorkflowNotFoundException;
 import com.kylas.sales.workflow.domain.service.UserService;
 import com.kylas.sales.workflow.domain.user.User;
@@ -126,11 +127,12 @@ class WorkflowFacadeTest {
 
     List<Parameter> parameters = List.of(new Parameter("paramKey", WebhookEntity.LEAD, "firstName"));
 
+    String requestUrl = "https://webhook.site/3e0d9676-ad3c-4cf2-a449-ca334e43b815";
     Set<ActionResponse> actions = Set.of(
         new ActionResponse(EDIT_PROPERTY,
             new ActionDetail.EditPropertyAction("city", "Pune")),
         new ActionResponse(WEBHOOK,
-            new WebhookAction("name", "desc", HttpMethod.GET, "someUrl", AuthorizationType.NONE, parameters, null))
+            new WebhookAction("name", "desc", HttpMethod.GET, requestUrl, AuthorizationType.NONE, parameters, null))
     );
     var workflowRequest = WorkflowStub
         .aWorkflowRequestWithActions("Edit Lead Property", "Edit Lead Property", EntityType.LEAD, TriggerType.EVENT, CREATED,
@@ -151,6 +153,51 @@ class WorkflowFacadeTest {
           return true;
         })
         .verifyComplete();
+  }
+
+  @Transactional
+  @Test
+  @Sql("/test-scripts/insert-users.sql")
+  public void givenWorkflowRequest_withMalformedUrl_shouldThrow() {
+    //given
+    User aUser = UserStub.aUser(11L, 99L, true, true, true, true, true)
+        .withName("user 1");
+    given(authService.getLoggedInUser()).willReturn(aUser);
+    given(userService.getUserDetails(11L, authService.getAuthenticationToken()))
+        .willReturn(Mono.just(aUser));
+
+    String requestUrl = "some-malformed-url";
+    Set<ActionResponse> actions = Set.of(
+        new ActionResponse(WEBHOOK,
+            new WebhookAction("name", "desc", HttpMethod.GET, requestUrl, AuthorizationType.NONE, Collections.emptyList(), null))
+    );
+    var workflowRequest = WorkflowStub
+        .aWorkflowRequestWithActions("Edit Lead Property", "Edit Lead Property", EntityType.LEAD, TriggerType.EVENT, CREATED,
+            ConditionType.FOR_ALL, true, actions);
+    //then
+    assertThatExceptionOfType(InvalidActionException.class)
+        .isThrownBy(() -> workflowFacade.create(workflowRequest).block());
+  }
+
+  @Transactional
+  @Test
+  @Sql("/test-scripts/insert-users.sql")
+  public void givenWorkflowRequest_withInvalidLengthPropertyValue_shouldThrow() {
+    //given
+    User aUser = UserStub.aUser(11L, 99L, true, true, true, true, true)
+        .withName("user 1");
+    given(authService.getLoggedInUser()).willReturn(aUser);
+    given(userService.getUserDetails(11L, authService.getAuthenticationToken()))
+        .willReturn(Mono.just(aUser));
+    Set<ActionResponse> actions = Set.of(
+        new ActionResponse(EDIT_PROPERTY, new ActionDetail.EditPropertyAction("city", "P")));
+
+    var workflowRequest = WorkflowStub
+        .aWorkflowRequestWithActions("Edit Lead Property", "Edit Lead Property", EntityType.LEAD, TriggerType.EVENT, CREATED,
+            ConditionType.FOR_ALL, true, actions);
+    //then
+    assertThatExceptionOfType(InvalidActionException.class)
+        .isThrownBy(() -> workflowFacade.create(workflowRequest).block());
   }
 
   @Transactional
@@ -209,8 +256,9 @@ class WorkflowFacadeTest {
     given(userService.getUserDetails(11L, authService.getAuthenticationToken()))
         .willReturn(Mono.just(aUser));
 
+    String requestUrl = "https://webhook.site/3e0d9676-ad3c-4cf2-a449-ca334e43b815";
     var actionRequest = new ActionResponse(UUID.fromString("a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a12"), WEBHOOK,
-        new ActionDetail.WebhookAction("UpdatedName", "UpdatedDescription", HttpMethod.GET, "updatedUrl", AuthorizationType.NONE,
+        new ActionDetail.WebhookAction("UpdatedName", "UpdatedDescription", HttpMethod.GET, requestUrl, AuthorizationType.NONE,
             Collections.emptyList(), "someAuthParameter"));
     Set<ActionResponse> actions = Set.of(actionRequest);
 

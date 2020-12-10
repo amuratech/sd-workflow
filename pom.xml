@@ -32,6 +32,8 @@
     <!--<editor-fold desc="Test Dependencies">-->
     <commons-io.version>2.6</commons-io.version>
     <commons-lang.version>3.9</commons-lang.version>
+    <commons-beanutils.version>1.9.4</commons-beanutils.version>
+    <commons-validator.version>1.3.0</commons-validator.version>
     <jsonassert.version>1.5.0</jsonassert.version>
     <junit-jupiter-testcontainer.version>1.12.4</junit-jupiter-testcontainer.version>
     <test-container-postgresql.version>1.10.6</test-container-postgresql.version>
@@ -88,7 +90,12 @@
     <dependency>
       <groupId>commons-beanutils</groupId>
       <artifactId>commons-beanutils</artifactId>
-      <version>1.9.4</version>
+      <version>${commons-beanutils.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>commons-validator</groupId>
+      <artifactId>commons-validator</artifactId>
+      <version>${commons-validator.version}</version>
     </dependency>
 
     <dependency>

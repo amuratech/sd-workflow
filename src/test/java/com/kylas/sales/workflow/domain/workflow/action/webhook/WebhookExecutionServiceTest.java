@@ -362,6 +362,49 @@ class WebhookExecutionServiceTest {
                     "http://some-random-host:9000/get-webhook?leadEmails=abc@kylas.io&leadEmails=def@kylas.io&leadFirstName=Tony&leadPhones=+91%208600990099&leadPhones=+91%208600990022")));
   }
 
+  @Test
+  public void givenWorkflowRequest_withNullCollectionParameters_shouldCreate() {
+    // given
+    String authenticationToken = "some-token";
+    given(authService.getAuthenticationToken()).willReturn(authenticationToken);
+    var idNameStore =
+        Map.of(
+            "salutation", Map.of(200L, "Mr."),
+            "createdBy", Map.of(10L, "Sandeep"),
+            "updatedBy", Map.of(10L, "Sandeep"));
+
+    User user = new User(12L, 1000L, Collections.emptySet(), "Amit", "Pandit", "Amit Pandit", "dept", "des", "INR", "timezone", "lang", "AP", true,
+        "some.email@kylas.io", null, 200L, 10L, 10L, new Metadata(idNameStore));
+    given(userService.getUserDetails(eq(12L), eq(authenticationToken)))
+        .willReturn(Mono.just(user));
+    var mockResponse = Mono.just(ClientResponse.create(HttpStatus.OK).build());
+    given(exchangeFunction.exchange(any())).willReturn(mockResponse);
+
+    // when
+    LeadDetail lead = getStubbedLead(12L);
+    lead.setFirstName("Tony");
+    lead.setCreatedBy(new IdName(12L, "user"));
+    lead.setEmails(null);
+    lead.setPhoneNumbers(null);
+    List<Parameter> parameters = List.of(
+        new Parameter("leadFirstName", WebhookEntity.LEAD, LeadAttribute.FIRST_NAME.getName()),
+        new Parameter("leadEmails", WebhookEntity.LEAD, LeadAttribute.EMAILS.getName()),
+        new Parameter("leadPhones", WebhookEntity.LEAD, LeadAttribute.PHONE_NUMBERS.getName()),
+        new Parameter("leadProducts", WebhookEntity.LEAD, LeadAttribute.REQUIREMENT_PRODUCTS.getName()),
+        new Parameter("ownerPhones", WebhookEntity.LEAD_OWNER, UserAttribute.PHONE_NUMBERS.getName()));
+    WebhookAction action = new WebhookAction("OwnerWebhook", "some description", GET, AuthorizationType.NONE,
+        "http://some-random-host:9000/get-webhook", parameters, null);
+
+    //when
+    webhookService.execute(action, lead);
+
+    //then
+    verify(exchangeFunction).exchange(argThat(request ->
+        request.method().equals(GET) &&
+            request.url().toString()
+                .equals("http://some-random-host:9000/get-webhook?leadFirstName=Tony")));
+  }
+
   @NotNull
   private LeadDetail getStubbedLead(long userId) {
     var lead = new LeadDetail();

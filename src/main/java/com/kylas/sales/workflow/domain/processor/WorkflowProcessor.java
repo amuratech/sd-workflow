@@ -57,19 +57,15 @@ public class WorkflowProcessor {
           Metadata metadata = event.getMetadata().with(workflow.getId()).withAllWorkflowIds(workflowIds).withEntityId(entity.getId());
           Set<AbstractWorkflowAction> workflowActions = workflow.getWorkflowActions();
           log.info("Workflow execution start for workflowId {} and prev metadata {}", workflow.getId(), event.getMetadata());
-          workflowActions.stream()
-              .forEach(workflowAction -> {
-                try {
-                  processAction(metadata, workflowAction, entity);
-                  workflowService.updateExecutedEventDetails(workflow);
-                } catch (WorkflowExecutionException e) {
-                  log.error(e.getMessage());
-                } catch (Exception e) {
-                  log.error("Exception while executing workflow Id {} with new metadata {} and errorMessage {} ", workflow.getId(), metadata,
-                      e.getMessage());
-                  log.error(e.getMessage(), e);
-                }
-              });
+          workflowActions.forEach(workflowAction -> {
+            try {
+              processAction(metadata, workflowAction, entity);
+            } catch (Exception e) {
+              log.error("Exception while executing workflow Id {} with new metadata {} and errorMessage {} ",
+                  workflow.getId(), metadata, e.getMessage());
+            }
+          });
+          workflowService.updateExecutedEventDetails(workflow);
         });
   }
 

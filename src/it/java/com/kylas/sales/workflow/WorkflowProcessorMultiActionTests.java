@@ -98,7 +98,7 @@ public class WorkflowProcessorMultiActionTests {
 
     Workflow workflow = workflowFacade.get(301);
     Assertions.assertThat(workflow.getWorkflowExecutedEvent().getLastTriggeredAt()).isNotNull();
-    Assertions.assertThat(workflow.getWorkflowExecutedEvent().getTriggerCount()).isEqualTo(153);
+    Assertions.assertThat(workflow.getWorkflowExecutedEvent().getTriggerCount()).isEqualTo(152);
   }
 
   static class MockMqListener {

@@ -30,10 +30,14 @@ public class EditPropertyAction extends AbstractWorkflowAction implements com.ky
 
   public static AbstractWorkflowAction createNew(ActionResponse actionResponse) {
     var payload = (ActionDetail.EditPropertyAction) actionResponse.getPayload();
-    if (isBlank(payload.getName()) || isBlank(payload.getValue())) {
+    if (isBlank(payload.getName()) || getCharCount(payload.getValue()) < 3) {
       throw new InvalidActionException();
     }
     return new EditPropertyAction(payload.getName(), payload.getValue());
+  }
+
+  private static int getCharCount(String value) {
+    return isBlank(value) ? 0 : value.length();
   }
 
   public static ActionResponse toActionResponse(EditPropertyAction action) {
@@ -49,7 +53,7 @@ public class EditPropertyAction extends AbstractWorkflowAction implements com.ky
   @Override
   public EditPropertyAction update(ActionResponse action) {
     var payload = (ActionDetail.EditPropertyAction) action.getPayload();
-    if (isBlank(payload.getName()) || isBlank(payload.getValue())) {
+    if (isBlank(payload.getName()) || getCharCount(payload.getValue()) < 3) {
       throw new InvalidActionException();
     }
     this.setName(payload.getName());

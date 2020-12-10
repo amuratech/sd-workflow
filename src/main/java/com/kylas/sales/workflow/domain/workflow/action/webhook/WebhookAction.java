@@ -2,10 +2,12 @@ package com.kylas.sales.workflow.domain.workflow.action.webhook;
 
 import static com.kylas.sales.workflow.domain.workflow.action.WorkflowAction.ActionType.WEBHOOK;
 import static java.util.Objects.nonNull;
+import static org.apache.commons.validator.UrlValidator.ALLOW_ALL_SCHEMES;
 
 import com.kylas.sales.workflow.common.dto.ActionDetail;
 import com.kylas.sales.workflow.common.dto.ActionDetail.WebhookAction.AuthorizationType;
 import com.kylas.sales.workflow.common.dto.ActionResponse;
+import com.kylas.sales.workflow.domain.exception.InvalidActionException;
 import com.kylas.sales.workflow.domain.workflow.Workflow;
 import com.kylas.sales.workflow.domain.workflow.action.AbstractWorkflowAction;
 import com.kylas.sales.workflow.domain.workflow.action.WorkflowAction;
@@ -23,6 +25,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.validator.UrlValidator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Component;
@@ -98,6 +101,7 @@ public class WebhookAction extends AbstractWorkflowAction implements WorkflowAct
   private static class WebhookActionMapper {
 
     private static CryptoService cryptoService;
+    private static final UrlValidator urlValidator = new UrlValidator(ALLOW_ALL_SCHEMES);
 
     @Autowired
     public void setCryptoService(CryptoService cryptoService) {
@@ -115,6 +119,9 @@ public class WebhookAction extends AbstractWorkflowAction implements WorkflowAct
 
     public static WebhookAction fromActionResponse(ActionResponse action) {
       var payload = (ActionDetail.WebhookAction) action.getPayload();
+      if (!urlValidator.isValid(payload.getRequestUrl())) {
+        throw new InvalidActionException();
+      }
       var encrypted = nonNull(payload.getAuthorizationParameter())
           ? cryptoService.encrypt(payload.getAuthorizationParameter())
           : null;
