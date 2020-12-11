@@ -14,9 +14,13 @@ import static com.kylas.sales.workflow.domain.workflow.action.webhook.attribute.
 import static com.kylas.sales.workflow.domain.workflow.action.webhook.attribute.AttributeFactory.WebhookEntity.UPDATED_BY;
 import static java.util.Arrays.stream;
 import static java.util.Collections.emptyList;
+import static java.util.Collections.emptyMap;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toMap;
+import static org.apache.commons.collections.CollectionUtils.isNotEmpty;
+import static org.springframework.http.HttpMethod.GET;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kylas.sales.workflow.common.dto.Tenant;
@@ -43,15 +47,19 @@ import java.util.AbstractMap.SimpleEntry;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.beanutils.PropertyUtils;
-import org.apache.commons.collections.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.client.reactive.ClientHttpRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.web.reactive.function.BodyInserter;
+import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.util.UriComponentsBuilder;
 import reactor.core.publisher.Flux;
@@ -101,23 +109,40 @@ public class WebhookService {
 
   public void execute(WebhookAction webhookAction, LeadDetail entity) {
     log.info("Executing webhook action with name {} & Id {}", webhookAction.getName(), webhookAction.getId());
+    var requestParameters = buildLeadParameters(webhookAction, entity);
     var uri = UriComponentsBuilder
         .fromUriString(webhookAction.getRequestUrl())
-        .queryParams(new LinkedMultiValueMap<>(buildLeadParameters(webhookAction, entity)))
+        .queryParams(buildQueryParams(webhookAction, requestParameters))
         .build()
         .toUri();
     log.info("Prepared uri is {}", uri.toString());
     webClient
         .method(webhookAction.getMethod())
         .uri(uri)
-        .headers(setAuthorizationHeader(webhookAction))
+        .body(buildRequestBody(webhookAction.getMethod(), requestParameters))
+        .headers(buildAuthorizationHeader(webhookAction))
         .retrieve()
         .bodyToMono(String.class)
         .subscribe(s -> log.debug("Received webhook response {}", s));
     log.info("Executed webhook action with name {} & Id {}", webhookAction.getName(), webhookAction.getId());
   }
 
-  private Consumer<HttpHeaders> setAuthorizationHeader(WebhookAction action) {
+  private BodyInserter<?, ? super ClientHttpRequest> buildRequestBody(HttpMethod method, Map<String, List<String>> parameters) {
+    if (method.equals(GET)) {
+      return BodyInserters.empty();
+    }
+    var collectedParameters = parameters.entrySet().stream()
+        .filter(entry -> isNotEmpty(entry.getValue()))
+        .collect(toMap(Entry::getKey, entry -> entry.getValue().size() == 1 ? entry.getValue().get(0) : entry.getValue()));
+    return BodyInserters.fromValue(collectedParameters);
+  }
+
+  private LinkedMultiValueMap<String, String> buildQueryParams(WebhookAction webhookAction, Map<String, List<String>> requestParameters) {
+    return new LinkedMultiValueMap<>(
+        webhookAction.getMethod().equals(GET) ? requestParameters : emptyMap());
+  }
+
+  private Consumer<HttpHeaders> buildAuthorizationHeader(WebhookAction action) {
     if (action.getAuthorizationType().equals(NONE)) {
       return NO_HEADER_CONSUMER;
     }
@@ -168,7 +193,7 @@ public class WebhookService {
                   }
                   return new SimpleEntry<>(parameter.getName(), getParameterValue(parameter, entity));
                 })
-                .filter(entry -> CollectionUtils.isNotEmpty(entry.getValue()))
+                .filter(entry -> isNotEmpty(entry.getValue()))
                 .collect(Collectors.toMap(SimpleEntry::getKey, SimpleEntry::getValue))
         ).block();
   }

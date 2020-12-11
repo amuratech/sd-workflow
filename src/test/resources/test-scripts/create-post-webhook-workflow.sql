@@ -30,7 +30,7 @@ VALUES
 ('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a12',301);
 
 INSERT INTO webhook_action (id, workflow_id, name, description, method, authorization_type, request_url) VALUES
-('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a12',301, 'webhookName', 'webhook desc', 'GET', 'NONE', 'https://webhook.site/3e0d9676-ad3c-4cf2-a449-ca334e43b815');
+('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a12',301, 'webhookName', 'webhook desc', 'POST', 'NONE', 'https://webhook.site/3e0d9676-ad3c-4cf2-a449-ca334e43b815');
 
 INSERT INTO parameter (id,name,entity, attribute, webhook_action_id) OVERRIDING SYSTEM VALUE VALUES
 (2000, 'param1','LEAD', 'firstName', 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a12'),

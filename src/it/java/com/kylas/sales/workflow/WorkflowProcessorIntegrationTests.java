@@ -190,7 +190,7 @@ public class WorkflowProcessorIntegrationTests {
 
     @Test
     @Sql("/test-scripts/create-webhook-workflow.sql")
-    public void givenLeadCreateEvent_shouldExecuteWebhook() throws IOException, InterruptedException {
+    public void givenLeadCreateEvent_usingMethodGET_shouldExecute() throws IOException, InterruptedException {
       //given
       String authenticationToken = "some-token";
       User aUser = UserStub.aUser(12L, 99L, true, true, true, true, true)
@@ -223,6 +223,78 @@ public class WorkflowProcessorIntegrationTests {
       //then
       Workflow workflow = workflowFacade.get(301);
       Assertions.assertThat(workflow.getWorkflowExecutedEvent().getLastTriggeredAt()).isNotNull();
+      Assertions.assertThat(workflow.getWorkflowExecutedEvent().getTriggerCount()).isEqualTo(152);
+    }
+
+    @Test
+    @Sql("/test-scripts/create-post-webhook-workflow.sql")
+    public void givenLeadCreateEvent_usingMethodPOST_shouldExecute() throws IOException, InterruptedException {
+      //given
+      String authenticationToken = "some-token";
+      User aUser = UserStub.aUser(12L, 99L, true, true, true, true, true)
+          .withName("user 1");
+      given(authService.getLoggedInUser()).willReturn(aUser);
+      given(authService.getAuthenticationToken()).willReturn(authenticationToken);
+
+      stubFor(
+          get("/iam/v1/users/10")
+              .withHeader(AUTHORIZATION, matching("Bearer " + authenticationToken))
+              .willReturn(
+                  okForContentType(
+                      MediaType.APPLICATION_JSON_VALUE,
+                      getResourceAsString("/contracts/user/responses/user-details-by-id.json"))));
+
+      stubFor(
+          get("/iam/v1/tenants")
+              .withHeader(AUTHORIZATION, matching("Bearer " + authenticationToken))
+              .willReturn(
+                  okForContentType(
+                      MediaType.APPLICATION_JSON_VALUE,
+                      getResourceAsString("/contracts/user/responses/tenant-details.json"))));
+
+      String resourceAsString = getResourceAsString("/contracts/mq/events/lead-created-v2-event.json");
+      LeadEvent leadEvent = objectMapper.readValue(resourceAsString, LeadEvent.class);
+      initializeRabbitMqListener(LEAD_UPDATE_COMMAND_QUEUE, SALES_LEAD_UPDATE_QUEUE);
+      //when
+      rabbitTemplate.convertAndSend(SALES_EXCHANGE, LeadEvent.getLeadCreatedEventName(), leadEvent);
+      mockMqListener.latch.await(3, TimeUnit.SECONDS);
+      //then
+      Workflow workflow = workflowFacade.get(301);
+      Assertions.assertThat(workflow.getWorkflowExecutedEvent().getTriggerCount()).isEqualTo(152);
+    }
+
+    @Test
+    @Sql("/test-scripts/create-put-webhook-workflow.sql")
+    public void givenLeadCreateEvent_usingMethodPUT_shouldExecute() throws IOException, InterruptedException {
+      //given
+      String authenticationToken = "some-token";
+      User aUser = UserStub.aUser(12L, 99L, true, true, true, true, true)
+          .withName("user 1");
+      given(authService.getLoggedInUser()).willReturn(aUser);
+      given(authService.getAuthenticationToken()).willReturn(authenticationToken);
+
+      stubFor(
+          get("/iam/v1/users/10")
+              .willReturn(
+                  okForContentType(
+                      MediaType.APPLICATION_JSON_VALUE,
+                      getResourceAsString("/contracts/user/responses/user-details-by-id.json"))));
+
+      stubFor(
+          get("/iam/v1/tenants")
+              .willReturn(
+                  okForContentType(
+                      MediaType.APPLICATION_JSON_VALUE,
+                      getResourceAsString("/contracts/user/responses/tenant-details.json"))));
+
+      String resourceAsString = getResourceAsString("/contracts/mq/events/lead-created-v2-event.json");
+      LeadEvent leadEvent = objectMapper.readValue(resourceAsString, LeadEvent.class);
+      initializeRabbitMqListener(LEAD_UPDATE_COMMAND_QUEUE, SALES_LEAD_UPDATE_QUEUE);
+      //when
+      rabbitTemplate.convertAndSend(SALES_EXCHANGE, LeadEvent.getLeadCreatedEventName(), leadEvent);
+      mockMqListener.latch.await(3, TimeUnit.SECONDS);
+      //then
+      Workflow workflow = workflowFacade.get(301);
       Assertions.assertThat(workflow.getWorkflowExecutedEvent().getTriggerCount()).isEqualTo(152);
     }
   }
