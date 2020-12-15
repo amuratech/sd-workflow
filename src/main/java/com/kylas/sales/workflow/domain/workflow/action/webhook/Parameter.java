@@ -44,7 +44,7 @@ public class Parameter {
     this.attribute = attribute;
   }
 
-  public String getPathToField() {
+  public String fetchPathToField() {
     EntityAttribute[] values =
         entity.getType().equals(EntityType.LEAD) ? LeadAttribute.values()
             : entity.getType().equals(EntityType.USER) ? UserAttribute.values() :

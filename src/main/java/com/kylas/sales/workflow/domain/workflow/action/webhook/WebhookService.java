@@ -244,7 +244,7 @@ public class WebhookService {
                 .map(this::buildPhoneNumber)
                 .collect(toList());
       }
-      var property = PropertyUtils.getNestedProperty(entity, parameter.getPathToField());
+      var property = PropertyUtils.getNestedProperty(entity, parameter.fetchPathToField());
       return List.of(nonNull(property) ? property.toString() : "");
     } catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
       log.error("Exception while building webhook request to be executed.", e);
