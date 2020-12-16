@@ -60,6 +60,7 @@ public class Workflow {
       fetch = FetchType.EAGER,
       cascade = CascadeType.ALL,
       mappedBy = "workflow",
+      orphanRemoval = true,
       targetEntity = AbstractWorkflowAction.class)
   private Set<AbstractWorkflowAction> workflowActions;
 

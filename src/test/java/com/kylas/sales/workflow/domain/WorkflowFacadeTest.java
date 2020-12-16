@@ -202,6 +202,34 @@ class WorkflowFacadeTest {
 
   @Transactional
   @Test
+  @Sql("/test-scripts/insert-users.sql")
+  public void givenWorkflowRequest_withDuplicateWebhookParamKey_shouldThrow() {
+    //given
+    User aUser = UserStub.aUser(11L, 99L, true, true, true, true, true)
+        .withName("user 1");
+    given(authService.getLoggedInUser()).willReturn(aUser);
+    given(userService.getUserDetails(11L, authService.getAuthenticationToken()))
+        .willReturn(Mono.just(aUser));
+
+    String requestUrl = "https://webhook.site/3e0d9676-ad3c-4cf2-a449-ca334e43b815";
+    List<Parameter> params = List.of(
+        new Parameter("key", WebhookEntity.CUSTOM, "some-value"),
+        new Parameter("key", WebhookEntity.CUSTOM, "some-different-value"));
+
+    Set<ActionResponse> actions = Set.of(
+        new ActionResponse(WEBHOOK,
+            new WebhookAction("name", "desc", HttpMethod.GET, requestUrl, AuthorizationType.NONE, params, null)));
+
+    var workflowRequest = WorkflowStub
+        .aWorkflowRequestWithActions("Edit Lead Property", "Edit Lead Property", EntityType.LEAD, TriggerType.EVENT, CREATED,
+            ConditionType.FOR_ALL, true, actions);
+    //then
+    assertThatExceptionOfType(InvalidActionException.class)
+        .isThrownBy(() -> workflowFacade.create(workflowRequest).block());
+  }
+
+  @Transactional
+  @Test
   @Sql("/test-scripts/insert-workflow.sql")
   public void givenWorkflowUpdateRequest_shouldUpdateIt() {
     //given
@@ -291,6 +319,101 @@ class WorkflowFacadeTest {
           return true;
         })
         .verifyComplete();
+  }
+
+  @Transactional
+  @Test
+  @Sql("/test-scripts/create-webhook-workflow.sql")
+  public void givenWorkflowUpdateRequest_withEmptyParam_shouldUpdateIt() {
+    //given
+    User aUser = UserStub.aUser(11L, 99L, true, true, true, true, true)
+        .withName("user 1");
+    given(authService.getLoggedInUser()).willReturn(aUser);
+
+    given(userService.getUserDetails(11L, authService.getAuthenticationToken()))
+        .willReturn(Mono.just(aUser));
+
+    String requestUrl = "https://webhook.site/3e0d9676-ad3c-4cf2-a449-ca334e43b815";
+    var actionRequest = new ActionResponse(UUID.fromString("a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a12"), WEBHOOK,
+        new ActionDetail.WebhookAction("UpdatedName", "UpdatedDescription", HttpMethod.GET, requestUrl, AuthorizationType.NONE,
+            null, "someAuthParameter"));
+    Set<ActionResponse> actions = Set.of(actionRequest);
+
+    var workflowRequest = WorkflowStub
+        .aWorkflowRequestWithActions("UpdatedWorkflowName", "UpdatedWorkflowProperty", EntityType.LEAD, TriggerType.EVENT, CREATED,
+            ConditionType.FOR_ALL, actions);
+    //when
+    var updatedWorkflow = workflowFacade.update(301L, workflowRequest);
+    //then
+    StepVerifier.create(updatedWorkflow)
+        .expectNextMatches(workflow -> {
+          assertThat(workflow.getId())
+              .isNotNull()
+              .isGreaterThan(0L);
+
+          assertThat(workflow.getWorkflowActions().size()).isEqualTo(1);
+          assertThat(workflow.getWorkflowActions()).hasSize(1);
+          var webhookAction = workflow.getWorkflowActions().stream()
+              .filter(action -> action.getType().equals(WEBHOOK))
+              .findFirst();
+          assertThat(webhookAction).isPresent();
+          var actionDetail = (com.kylas.sales.workflow.domain.workflow.action.webhook.WebhookAction) webhookAction.get();
+
+          assertThat(actionDetail.getParameters()).isEmpty();
+          assertThat(actionDetail.getId()).isEqualTo(UUID.fromString("a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a12"));
+          assertThat(actionDetail.getName()).isEqualTo("UpdatedName");
+          assertThat(actionDetail.getDescription()).isEqualTo("UpdatedDescription");
+          return true;
+        })
+        .verifyComplete();
+  }
+
+  @Transactional
+  @Test
+  @Sql("/test-scripts/create-multiple-actions-workflow.sql")
+  public void givenWorkflowUpdateRequest_onRemovingActions_shouldUpdateIt() {
+    //given
+    User aUser = UserStub.aUser(11L, 99L, true, true, true, true, true)
+        .withName("user 1");
+    given(authService.getLoggedInUser()).willReturn(aUser);
+
+    given(userService.getUserDetails(11L, authService.getAuthenticationToken()))
+        .willReturn(Mono.just(aUser));
+
+    String requestUrl = "https://webhook.site/3e0d9676-ad3c-4cf2-a449-ca334e43b815";
+    var actionRequest = new ActionResponse(UUID.fromString("a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a12"), WEBHOOK,
+        new ActionDetail.WebhookAction("webhookName", "webhook desc", HttpMethod.GET, requestUrl, AuthorizationType.NONE,
+            null, "someAuthParameter"));
+    Set<ActionResponse> actions = Set.of(actionRequest);
+
+    var workflowRequest = WorkflowStub
+        .aWorkflowRequestWithActions("Workflow 1", "Workflow 1", EntityType.LEAD, TriggerType.EVENT, CREATED,
+            ConditionType.FOR_ALL, actions);
+    //when
+    var updatedWorkflow = workflowFacade.update(301L, workflowRequest);
+    //then
+    StepVerifier.create(updatedWorkflow)
+        .expectNextMatches(workflow -> {
+          assertThat(workflow.getId())
+              .isNotNull()
+              .isGreaterThan(0L);
+
+          assertThat(workflow.getWorkflowActions().size()).isEqualTo(1);
+          assertThat(workflow.getWorkflowActions()).hasSize(1);
+          var webhookAction = workflow.getWorkflowActions().stream()
+              .filter(action -> action.getType().equals(WEBHOOK))
+              .findFirst();
+          assertThat(webhookAction).isPresent();
+          var actionDetail = (com.kylas.sales.workflow.domain.workflow.action.webhook.WebhookAction) webhookAction.get();
+
+          assertThat(actionDetail.getParameters()).isEmpty();
+          assertThat(actionDetail.getId()).isEqualTo(UUID.fromString("a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a12"));
+          assertThat(actionDetail.getName()).isEqualTo("webhookName");
+          assertThat(actionDetail.getDescription()).isEqualTo("webhook desc");
+          return true;
+        })
+        .verifyComplete();
+    assertThat(workflowFacade.get(301L).getWorkflowActions()).hasSize(1);
   }
 
   @Transactional

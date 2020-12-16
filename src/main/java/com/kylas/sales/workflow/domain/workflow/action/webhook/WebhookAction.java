@@ -1,7 +1,9 @@
 package com.kylas.sales.workflow.domain.workflow.action.webhook;
 
 import static com.kylas.sales.workflow.domain.workflow.action.WorkflowAction.ActionType.WEBHOOK;
+import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
+import static java.util.stream.Collectors.toList;
 import static org.apache.commons.validator.UrlValidator.ALLOW_ALL_SCHEMES;
 
 import com.kylas.sales.workflow.common.dto.ActionDetail;
@@ -11,8 +13,8 @@ import com.kylas.sales.workflow.domain.exception.InvalidActionException;
 import com.kylas.sales.workflow.domain.workflow.Workflow;
 import com.kylas.sales.workflow.domain.workflow.action.AbstractWorkflowAction;
 import com.kylas.sales.workflow.domain.workflow.action.WorkflowAction;
+import java.util.Collections;
 import java.util.List;
-import java.util.UUID;
 import javax.persistence.CascadeType;
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
@@ -21,6 +23,7 @@ import javax.persistence.FetchType;
 import javax.persistence.JoinColumn;
 import javax.persistence.OneToMany;
 import javax.validation.constraints.NotBlank;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -55,6 +58,7 @@ public class WebhookAction extends AbstractWorkflowAction implements WorkflowAct
 
   @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER, orphanRemoval = true)
   @JoinColumn(name = "webhook_action_id")
+  @Setter(AccessLevel.NONE)
   private List<Parameter> parameters;
 
   public WebhookAction(@NotBlank String name, String description, HttpMethod method,
@@ -82,13 +86,25 @@ public class WebhookAction extends AbstractWorkflowAction implements WorkflowAct
     super.setWorkflow(workflow);
   }
 
-  @Override
-  public WebhookAction update(ActionResponse action) {
-    return WebhookActionMapper.fromActionResponse(action).withId(getId());
+  public void setParameters(List<Parameter> parameters) {
+    this.parameters.clear();
+    if (parameters != null) {
+      this.parameters.addAll(parameters);
+    }
   }
 
-  private WebhookAction withId(UUID id) {
-    this.setId(id);
+  @Override
+  public WebhookAction update(ActionResponse action) {
+    var payload = (ActionDetail.WebhookAction) action.getPayload();
+    WebhookActionMapper.validate(payload);
+
+    this.setName(payload.getName());
+    this.setDescription(payload.getDescription());
+    this.setMethod(payload.getMethod());
+    this.setAuthorizationType(payload.getAuthorizationType());
+    this.setAuthorizationParameter(WebhookActionMapper.encrypt(payload.getAuthorizationParameter()));
+    this.setRequestUrl(payload.getRequestUrl());
+    this.setParameters(payload.getParameters());
     return this;
   }
 
@@ -119,12 +135,9 @@ public class WebhookAction extends AbstractWorkflowAction implements WorkflowAct
 
     public static WebhookAction fromActionResponse(ActionResponse action) {
       var payload = (ActionDetail.WebhookAction) action.getPayload();
-      if (!urlValidator.isValid(payload.getRequestUrl())) {
-        throw new InvalidActionException();
-      }
-      var encrypted = nonNull(payload.getAuthorizationParameter())
-          ? cryptoService.encrypt(payload.getAuthorizationParameter())
-          : null;
+      validate(payload);
+      var encrypted = encrypt(payload.getAuthorizationParameter());
+
       return new WebhookAction(
           payload.getName(),
           payload.getDescription(),
@@ -133,6 +146,20 @@ public class WebhookAction extends AbstractWorkflowAction implements WorkflowAct
           payload.getRequestUrl(),
           payload.getParameters(),
           encrypted);
+    }
+
+    private static String encrypt(String text) {
+      return nonNull(text) ? cryptoService.encrypt(text) : null;
+    }
+
+    private static void validate(ActionDetail.WebhookAction payload) {
+      var keys =
+          isNull(payload.getParameters()) ? Collections.emptyList()
+              : payload.getParameters().stream().map(Parameter::getName).collect(toList());
+      var duplicateKeyExists = keys.size() != keys.stream().distinct().count();
+      if (!urlValidator.isValid(payload.getRequestUrl()) || duplicateKeyExists) {
+        throw new InvalidActionException();
+      }
     }
   }
 }
