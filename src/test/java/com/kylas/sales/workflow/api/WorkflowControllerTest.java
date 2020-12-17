@@ -33,7 +33,6 @@ import com.kylas.sales.workflow.stubs.WorkflowStub;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Set;
@@ -175,7 +174,7 @@ class WorkflowControllerTest {
     //given
     var requestPayload = getResourceAsString("classpath:contracts/workflow/api/update-workflow-request.json");
     WorkflowTrigger trigger = new WorkflowTrigger(TriggerType.EVENT, TriggerFrequency.CREATED);
-    WorkflowCondition condition = new WorkflowCondition(ConditionType.FOR_ALL);
+    WorkflowCondition condition = new WorkflowCondition(ConditionType.FOR_ALL, null);
     Set<ActionResponse> actions =
         Set.of(
             new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("city", "Pune")));

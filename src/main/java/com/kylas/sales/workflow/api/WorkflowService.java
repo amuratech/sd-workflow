@@ -60,7 +60,10 @@ public class WorkflowService {
         new WorkflowTrigger(
             workflow.getWorkflowTrigger().getTriggerType(),
             workflow.getWorkflowTrigger().getTriggerFrequency());
-    var workflowCondition = new WorkflowCondition(workflow.getWorkflowCondition().getType());
+    var workflowCondition =
+        new WorkflowCondition(
+            workflow.getWorkflowCondition().getType(),
+            workflow.getWorkflowCondition().getExpression());
 
     Set<ActionResponse> actions =
         workflow.getWorkflowActions().stream()

@@ -6,6 +6,7 @@ import com.kylas.sales.workflow.common.dto.ActionDetail.EditPropertyAction;
 import com.kylas.sales.workflow.common.dto.ActionResponse;
 import com.kylas.sales.workflow.common.dto.User;
 import com.kylas.sales.workflow.common.dto.WorkflowCondition;
+import com.kylas.sales.workflow.common.dto.WorkflowCondition.ConditionExpression;
 import com.kylas.sales.workflow.common.dto.WorkflowTrigger;
 import com.kylas.sales.workflow.domain.user.Action;
 import com.kylas.sales.workflow.domain.workflow.ConditionType;
@@ -38,6 +39,17 @@ public class WorkflowStub {
     var actionRequests = new HashSet<ActionResponse>();
     actionRequests.add(actionRequest);
     return new WorkflowRequest(name, description, entityType, triggerRequest, conditionRequest, actionRequests, active);
+  }
+
+  public static WorkflowRequest anConditionBasedEditPropertyWorkflowRequest(
+      String name,
+      String description,
+      EntityType entityType,
+      ConditionExpression expression,
+      Set<ActionResponse> actions) {
+    var triggerRequest = new WorkflowTrigger(TriggerType.EVENT, TriggerFrequency.CREATED);
+    var conditionRequest = new WorkflowCondition(ConditionType.CONDITION_BASED, expression);
+    return new WorkflowRequest(name, description, entityType, triggerRequest, conditionRequest, actions, true);
   }
 
   public static WorkflowRequest aWorkflowRequestWithActions(

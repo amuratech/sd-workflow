@@ -12,6 +12,7 @@ public class ErrorCode {
   public static final String INVALID_FILTER_RULE = serviceCode + Module.Domain.getCode() + "006";
   public static final String INVALID_PARAMETER = serviceCode + Module.Domain.getCode() + "007";
   public static final String CRYPTO_FAILURE = serviceCode + Module.Domain.getCode() + "008";
+  public static final String INVALID_CONDITION = serviceCode + Module.Domain.getCode() + "009";
 
   public static final String INSUFFICIENT_PRIVILEGES =
       serviceCode + Module.Security.getCode() + "001";

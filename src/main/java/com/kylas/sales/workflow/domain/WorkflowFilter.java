@@ -80,7 +80,7 @@ public class WorkflowFilter {
       }
     }
     if ("".equals(fieldValue)) {
-      log.info("Search job operator {} value must not be blank", operator, fieldValue);
+      log.info("Search job operator {} value {} must not be blank", operator, fieldValue);
       throw new InvalidFilterException();
     }
   }

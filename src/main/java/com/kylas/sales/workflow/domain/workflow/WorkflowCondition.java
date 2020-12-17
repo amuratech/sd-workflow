@@ -1,5 +1,12 @@
 package com.kylas.sales.workflow.domain.workflow;
 
+import static com.kylas.sales.workflow.domain.workflow.ConditionType.CONDITION_BASED;
+import static java.util.Objects.isNull;
+
+import com.kylas.sales.workflow.common.dto.WorkflowCondition.ConditionExpression;
+import com.kylas.sales.workflow.domain.exception.InvalidConditionException;
+import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
+import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
@@ -11,25 +18,34 @@ import javax.persistence.OneToOne;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.Type;
+import org.hibernate.annotations.TypeDef;
 
 @Entity
 @Getter
 @Setter
 @NoArgsConstructor
+@TypeDef(name = "jsonb", typeClass = JsonBinaryType.class)
 public class WorkflowCondition {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
+
   @Enumerated(value = EnumType.STRING)
   private ConditionType type;
+
+  @Type(type = "jsonb")
+  @Column(columnDefinition = "jsonb")
+  private ConditionExpression expression;
 
   @OneToOne
   @JoinColumn(name = "workflow_id")
   private Workflow workflow;
 
-  private WorkflowCondition(ConditionType type) {
+  private WorkflowCondition(ConditionType type, ConditionExpression expression) {
     this.type = type;
+    this.expression = expression;
   }
 
   private WorkflowCondition(Long id, ConditionType type, Workflow workflow) {
@@ -39,7 +55,17 @@ public class WorkflowCondition {
   }
 
   public static WorkflowCondition createNew(com.kylas.sales.workflow.common.dto.WorkflowCondition condition) {
-    return new WorkflowCondition(condition.getConditionType());
+    validate(condition);
+    return new WorkflowCondition(condition.getConditionType(), condition.getExpression());
+  }
+
+  private static void validate(com.kylas.sales.workflow.common.dto.WorkflowCondition condition) {
+    if (condition.getConditionType().equals(CONDITION_BASED)) {
+      if (isNull(condition.getExpression())) {
+        throw new InvalidConditionException();
+      }
+      condition.getExpression().validate();
+    }
   }
 
   public WorkflowCondition update(com.kylas.sales.workflow.common.dto.WorkflowCondition condition) {

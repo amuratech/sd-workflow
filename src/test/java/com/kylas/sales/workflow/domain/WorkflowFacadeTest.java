@@ -12,6 +12,8 @@ import com.kylas.sales.workflow.common.dto.ActionDetail;
 import com.kylas.sales.workflow.common.dto.ActionDetail.WebhookAction;
 import com.kylas.sales.workflow.common.dto.ActionDetail.WebhookAction.AuthorizationType;
 import com.kylas.sales.workflow.common.dto.ActionResponse;
+import com.kylas.sales.workflow.common.dto.WorkflowCondition.ConditionExpression;
+import com.kylas.sales.workflow.common.dto.WorkflowCondition.Operator;
 import com.kylas.sales.workflow.config.TestDatabaseInitializer;
 import com.kylas.sales.workflow.domain.exception.InsufficientPrivilegeException;
 import com.kylas.sales.workflow.domain.exception.InvalidActionException;
@@ -23,6 +25,7 @@ import com.kylas.sales.workflow.domain.workflow.EntityType;
 import com.kylas.sales.workflow.domain.workflow.TriggerFrequency;
 import com.kylas.sales.workflow.domain.workflow.TriggerType;
 import com.kylas.sales.workflow.domain.workflow.Workflow;
+import com.kylas.sales.workflow.domain.workflow.WorkflowCondition;
 import com.kylas.sales.workflow.domain.workflow.action.EditPropertyAction;
 import com.kylas.sales.workflow.domain.workflow.action.webhook.CryptoService;
 import com.kylas.sales.workflow.domain.workflow.action.webhook.Parameter;
@@ -108,6 +111,43 @@ class WorkflowFacadeTest {
           assertThat(workflow.getWorkflowExecutedEvent().getTriggerCount()).isEqualTo(0);
 
           assertThat(workflow.isActive()).isTrue();
+          return true;
+        })
+        .verifyComplete();
+  }
+
+  @Transactional
+  @Test
+  @Sql("/test-scripts/insert-users.sql")
+  public void givenWorkflowRequest_withConditionExpression_shouldCreateIt() {
+    //given
+    User aUser = UserStub.aUser(11L, 99L, true, true, true, true, true)
+        .withName("user 1");
+    given(authService.getLoggedInUser()).willReturn(aUser);
+
+    given(userService.getUserDetails(11L, authService.getAuthenticationToken()))
+        .willReturn(Mono.just(aUser));
+    var action = new ActionResponse(EDIT_PROPERTY, new ActionDetail.EditPropertyAction("firstName", "Tony"));
+
+    ConditionExpression expression = new ConditionExpression(Operator.EQUAL, "firstName", "Tony");
+
+    var workflowRequest = WorkflowStub.anConditionBasedEditPropertyWorkflowRequest(
+        "SomeRandomName", "desc", EntityType.LEAD, expression, Set.of(action));
+    //when
+    var workflowMono = workflowFacade.create(workflowRequest);
+    //then
+    StepVerifier.create(workflowMono)
+        .expectNextMatches(workflow -> {
+          assertThat(workflow.getId())
+              .isNotNull()
+              .isGreaterThan(0L);
+
+          WorkflowCondition condition = workflow.getWorkflowCondition();
+          assertThat(condition.getType()).isEqualTo(ConditionType.CONDITION_BASED);
+          assertThat(condition.getExpression()).isNotNull();
+          assertThat(condition.getExpression().getOperator()).isEqualTo(Operator.EQUAL);
+          assertThat(condition.getExpression().getName()).isEqualTo("firstName");
+          assertThat(condition.getExpression().getValue()).isEqualTo("Tony");
           return true;
         })
         .verifyComplete();
@@ -617,6 +657,24 @@ class WorkflowFacadeTest {
   @Test
   @Sql("/test-scripts/insert-create-lead-workflow.sql")
   public void givenWorkflowId_shouldGetIt() {
+    //given
+    long tenantId = 99L;
+    long userId = 12L;
+    User aUser = UserStub.aUser(userId, tenantId, false, true, true, false, false)
+        .withName("user 1");
+    given(authService.getLoggedInUser()).willReturn(aUser);
+    long workflowId = 301;
+    //when
+    var workflow = workflowFacade.get(workflowId);
+    //then
+    assertThat(workflow.getId()).isEqualTo(workflowId);
+    assertThat(workflow.getAllowedActions().canRead()).isEqualTo(true);
+  }
+
+  @Transactional
+  @Test
+  @Sql("/test-scripts/insert-workflow-with-condition.sql")
+  public void givenWorkflowId_havingConditionOnWorkflow_shouldGetIt() {
     //given
     long tenantId = 99L;
     long userId = 12L;
