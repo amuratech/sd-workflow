@@ -119,6 +119,11 @@ public class WorkflowIntegrationTests {
                     new CustomComparator(
                         JSONCompareMode.STRICT,
                         new Customization("actions[0].id", (o1, o2) -> true),
+                        new Customization("actions[1].id", (o1, o2) -> true),
+                        new Customization("actions[2].id", (o1, o2) -> true),
+                        new Customization("actions[0].payload", (o1, o2) -> true),
+                        new Customization("actions[1].payload", (o1, o2) -> true),
+                        new Customization("actions[2].payload", (o1, o2) -> true),
                         new Customization("lastTriggeredAt", (o1, o2) -> true),
                         new Customization("updatedAt", (o1, o2) -> true),
                         new Customization("createdAt", (o1, o2) -> true)));
@@ -160,7 +165,8 @@ public class WorkflowIntegrationTests {
                         new Customization("lastTriggeredAt", (o1, o2) -> true),
                         new Customization("createdAt", (o1, o2) -> true),
                         new Customization("updatedAt", (o1, o2) -> true),
-                        new Customization("actions[0].id", (o1, o2) -> true)));
+                        new Customization("actions[0].id", (o1, o2) -> true),
+                        new Customization("actions[0].payload", (o1, o2) -> true)));
               } catch (JSONException e) {
                 fail(e.getMessage());
               }

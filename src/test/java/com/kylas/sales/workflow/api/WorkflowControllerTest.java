@@ -1,5 +1,7 @@
 package com.kylas.sales.workflow.api;
 
+import static com.kylas.sales.workflow.common.dto.ActionDetail.EditPropertyAction.ValueType.ARRAY;
+import static com.kylas.sales.workflow.common.dto.ActionDetail.EditPropertyAction.ValueType.PLAIN;
 import static java.util.Arrays.asList;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
@@ -13,6 +15,7 @@ import com.kylas.sales.workflow.api.request.WorkflowRequest;
 import com.kylas.sales.workflow.api.response.WorkflowDetail;
 import com.kylas.sales.workflow.api.response.WorkflowSummary;
 import com.kylas.sales.workflow.common.dto.ActionDetail.EditPropertyAction;
+import com.kylas.sales.workflow.common.dto.ActionDetail.EditPropertyAction.ValueType;
 import com.kylas.sales.workflow.common.dto.ActionResponse;
 import com.kylas.sales.workflow.common.dto.User;
 import com.kylas.sales.workflow.common.dto.WorkflowCondition;
@@ -36,7 +39,6 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Set;
-import java.util.UUID;
 import org.apache.commons.io.FileUtils;
 import org.json.JSONException;
 import org.junit.jupiter.api.Test;
@@ -64,6 +66,7 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.testcontainers.shaded.com.fasterxml.jackson.databind.ObjectMapper;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
@@ -74,10 +77,14 @@ import reactor.test.StepVerifier;
 @ContextConfiguration(initializers = TestDatabaseInitializer.class)
 class WorkflowControllerTest {
 
-  @Autowired Environment environment;
-  @Autowired MockMvc mockMvc;
-  @Autowired ResourceLoader resourceLoader;
-  @MockBean WorkflowService workflowService;
+  @Autowired
+  Environment environment;
+  @Autowired
+  MockMvc mockMvc;
+  @Autowired
+  ResourceLoader resourceLoader;
+  @MockBean
+  WorkflowService workflowService;
 
   private WebClient buildWebClient() {
     var port = environment.getProperty("local.server.port");
@@ -93,23 +100,27 @@ class WorkflowControllerTest {
   }
 
   @Test
-  public void givenWorkflow_shouldCreateIt() {
+  public void givenWorkflow_withDifferentValueTypes_shouldCreateIt() {
     //given
     var requestPayload = getResourceAsString("classpath:contracts/workflow/api/create-workflow-request.json");
     given(workflowService.create(argThat(workflowRequest ->
         {
-          var actionDetail =
-              (EditPropertyAction) workflowRequest.getActions().iterator().next().getPayload();
+          List<ValueType> mockList = List.of(ARRAY, PLAIN);
+          List<ValueType> valueTypeList = new ArrayList<>();
+          workflowRequest.getActions().forEach(action -> {
+            EditPropertyAction payload = (EditPropertyAction) action.getPayload();
+            valueTypeList.add(payload.getValueType());
+          });
           return workflowRequest.getName().equalsIgnoreCase("Workflow 1")
               && workflowRequest.getDescription().equalsIgnoreCase("Workflow Description")
               && workflowRequest.getEntityType().equals(EntityType.LEAD)
               && workflowRequest.getTrigger().getName().equals(TriggerType.EVENT)
               && workflowRequest.getTrigger().getTriggerFrequency().equals(TriggerFrequency.CREATED)
               && workflowRequest.getCondition().getConditionType().equals(ConditionType.FOR_ALL)
-              && workflowRequest.getActions().iterator().next().getType().equals(ActionType.EDIT_PROPERTY)
-              && actionDetail.getName().equalsIgnoreCase("city")
-              && actionDetail.getValue().equalsIgnoreCase("Pune")
-              && workflowRequest.isActive();
+              && workflowRequest.getActions().stream().allMatch(action -> action.getType().equals(ActionType.EDIT_PROPERTY)
+              && valueTypeList.containsAll(mockList)
+              && workflowRequest.getActions().size() == 33
+              && workflowRequest.isActive());
         }
     ))).willReturn(Mono.just(new WorkflowSummary(1L)));
     //when
@@ -134,19 +145,24 @@ class WorkflowControllerTest {
   }
 
   @Test
-  public void givenWorkflowWithMultipleActions_shouldCreateIt() {
+  public void givenWorkflowWithMultipleActions_andDifferentValueTypes_shouldCreateIt() {
     //given
     var requestPayload = getResourceAsString("classpath:contracts/workflow/api/create-multiple-actions-workflow.json");
     given(workflowService.create(argThat(
-        workflowRequest ->
-            workflowRequest.getActions()
-                .stream()
-                .anyMatch(editPropertyAction ->
-                    editPropertyAction.getType().equals(ActionType.EDIT_PROPERTY))
-                && workflowRequest.getActions()
-                .stream()
-                .anyMatch(webhookAction ->
-                    webhookAction.getType().equals(ActionType.WEBHOOK))
+        workflowRequest -> {
+          List<ValueType> mockList = List.of(ARRAY, PLAIN);
+          List<ValueType> valueTypeList = new ArrayList<>();
+          workflowRequest.getActions().stream().filter(action -> action.getType().equals(ActionType.EDIT_PROPERTY)).forEach(action -> {
+            EditPropertyAction payload = (EditPropertyAction) action.getPayload();
+            valueTypeList.add(payload.getValueType());
+          });
+          return workflowRequest.getActions()
+              .stream()
+              .anyMatch(webhookAction ->
+                  webhookAction.getType().equals(ActionType.WEBHOOK))
+              && valueTypeList.size() == 33
+              && valueTypeList.containsAll(mockList);
+        }
     ))).willReturn(Mono.just(new WorkflowSummary(1L)));
     //when
     var workflowResponse = buildWebClient()
@@ -170,31 +186,37 @@ class WorkflowControllerTest {
   }
 
   @Test
-  public void givenWorkflowUpdate_shouldUpdateIt() {
+  public void givenWorkflowUpdate_withDifferentValueTypes_shouldUpdateIt() {
     //given
     var requestPayload = getResourceAsString("classpath:contracts/workflow/api/update-workflow-request.json");
+    ObjectMapper objectMapper = new ObjectMapper();
     WorkflowTrigger trigger = new WorkflowTrigger(TriggerType.EVENT, TriggerFrequency.CREATED);
     WorkflowCondition condition = new WorkflowCondition(ConditionType.FOR_ALL, null);
     Set<ActionResponse> actions =
         Set.of(
-            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("city", "Pune")));
+            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("salutation", 1319, PLAIN)),
+            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("dnd", true, PLAIN)),
+            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("city", "PUNE", PLAIN)));
     User user = new User(5000L, "Tony Stark");
     WorkflowDetail workflowDetail = new WorkflowDetail(1L, "Workflow 1", "Workflow Description", EntityType.LEAD, trigger, condition, actions, user,
         user, null, null, null, 0L, null, true);
     given(workflowService.update(eq(1L), argThat(workflowRequest ->
         {
-          var actionDetail =
-              (EditPropertyAction) workflowRequest.getActions().iterator().next().getPayload();
+          List<ValueType> mockList = List.of(PLAIN);
+          List<ValueType> valueTypeList = new ArrayList<>();
+          workflowRequest.getActions().forEach(action -> {
+            EditPropertyAction payload = (EditPropertyAction) action.getPayload();
+            valueTypeList.add(payload.getValueType());
+          });
           return workflowRequest.getName().equalsIgnoreCase("Workflow 1")
               && workflowRequest.getDescription().equalsIgnoreCase("Workflow Description")
               && workflowRequest.getEntityType().equals(EntityType.LEAD)
               && workflowRequest.getTrigger().getName().equals(TriggerType.EVENT)
               && workflowRequest.getTrigger().getTriggerFrequency().equals(TriggerFrequency.CREATED)
               && workflowRequest.getCondition().getConditionType().equals(ConditionType.FOR_ALL)
-              && workflowRequest.getActions().iterator().next().getType().equals(ActionType.EDIT_PROPERTY)
-              && workflowRequest.getActions().iterator().next().getId().equals(UUID.fromString("08518b20-23f9-11eb-adc1-0242ac120002"))
-              && actionDetail.getName().equalsIgnoreCase("city")
-              && actionDetail.getValue().equalsIgnoreCase("Pune")
+              && workflowRequest.getActions().stream().allMatch(actionResponse -> actionResponse.getType().equals(ActionType.EDIT_PROPERTY))
+              && valueTypeList.size() == actions.size()
+              && valueTypeList.containsAll(mockList)
               && workflowRequest.isActive();
         }
     ))).willReturn(Mono.just(workflowDetail));
@@ -225,18 +247,22 @@ class WorkflowControllerTest {
     var requestPayload = getResourceAsString("classpath:contracts/workflow/api/create-deactivated-workflow-request.json");
     given(workflowService.create(argThat(workflowRequest ->
         {
-          var actionDetail =
-              (EditPropertyAction) workflowRequest.getActions().iterator().next().getPayload();
+          List<ValueType> mockList = List.of(ARRAY, PLAIN);
+          List<ValueType> valueTypeList = new ArrayList<>();
+          workflowRequest.getActions().forEach(action -> {
+            EditPropertyAction payload = (EditPropertyAction) action.getPayload();
+            valueTypeList.add(payload.getValueType());
+          });
           return workflowRequest.getName().equalsIgnoreCase("Workflow 1")
               && workflowRequest.getDescription().equalsIgnoreCase("Workflow Description")
               && workflowRequest.getEntityType().equals(EntityType.LEAD)
               && workflowRequest.getTrigger().getName().equals(TriggerType.EVENT)
               && workflowRequest.getTrigger().getTriggerFrequency().equals(TriggerFrequency.CREATED)
               && workflowRequest.getCondition().getConditionType().equals(ConditionType.FOR_ALL)
-              && workflowRequest.getActions().iterator().next().getType().equals(ActionType.EDIT_PROPERTY)
-              && actionDetail.getName().equalsIgnoreCase("city")
-              && actionDetail.getValue().equalsIgnoreCase("Pune")
-              && !workflowRequest.isActive();
+              && workflowRequest.getActions().stream().allMatch(action -> action.getType().equals(ActionType.EDIT_PROPERTY)
+              && valueTypeList.containsAll(mockList)
+              && workflowRequest.getActions().size() == 33
+              && !workflowRequest.isActive());
         }
     ))).willReturn(Mono.just(new WorkflowSummary(1L)));
     //when
@@ -340,6 +366,7 @@ class WorkflowControllerTest {
             ActionType.EDIT_PROPERTY,
             "lastName",
             "Stark",
+            PLAIN,
             true,
             true,
             createdBy,
@@ -395,6 +422,7 @@ class WorkflowControllerTest {
             ActionType.EDIT_PROPERTY,
             "lastName",
             "Stark",
+            PLAIN,
             true,
             true,
             createdBy,
@@ -443,6 +471,7 @@ class WorkflowControllerTest {
             ActionType.EDIT_PROPERTY,
             "lastName",
             "Stark",
+            PLAIN,
             true,
             true,
             createdBy,
@@ -517,6 +546,7 @@ class WorkflowControllerTest {
             ActionType.EDIT_PROPERTY,
             "lastName",
             "Stark",
+            PLAIN,
             true,
             true,
             createdBy,
@@ -536,6 +566,7 @@ class WorkflowControllerTest {
             ActionType.EDIT_PROPERTY,
             "firstName",
             "Tony",
+            PLAIN,
             true,
             true,
             createdBy,
@@ -600,6 +631,7 @@ class WorkflowControllerTest {
             ActionType.EDIT_PROPERTY,
             "lastName",
             "Stark",
+            PLAIN,
             true,
             true,
             createdBy,
@@ -619,6 +651,7 @@ class WorkflowControllerTest {
             ActionType.EDIT_PROPERTY,
             "firstName",
             "Tony",
+            PLAIN,
             true,
             true,
             createdBy,
@@ -693,6 +726,7 @@ class WorkflowControllerTest {
             ActionType.EDIT_PROPERTY,
             "lastName",
             "Stark",
+            PLAIN,
             true,
             true,
             createdBy,
@@ -712,6 +746,7 @@ class WorkflowControllerTest {
             ActionType.EDIT_PROPERTY,
             "firstName",
             "Tony",
+            PLAIN,
             true,
             true,
             createdBy,
@@ -786,6 +821,7 @@ class WorkflowControllerTest {
             ActionType.EDIT_PROPERTY,
             "lastName",
             "Stark",
+            PLAIN,
             true,
             true,
             createdBy,
@@ -805,6 +841,7 @@ class WorkflowControllerTest {
             ActionType.EDIT_PROPERTY,
             "firstName",
             "Tony",
+            PLAIN,
             true,
             true,
             createdBy,

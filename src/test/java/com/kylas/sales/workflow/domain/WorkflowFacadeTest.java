@@ -1,5 +1,6 @@
 package com.kylas.sales.workflow.domain;
 
+import static com.kylas.sales.workflow.common.dto.ActionDetail.EditPropertyAction.ValueType.PLAIN;
 import static com.kylas.sales.workflow.domain.workflow.TriggerFrequency.CREATED;
 import static com.kylas.sales.workflow.domain.workflow.action.WorkflowAction.ActionType.EDIT_PROPERTY;
 import static com.kylas.sales.workflow.domain.workflow.action.WorkflowAction.ActionType.WEBHOOK;
@@ -86,7 +87,7 @@ class WorkflowFacadeTest {
                 aUser));
     var workflowRequest = WorkflowStub
         .anEditPropertyWorkflowRequest("Edit Lead Property", "Edit Lead Property", EntityType.LEAD, TriggerType.EVENT, CREATED,
-            ConditionType.FOR_ALL, EDIT_PROPERTY, "lastName", "Stark", true);
+            ConditionType.FOR_ALL, EDIT_PROPERTY, "lastName", "Stark", PLAIN, true);
     //when
     var workflowMono = workflowFacade.create(workflowRequest);
     //then
@@ -127,7 +128,7 @@ class WorkflowFacadeTest {
 
     given(userService.getUserDetails(11L, authService.getAuthenticationToken()))
         .willReturn(Mono.just(aUser));
-    var action = new ActionResponse(EDIT_PROPERTY, new ActionDetail.EditPropertyAction("firstName", "Tony"));
+    var action = new ActionResponse(EDIT_PROPERTY, new ActionDetail.EditPropertyAction("firstName", "Tony", PLAIN));
 
     ConditionExpression expression = new ConditionExpression(Operator.EQUAL, "firstName", "Tony");
 
@@ -170,7 +171,7 @@ class WorkflowFacadeTest {
     String requestUrl = "https://webhook.site/3e0d9676-ad3c-4cf2-a449-ca334e43b815";
     Set<ActionResponse> actions = Set.of(
         new ActionResponse(EDIT_PROPERTY,
-            new ActionDetail.EditPropertyAction("city", "Pune")),
+            new ActionDetail.EditPropertyAction("city", "Pune", PLAIN)),
         new ActionResponse(WEBHOOK,
             new WebhookAction("name", "desc", HttpMethod.GET, requestUrl, AuthorizationType.NONE, parameters, null))
     );
@@ -222,7 +223,7 @@ class WorkflowFacadeTest {
   @Transactional
   @Test
   @Sql("/test-scripts/insert-users.sql")
-  public void givenWorkflowRequest_withInvalidLengthPropertyValue_shouldThrow() {
+  public void givenWorkflowRequest_withInvalidPropertyValue_shouldThrow() {
     //given
     User aUser = UserStub.aUser(11L, 99L, true, true, true, true, true)
         .withName("user 1");
@@ -230,7 +231,7 @@ class WorkflowFacadeTest {
     given(userService.getUserDetails(11L, authService.getAuthenticationToken()))
         .willReturn(Mono.just(aUser));
     Set<ActionResponse> actions = Set.of(
-        new ActionResponse(EDIT_PROPERTY, new ActionDetail.EditPropertyAction("city", "P")));
+        new ActionResponse(EDIT_PROPERTY, new ActionDetail.EditPropertyAction("city", null, PLAIN)));
 
     var workflowRequest = WorkflowStub
         .aWorkflowRequestWithActions("Edit Lead Property", "Edit Lead Property", EntityType.LEAD, TriggerType.EVENT, CREATED,
@@ -283,7 +284,7 @@ class WorkflowFacadeTest {
                 aUser));
     var workflowRequest = WorkflowStub
         .anEditPropertyWorkflowRequest("Edit Lead Property", "Edit Lead Property", EntityType.LEAD, TriggerType.EVENT, CREATED,
-            ConditionType.FOR_ALL, EDIT_PROPERTY, "lastName", "Stark", true);
+            ConditionType.FOR_ALL, EDIT_PROPERTY, "lastName", "Stark", PLAIN, true);
     //when
     var workflowMono = workflowFacade.update(301L, workflowRequest);
     //then
@@ -472,7 +473,8 @@ class WorkflowFacadeTest {
     var workflowRequest = WorkflowStub
         .anExistingEditPropertyWorkflowRequest("Edit Lead Property", "Edit Lead Property",
             EntityType.LEAD, TriggerType.EVENT, CREATED,
-            ConditionType.FOR_ALL, UUID.fromString("a0eebc55-9c0b-4ef8-bb6d-6bb9bd380a11"), EDIT_PROPERTY, "lastName", "Stark", true);
+            ConditionType.FOR_ALL, UUID.fromString("a0eebc55-9c0b-4ef8-bb6d-6bb9bd380a11"), EDIT_PROPERTY, "lastName", "Stark", PLAIN,
+            true);
     //when
     var workflowMono = workflowFacade.update(301L, workflowRequest);
     //then
@@ -510,7 +512,7 @@ class WorkflowFacadeTest {
                 aUser));
     var workflowRequest = WorkflowStub
         .anEditPropertyWorkflowRequest("Edit Lead Property", "Edit Lead Property", EntityType.LEAD, TriggerType.EVENT, CREATED,
-            ConditionType.FOR_ALL, EDIT_PROPERTY, "lastName", "Stark", false);
+            ConditionType.FOR_ALL, EDIT_PROPERTY, "lastName", "Stark", PLAIN, false);
     //when
     var workflowMono = workflowFacade.create(workflowRequest);
     //then
@@ -540,7 +542,7 @@ class WorkflowFacadeTest {
                 aUser));
     var workflowRequest = WorkflowStub
         .anEditPropertyWorkflowRequest("Edit Lead Property", "Edit Lead Property", EntityType.LEAD, TriggerType.EVENT, CREATED,
-            ConditionType.FOR_ALL, EDIT_PROPERTY, "lastName", "Stark", true);
+            ConditionType.FOR_ALL, EDIT_PROPERTY, "lastName", "Stark", PLAIN, true);
     //when
     var workflowMono = workflowFacade.create(workflowRequest);
     //then

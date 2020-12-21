@@ -49,9 +49,9 @@ VALUES
 ('c0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',302),
 ('c0eebc99-9c0b-4ef8-bb6d-6bb9bd380a12',303);
 
-INSERT INTO edit_property_action (id, workflow_id,name, value)
+INSERT INTO edit_property_action (id, workflow_id,name, value, value_type)
 VALUES
-('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',301,'firstName','Tony 301'),
-('b0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',302,'firstName','Tony 302'),
-('b0eebc99-9c0b-4ef8-bb6d-6bb9bd380a12',303,'firstName','Tony 303'),
-('c0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',377,'firstName','Tony 377');
+('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',301,'firstName','Tony 301','PLAIN'),
+('b0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',302,'firstName','Tony 302','PLAIN'),
+('b0eebc99-9c0b-4ef8-bb6d-6bb9bd380a12',303,'firstName','Tony 303','PLAIN'),
+('c0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',377,'firstName','Tony 377','PLAIN');

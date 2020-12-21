@@ -3,6 +3,7 @@ package com.kylas.sales.workflow.stubs;
 import com.kylas.sales.workflow.api.request.WorkflowRequest;
 import com.kylas.sales.workflow.api.response.WorkflowDetail;
 import com.kylas.sales.workflow.common.dto.ActionDetail.EditPropertyAction;
+import com.kylas.sales.workflow.common.dto.ActionDetail.EditPropertyAction.ValueType;
 import com.kylas.sales.workflow.common.dto.ActionResponse;
 import com.kylas.sales.workflow.common.dto.User;
 import com.kylas.sales.workflow.common.dto.WorkflowCondition;
@@ -31,11 +32,12 @@ public class WorkflowStub {
       ActionType actionType,
       String propertyName,
       String propertyValue,
+      ValueType propertyValueType,
       boolean active
   ) {
     var triggerRequest = new WorkflowTrigger(triggerType, triggerFrequency);
     var conditionRequest = new WorkflowCondition(conditionType);
-    var actionRequest = new ActionResponse(actionType, new EditPropertyAction(propertyName, propertyValue));
+    var actionRequest = new ActionResponse(actionType, new EditPropertyAction(propertyName, propertyValue, propertyValueType));
     var actionRequests = new HashSet<ActionResponse>();
     actionRequests.add(actionRequest);
     return new WorkflowRequest(name, description, entityType, triggerRequest, conditionRequest, actionRequests, active);
@@ -90,11 +92,12 @@ public class WorkflowStub {
       ActionType actionType,
       String propertyName,
       String propertyValue,
+      ValueType propertyValueType,
       boolean active
   ) {
     var triggerRequest = new WorkflowTrigger(triggerType, triggerFrequency);
     var conditionRequest = new WorkflowCondition(conditionType);
-    var actionRequest = new ActionResponse(actionId, actionType, new EditPropertyAction(propertyName, propertyValue));
+    var actionRequest = new ActionResponse(actionId, actionType, new EditPropertyAction(propertyName, propertyValue, propertyValueType));
     var actionRequests = new HashSet<ActionResponse>();
     actionRequests.add(actionRequest);
     return new WorkflowRequest(name, description, entityType, triggerRequest, conditionRequest, actionRequests, active);
@@ -112,11 +115,12 @@ public class WorkflowStub {
       ActionType actionType,
       String propertyName,
       String propertyValue,
+      ValueType propertyValueType,
       boolean canCreate, boolean canRead, User createdBy, User updatedBy, Date createdAndUpdatedAt
   ) {
     var workflowTrigger = new WorkflowTrigger(triggerType, triggerFrequency);
     var condition = new WorkflowCondition(conditionType);
-    var action = new ActionResponse(actionType, new EditPropertyAction(propertyName, propertyValue));
+    var action = new ActionResponse(actionType, new EditPropertyAction(propertyName, propertyValue, propertyValueType));
     var actions = new HashSet<ActionResponse>();
     actions.add(action);
     Action allowedActions = new Action();

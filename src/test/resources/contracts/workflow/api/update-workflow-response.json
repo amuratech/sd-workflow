@@ -14,8 +14,25 @@
     {
       "type": "EDIT_PROPERTY",
       "payload": {
+        "name": "salutation",
+        "value": 1319,
+        "valueType": "PLAIN"
+      }
+    },
+    {
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "dnd",
+        "value": true,
+        "valueType": "PLAIN"
+      }
+    },
+    {
+      "type": "EDIT_PROPERTY",
+      "payload": {
         "name": "city",
-        "value": "Pune"
+        "value": "PUNE",
+        "valueType": "PLAIN"
       }
     }
   ],

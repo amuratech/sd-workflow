@@ -18,7 +18,8 @@
           "type": "EDIT_PROPERTY",
           "payload": {
             "name": "lastName",
-            "value": "Stark"
+            "value": "Stark",
+            "valueType": "PLAIN"
           }
         }
       ],
@@ -61,7 +62,8 @@
           "type": "EDIT_PROPERTY",
           "payload": {
             "name": "firstName",
-            "value": "Tony"
+            "value": "Tony",
+            "valueType": "PLAIN"
           }
         }
       ],

@@ -12,11 +12,30 @@
   },
   "actions": [
     {
-      "id": "727e7d6f-4d30-4e27-90fe-f5d84d0e1fb9",
+      "id": "08518b20-23f9-11eb-adc1-0242ac120002",
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "salutation",
+        "value": 1319,
+        "valueType": "PLAIN"
+      }
+    },
+    {
+      "id": "08518b20-23f9-11eb-adc1-0242ac120003",
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "dnd",
+        "value": true,
+        "valueType": "PLAIN"
+      }
+    },
+    {
+      "id": "08518b20-23f9-11eb-adc1-0242ac120006",
       "type": "EDIT_PROPERTY",
       "payload": {
         "name": "city",
-        "value": "Pune"
+        "value": "PUNE",
+        "valueType": "PLAIN"
       }
     }
   ],

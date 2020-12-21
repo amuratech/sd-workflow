@@ -33,7 +33,28 @@ public interface ActionDetail {
   class EditPropertyAction implements ActionDetail {
 
     private final String name;
-    private final String value;
+    private final Object value;
+    private final ValueType valueType;
+
+    public enum ValueType {
+      ARRAY, OBJECT, PLAIN,
+    }
+
+    public enum FieldValueType {
+      products(ValueType.ARRAY),
+      phoneNumbers(ValueType.ARRAY),
+      emails(ValueType.ARRAY),
+      companyPhones(ValueType.ARRAY);
+      private ValueType valueType;
+
+      FieldValueType(ValueType valueType) {
+        this.valueType = valueType;
+      }
+
+      public ValueType getFieldValueType() {
+        return this.valueType;
+      }
+    }
 
   }
 }

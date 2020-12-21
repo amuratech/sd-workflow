@@ -101,7 +101,7 @@ class WorkflowProcessorTest {
     EditPropertyAction failedAction = mock(EditPropertyAction.class);
     given(failedAction.getName()).willReturn("firstName");
     given(failedAction.getValue()).willReturn("Steve");
-    given(updateFirstNameAction.getType()).willReturn(ActionType.EDIT_PROPERTY);
+    given(failedAction.getType()).willReturn(ActionType.EDIT_PROPERTY);
     actions.add(failedAction);
 
     given(workflowMock.getWorkflowActions()).willReturn(actions);
@@ -240,11 +240,47 @@ class WorkflowProcessorTest {
     workflowProcessor.process(leadUpdatedEvent);
     // then
     ArgumentCaptor<Metadata> metadataArgumentCaptor = ArgumentCaptor.forClass(Metadata.class);
-    verify(leadUpdatedCommandPublisher, times(2)).execute(metadataArgumentCaptor.capture(),any(Lead.class));
+    verify(leadUpdatedCommandPublisher, times(2)).execute(metadataArgumentCaptor.capture(), any(Lead.class));
     List<Metadata> allValues = metadataArgumentCaptor.getAllValues();
     Assertions.assertThat(allValues.size()).isEqualTo(2);
-    Assertions.assertThat(allValues.get(0).getExecutedWorkflows()).containsExactlyInAnyOrder("WF_99","WF_100");
-    Assertions.assertThat(allValues.get(1).getExecutedWorkflows()).containsExactlyInAnyOrder("WF_99","WF_100");
+    Assertions.assertThat(allValues.get(0).getExecutedWorkflows()).containsExactlyInAnyOrder("WF_99", "WF_100");
+    Assertions.assertThat(allValues.get(1).getExecutedWorkflows()).containsExactlyInAnyOrder("WF_99", "WF_100");
+  }
+
+  @Test
+  public void givenLeadEvent_withoutEditPropertyActions_shouldNotPublishEvent() {
+    // given
+    long tenantId = 101;
+    long userId = 10L;
+    long workflowId = 99L;
+
+    var lead = new LeadDetail();
+    lead.setFirstName("Tony");
+    lead.setLastName("Stark");
+    lead.setId(55L);
+    Metadata metadata = new Metadata(tenantId, userId, LEAD, null, null, EntityAction.CREATED);
+
+    var leadCreatedEvent = new LeadEvent(lead, null, metadata);
+
+    Workflow workflowMock = mock(Workflow.class);
+    given(workflowMock.getId()).willReturn(workflowId);
+
+    Set<AbstractWorkflowAction> actions = new HashSet<>();
+    
+    given(workflowMock.getWorkflowActions()).willReturn(actions);
+    WorkflowTrigger workflowTriggerMock = mock(WorkflowTrigger.class);
+    given(workflowTriggerMock.getTriggerType()).willReturn(TriggerType.EVENT);
+    given(workflowTriggerMock.getTriggerFrequency()).willReturn(TriggerFrequency.CREATED);
+    given(workflowMock.getWorkflowTrigger()).willReturn(workflowTriggerMock);
+
+    List<Workflow> workflows = Arrays.asList(workflowMock);
+
+    given(workflowService.findActiveBy(tenantId, LEAD, TriggerFrequency.CREATED)).willReturn(workflows);
+    doNothing().when(leadUpdatedCommandPublisher).execute(any(Metadata.class), any(Lead.class));
+    // when
+    workflowProcessor.process(leadCreatedEvent);
+    // then
+    verifyNoInteractions(leadUpdatedCommandPublisher);
   }
 
   private Workflow getMockEditPropertyWorkflow(

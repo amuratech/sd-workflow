@@ -17,7 +17,8 @@
       "type": "EDIT_PROPERTY",
       "payload": {
         "name": "firstName",
-        "value": "Tony 301"
+        "value": "Tony 301",
+        "valueType": "PLAIN"
       }
     }
   ],

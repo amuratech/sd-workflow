@@ -32,9 +32,9 @@ VALUES
 ('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',301),
 ('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a12',301);
 
-INSERT INTO edit_property_action (id, workflow_id,name, value)
+INSERT INTO edit_property_action (id, workflow_id,name, value, value_type)
 VALUES
-('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',301,'firstName','Tony 301');
+('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',301,'firstName','Tony 301','PLAIN');
 
 INSERT INTO webhook_action (id, workflow_id, name, description, method, authorization_type, request_url)
 VALUES
