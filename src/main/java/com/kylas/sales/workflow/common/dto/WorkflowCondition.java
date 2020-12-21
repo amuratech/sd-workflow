@@ -1,12 +1,12 @@
 package com.kylas.sales.workflow.common.dto;
 
 import static com.kylas.sales.workflow.common.dto.WorkflowCondition.Operator.AND;
-import static com.kylas.sales.workflow.common.dto.WorkflowCondition.Operator.BETWEEN;
 import static com.kylas.sales.workflow.common.dto.WorkflowCondition.Operator.IS_NOT_NULL;
 import static com.kylas.sales.workflow.common.dto.WorkflowCondition.Operator.IS_NULL;
-import static com.kylas.sales.workflow.common.dto.WorkflowCondition.Operator.NOT_BETWEEN;
 import static com.kylas.sales.workflow.common.dto.WorkflowCondition.Operator.OR;
 import static java.util.Objects.isNull;
+import static java.util.Objects.nonNull;
+import static org.apache.commons.beanutils.BeanUtils.getNestedProperty;
 import static org.apache.commons.lang3.StringUtils.isAnyBlank;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 
@@ -15,17 +15,14 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.kylas.sales.workflow.domain.WorkflowSpecification;
 import com.kylas.sales.workflow.domain.exception.InvalidConditionException;
 import com.kylas.sales.workflow.domain.workflow.ConditionType;
-import com.kylas.sales.workflow.domain.workflow.Workflow;
 import java.io.Serializable;
+import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
-import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.jpa.domain.Specification;
 
 @Getter
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -73,42 +70,20 @@ public class WorkflowCondition {
       this.value = value;
     }
 
+    public ConditionExpression(ConditionExpression operand1, ConditionExpression operand2, Operator operator) {
+      this.operand1 = operand1;
+      this.operand2 = operand2;
+      this.operator = operator;
+      this.name = null;
+      this.value = null;
+    }
+
     public ConditionExpression(Operator operator, String name, Object value) {
       this.operator = operator;
       this.name = name;
       this.value = value;
       operand1 = null;
       operand2 = null;
-    }
-
-    public Specification<Workflow> toSpecification() {
-      switch (this.getOperator()) {
-        case AND:
-          return operand1.toSpecification().and(operand2.toSpecification());
-        case OR:
-          return operand1.toSpecification().or(operand2.toSpecification());
-        case EQUAL:
-          return WorkflowSpecification.hasFieldEqualsTo(name, value);
-        case NOT_EQUAL:
-          return WorkflowSpecification.fieldIsNotEqualsTo(name, value);
-        case GREATER:
-          return WorkflowSpecification.hasFieldGreaterTo(name, value);
-        case GREATER_OR_EQUAL:
-          return WorkflowSpecification.hasFieldGreaterOrEqualTo(name, value);
-        case LESS:
-          return WorkflowSpecification.hasFieldLessTo(name, value);
-        case LESS_OR_EQUAL:
-          return WorkflowSpecification.hasFieldLessOrEqualTo(name, value);
-        case IS_NOT_NULL:
-          return WorkflowSpecification.fieldIsNotNull(name);
-        case IS_NULL:
-          return WorkflowSpecification.fieldIsNull(name);
-        case BETWEEN:
-          return WorkflowSpecification.fieldIsBetween(name, value);
-        case NOT_BETWEEN:
-          return WorkflowSpecification.fieldIsNotBetween(name, value);
-      }
-      throw new InvalidConditionException();
     }
 
     public void validate() {
@@ -132,25 +107,43 @@ public class WorkflowCondition {
         log.error("Condition value can not be null.");
         throw new InvalidConditionException();
       }
-      if (operator.equals(BETWEEN) || operator.equals(NOT_BETWEEN)) {
-        if (!(value instanceof List)) {
-          log.error("Condition operator {} value {} is not a list.", operator, value);
-          throw new InvalidConditionException();
-        }
-        List values = (List) value;
-        if (values.size() != 2) {
-          log.error("Condition operator {} expects value of size 2.", operator);
-          throw new InvalidConditionException();
-        }
-        if (isAnyBlank(String.valueOf(values.get(0)), String.valueOf(values.get(1)))) {
-          log.error("Condition operator {} expects non-blank values.", operator);
-          throw new InvalidConditionException();
-        }
-      }
       if (isBlank(String.valueOf(value))) {
         log.info("Condition job operator {} expects non-blank value.", operator);
         throw new InvalidConditionException();
       }
+    }
+
+    public boolean isSatisfiedBy(Object entity) throws IllegalAccessException, NoSuchMethodException, InvocationTargetException {
+
+      String actualValue = nonNull(name) ? getNestedProperty(entity, name) : null;
+
+      switch (operator) {
+        case AND:
+          return operand1.isSatisfiedBy(entity) && operand2.isSatisfiedBy(entity);
+        case OR:
+          return operand1.isSatisfiedBy(entity) || operand2.isSatisfiedBy(entity);
+        case EQUAL:
+          return actualValue.equals(String.valueOf(value));
+        case NOT_EQUAL:
+          return !actualValue.equals(String.valueOf(value));
+        case IS_NOT_NULL:
+          return !isNull(actualValue);
+        case IS_NULL:
+          return isNull(actualValue);
+        case CONTAIN:
+          return actualValue.contains(String.valueOf(value));
+        case NOT_CONTAIN:
+          return !actualValue.contains(String.valueOf(value));
+        case GREATER:
+          return Double.parseDouble(actualValue) > Double.parseDouble(String.valueOf(value));
+        case GREATER_OR_EQUAL:
+          return Double.parseDouble(actualValue) >= Double.parseDouble(String.valueOf(value));
+        case LESS:
+          return Double.parseDouble(actualValue) < Double.parseDouble(String.valueOf(value));
+        case LESS_OR_EQUAL:
+          return Double.parseDouble(actualValue) <= Double.parseDouble(String.valueOf(value));
+      }
+      throw new InvalidConditionException();
     }
   }
 
@@ -167,8 +160,8 @@ public class WorkflowCondition {
     LESS_OR_EQUAL,
     IS_NOT_NULL,
     IS_NULL,
-    BETWEEN,
-    NOT_BETWEEN;
+    CONTAIN,
+    NOT_CONTAIN;
 
     public static Operator getByName(String operatorName) {
       return Arrays.stream(values())

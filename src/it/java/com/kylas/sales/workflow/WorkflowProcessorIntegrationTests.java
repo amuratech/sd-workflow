@@ -181,11 +181,44 @@ public class WorkflowProcessorIntegrationTests {
     Assertions.assertThat(workflow.getWorkflowExecutedEvent().getTriggerCount()).isEqualTo(151);
   }
 
+
   @Nested
   @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
   @AutoConfigureTestDatabase(replace = Replace.NONE)
   @ContextConfiguration(initializers = {TestMqSetup.class, TestDatabaseInitializer.class})
-  @DisplayName("For tests that execute webhooks on event")
+  @DisplayName("Tests that verify workflow condition evaluation")
+  class WorkflowConditionTests {
+
+    @Test
+    @Sql("/test-scripts/integration/insert-workflows-with-condition.sql")
+    public void givenLeadUpdatedEvent_shouldTriggerWorkflowsConditionally() throws IOException, InterruptedException, JSONException {
+      //given
+      User aUser = UserStub.aUser(12L, 99L, true, true, true, true, true)
+          .withName("user 1");
+      given(authService.getLoggedInUser()).willReturn(aUser);
+
+      String resourceAsString = getResourceAsString("/contracts/mq/events/lead-created-triggering-conditional-workflows.json");
+      LeadEvent leadEvent = objectMapper.readValue(resourceAsString, LeadEvent.class);
+      initializeRabbitMqListener(LEAD_UPDATE_COMMAND_QUEUE, SALES_LEAD_UPDATE_QUEUE);
+      //when
+      rabbitTemplate.convertAndSend(SALES_EXCHANGE, LeadEvent.getLeadUpdatedEventName(),
+          leadEvent);
+      //then
+      mockMqListener.latch.await(3, TimeUnit.SECONDS);
+
+      Workflow workflow301 = workflowFacade.get(301);
+      Assertions.assertThat(workflow301.getWorkflowExecutedEvent().getTriggerCount()).isEqualTo(0);
+
+      Workflow workflow302 = workflowFacade.get(302);
+      Assertions.assertThat(workflow302.getWorkflowExecutedEvent().getTriggerCount()).isEqualTo(1);
+    }
+  }
+
+  @Nested
+  @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
+  @AutoConfigureTestDatabase(replace = Replace.NONE)
+  @ContextConfiguration(initializers = {TestMqSetup.class, TestDatabaseInitializer.class})
+  @DisplayName("Tests that execute webhooks on event")
   class WebhookIntegrationTests {
 
     @Test

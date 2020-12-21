@@ -1,11 +1,13 @@
 package com.kylas.sales.workflow.domain.workflow;
 
 import static com.kylas.sales.workflow.domain.workflow.ConditionType.CONDITION_BASED;
+import static com.kylas.sales.workflow.domain.workflow.ConditionType.FOR_ALL;
 import static java.util.Objects.isNull;
 
 import com.kylas.sales.workflow.common.dto.WorkflowCondition.ConditionExpression;
 import com.kylas.sales.workflow.domain.exception.InvalidConditionException;
 import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
+import java.lang.reflect.InvocationTargetException;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
@@ -18,6 +20,7 @@ import javax.persistence.OneToOne;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.hibernate.annotations.Type;
 import org.hibernate.annotations.TypeDef;
 
@@ -26,6 +29,7 @@ import org.hibernate.annotations.TypeDef;
 @Setter
 @NoArgsConstructor
 @TypeDef(name = "jsonb", typeClass = JsonBinaryType.class)
+@Slf4j
 public class WorkflowCondition {
 
   @Id
@@ -70,5 +74,17 @@ public class WorkflowCondition {
 
   public WorkflowCondition update(com.kylas.sales.workflow.common.dto.WorkflowCondition condition) {
     return new WorkflowCondition(this.id, condition.getConditionType(), this.workflow);
+  }
+
+  public boolean isSatisfiedBy(Object entity) {
+    if (type.equals(FOR_ALL)) {
+      return true;
+    }
+    try {
+      return expression.isSatisfiedBy(entity);
+    } catch (IllegalAccessException | NoSuchMethodException | InvocationTargetException e) {
+      log.error("Exception while resolving expression {} from entity.", expression.toString());
+      throw new InvalidConditionException();
+    }
   }
 }

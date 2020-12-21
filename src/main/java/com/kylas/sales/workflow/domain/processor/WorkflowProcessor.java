@@ -7,6 +7,7 @@ import static com.kylas.sales.workflow.common.dto.ActionDetail.EditPropertyActio
 import static com.kylas.sales.workflow.common.dto.ActionDetail.EditPropertyAction.FieldValueType.valueOf;
 import static com.kylas.sales.workflow.common.dto.ActionDetail.EditPropertyAction.ValueType.ARRAY;
 import static java.util.Collections.emptyList;
+import static java.util.Objects.isNull;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -68,14 +69,18 @@ public class WorkflowProcessor {
 
     Set<Long> workflowIds = workflows.stream().map(Workflow::getId).collect(Collectors.toSet());
 
-    workflows.forEach(workflow -> {
-      LeadDetail entity = event.getEntity();
-      Metadata metadata = event.getMetadata().with(workflow.getId()).withAllWorkflowIds(workflowIds).withEntityId(entity.getId());
-      Set<AbstractWorkflowAction> workflowActions = workflow.getWorkflowActions();
-      log.info("Workflow execution start for workflowId {} and prev metadata {}", workflow.getId(), event.getMetadata());
-      processActions(metadata, workflowActions, entity);
-      workflowService.updateExecutedEventDetails(workflow);
-    });
+    workflows.stream()
+        .filter(workflow ->
+            isNull(workflow.getWorkflowCondition()) ||
+                workflow.getWorkflowCondition().isSatisfiedBy(event.getEntity()))
+        .forEach(workflow -> {
+          LeadDetail entity = event.getEntity();
+          Metadata metadata = event.getMetadata().with(workflow.getId()).withAllWorkflowIds(workflowIds).withEntityId(entity.getId());
+          Set<AbstractWorkflowAction> workflowActions = workflow.getWorkflowActions();
+          log.info("Workflow execution start for workflowId {} and prev metadata {}", workflow.getId(), event.getMetadata());
+          processActions(metadata, workflowActions, entity);
+          workflowService.updateExecutedEventDetails(workflow);
+        });
   }
 
   private void processActions(Metadata metadata, final Set<AbstractWorkflowAction> workflowActions, LeadDetail entity) {
