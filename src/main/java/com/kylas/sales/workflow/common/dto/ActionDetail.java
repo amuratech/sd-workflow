@@ -1,6 +1,8 @@
 package com.kylas.sales.workflow.common.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.kylas.sales.workflow.domain.workflow.action.webhook.Parameter;
 import java.util.List;
 import lombok.AllArgsConstructor;
@@ -39,22 +41,19 @@ public interface ActionDetail {
     public enum ValueType {
       ARRAY, OBJECT, PLAIN,
     }
+  }
 
-    public enum FieldValueType {
-      products(ValueType.ARRAY),
-      phoneNumbers(ValueType.ARRAY),
-      emails(ValueType.ARRAY),
-      companyPhones(ValueType.ARRAY);
-      private ValueType valueType;
+  @Getter
+  @JsonIgnoreProperties(ignoreUnknown = true)
+  @AllArgsConstructor
+  @JsonInclude(Include.NON_NULL)
+  class ReassignAction implements ActionDetail {
+    
+    private String name;
+    private final Long ownerId;
 
-      FieldValueType(ValueType valueType) {
-        this.valueType = valueType;
-      }
-
-      public ValueType getFieldValueType() {
-        return this.valueType;
-      }
+    public ReassignAction(Long ownerId) {
+      this.ownerId = ownerId;
     }
-
   }
 }

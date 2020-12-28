@@ -8,6 +8,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 
 import com.kylas.sales.workflow.api.WorkflowService;
 import com.kylas.sales.workflow.domain.processor.lead.Lead;
@@ -18,15 +19,20 @@ import com.kylas.sales.workflow.domain.workflow.Workflow;
 import com.kylas.sales.workflow.domain.workflow.WorkflowTrigger;
 import com.kylas.sales.workflow.domain.workflow.action.AbstractWorkflowAction;
 import com.kylas.sales.workflow.domain.workflow.action.EditPropertyAction;
+import com.kylas.sales.workflow.domain.workflow.action.ValueConverter;
 import com.kylas.sales.workflow.domain.workflow.action.WorkflowAction.ActionType;
+import com.kylas.sales.workflow.domain.workflow.action.reassign.ReassignAction;
+import com.kylas.sales.workflow.domain.workflow.action.reassign.ReassignDetail;
 import com.kylas.sales.workflow.mq.command.LeadUpdatedCommandPublisher;
 import com.kylas.sales.workflow.mq.event.EntityAction;
 import com.kylas.sales.workflow.mq.event.LeadEvent;
 import com.kylas.sales.workflow.mq.event.Metadata;
+import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import lombok.extern.slf4j.Slf4j;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -36,11 +42,17 @@ import org.mockito.Mock;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 @ExtendWith(SpringExtension.class)
+@Slf4j
 class WorkflowProcessorTest {
 
-  @Mock private WorkflowService workflowService;
-  @Mock private LeadUpdatedCommandPublisher leadUpdatedCommandPublisher;
-  @InjectMocks private WorkflowProcessor workflowProcessor;
+  @Mock
+  private WorkflowService workflowService;
+  @Mock
+  private LeadUpdatedCommandPublisher leadUpdatedCommandPublisher;
+  @Mock
+  private ValueConverter valueConverter;
+  @InjectMocks
+  private WorkflowProcessor workflowProcessor;
 
   @Test
   public void givenLeadEvent_shouldPublishPatchCommand() {
@@ -57,13 +69,16 @@ class WorkflowProcessorTest {
 
     var leadCreatedEvent = new LeadEvent(lead, null, metadata);
 
+    String propertyValue = "steve";
+
     Workflow workflowMock =
-        getMockEditPropertyWorkflow(workflowId, TriggerFrequency.CREATED, "firstName", "steve");
+        getMockEditPropertyWorkflow(workflowId, TriggerFrequency.CREATED, "firstName", propertyValue);
 
     List<Workflow> workflows = Arrays.asList(workflowMock);
 
     given(workflowService.findActiveBy(tenantId, LEAD, TriggerFrequency.CREATED)).willReturn(workflows);
     doNothing().when(leadUpdatedCommandPublisher).execute(any(Metadata.class), any(Lead.class));
+    when(valueConverter.getValue(any(EditPropertyAction.class), any(Field.class))).thenReturn(propertyValue);
     // when
     workflowProcessor.process(leadCreatedEvent);
     // then
@@ -92,15 +107,17 @@ class WorkflowProcessorTest {
 
     Set<AbstractWorkflowAction> actions = new HashSet<>();
 
+    String value = "steve";
+
     EditPropertyAction updateFirstNameAction = mock(EditPropertyAction.class);
     given(updateFirstNameAction.getName()).willReturn("firstName");
-    given(updateFirstNameAction.getValue()).willReturn("Steve");
+    given(updateFirstNameAction.getValue()).willReturn(value);
     given(updateFirstNameAction.getType()).willReturn(ActionType.EDIT_PROPERTY);
     actions.add(updateFirstNameAction);
 
     EditPropertyAction failedAction = mock(EditPropertyAction.class);
     given(failedAction.getName()).willReturn("firstName");
-    given(failedAction.getValue()).willReturn("Steve");
+    given(failedAction.getValue()).willReturn(value);
     given(failedAction.getType()).willReturn(ActionType.EDIT_PROPERTY);
     actions.add(failedAction);
 
@@ -114,6 +131,7 @@ class WorkflowProcessorTest {
 
     given(workflowService.findActiveBy(tenantId, LEAD, TriggerFrequency.CREATED)).willReturn(workflows);
     doNothing().when(leadUpdatedCommandPublisher).execute(any(Metadata.class), any(Lead.class));
+    when(valueConverter.getValue(any(EditPropertyAction.class), any(Field.class))).thenReturn(value);
     // when
     workflowProcessor.process(leadCreatedEvent);
     // then
@@ -142,6 +160,8 @@ class WorkflowProcessorTest {
     var metadata = new Metadata(tenantId, userId, LEAD, null, null, EntityAction.UPDATED);
     var leadUpdatedEvent = new LeadEvent(lead, old, metadata);
 
+    String value = "tony";
+
     Workflow workflowMockUpdate =
         getMockEditPropertyWorkflow(workflowId100, TriggerFrequency.UPDATED, "firstName", "tony");
 
@@ -149,6 +169,7 @@ class WorkflowProcessorTest {
 
     given(workflowService.findActiveBy(tenantId, LEAD, TriggerFrequency.UPDATED)).willReturn(workflows);
     doNothing().when(leadUpdatedCommandPublisher).execute(any(Metadata.class), any(Lead.class));
+    when(valueConverter.getValue(any(EditPropertyAction.class), any(Field.class))).thenReturn(value);
     // when
     workflowProcessor.process(leadUpdatedEvent);
     // then
@@ -222,9 +243,11 @@ class WorkflowProcessorTest {
     old.setFirstName("Steve");
     old.setLastName("Roger");
 
-    var metadata = new Metadata(tenantId,userId,LEAD,null,null,EntityAction.UPDATED);
+    var metadata = new Metadata(tenantId, userId, LEAD, null, null, EntityAction.UPDATED);
 
     var leadUpdatedEvent = new LeadEvent(lead, old, metadata);
+
+    List<String> values = List.of("tony", "steve");
 
     Workflow workflowMockUpdate99 =
         getMockEditPropertyWorkflow(workflowId99, TriggerFrequency.UPDATED, "firstName", "tony");
@@ -232,10 +255,13 @@ class WorkflowProcessorTest {
     Workflow workflowMockUpdate100 =
         getMockEditPropertyWorkflow(workflowId100, TriggerFrequency.UPDATED, "lastName", "stark");
 
-    List<Workflow> workflows = Arrays.asList(workflowMockUpdate99,workflowMockUpdate100);
+    List<Workflow> workflows = Arrays.asList(workflowMockUpdate99, workflowMockUpdate100);
 
     given(workflowService.findActiveBy(tenantId, LEAD, TriggerFrequency.UPDATED)).willReturn(workflows);
     doNothing().when(leadUpdatedCommandPublisher).execute(any(Metadata.class), any(Lead.class));
+    values.forEach(value -> {
+      when(valueConverter.getValue(any(EditPropertyAction.class), any(Field.class))).thenReturn(value);
+    });
     // when
     workflowProcessor.process(leadUpdatedEvent);
     // then
@@ -266,7 +292,7 @@ class WorkflowProcessorTest {
     given(workflowMock.getId()).willReturn(workflowId);
 
     Set<AbstractWorkflowAction> actions = new HashSet<>();
-    
+
     given(workflowMock.getWorkflowActions()).willReturn(actions);
     WorkflowTrigger workflowTriggerMock = mock(WorkflowTrigger.class);
     given(workflowTriggerMock.getTriggerType()).willReturn(TriggerType.EVENT);
@@ -280,6 +306,89 @@ class WorkflowProcessorTest {
     // when
     workflowProcessor.process(leadCreatedEvent);
     // then
+    verifyNoInteractions(leadUpdatedCommandPublisher);
+  }
+
+  @Test
+  public void givenLeadEvent_withReassignActions_shouldPublishEvent() {
+    // given
+    long tenantId = 101;
+    long userId = 10L;
+    long workflowId = 99L;
+
+    var lead = new LeadDetail();
+    lead.setFirstName("Tony");
+    lead.setLastName("Stark");
+    lead.setId(55L);
+    Metadata metadata = new Metadata(tenantId, userId, LEAD, null, null, EntityAction.CREATED);
+
+    var leadEvent = new LeadEvent(lead, null, metadata);
+
+    Workflow workflowMock = mock(Workflow.class);
+    given(workflowMock.getId()).willReturn(workflowId);
+
+    ReassignAction reassignAction = mock(ReassignAction.class);
+    when(reassignAction.getOwnerId()).thenReturn(2000L);
+    when(reassignAction.getType()).thenReturn(ActionType.REASSIGN);
+
+    Set<AbstractWorkflowAction> actions = new HashSet<>();
+    actions.add(reassignAction);
+
+    given(workflowMock.getWorkflowActions()).willReturn(actions);
+    WorkflowTrigger workflowTriggerMock = mock(WorkflowTrigger.class);
+    given(workflowTriggerMock.getTriggerType()).willReturn(TriggerType.EVENT);
+    given(workflowTriggerMock.getTriggerFrequency()).willReturn(TriggerFrequency.CREATED);
+    given(workflowMock.getWorkflowTrigger()).willReturn(workflowTriggerMock);
+
+    List<Workflow> workflows = Arrays.asList(workflowMock);
+
+    given(workflowService.findActiveBy(tenantId, LEAD, TriggerFrequency.CREATED)).willReturn(workflows);
+    doNothing().when(leadUpdatedCommandPublisher).execute(any(Metadata.class), any(ReassignDetail.class));
+
+    //when
+    workflowProcessor.process(leadEvent);
+
+    //Then
+    verify(leadUpdatedCommandPublisher, times(1))
+        .execute(any(Metadata.class), any(Actionable.class));
+  }
+
+
+  @Test
+  public void givenLeadEvent_withoutReassignActions_shouldNotPublishEvent() {
+    // given
+    long tenantId = 101;
+    long userId = 10L;
+    long workflowId = 99L;
+
+    var lead = new LeadDetail();
+    lead.setFirstName("Tony");
+    lead.setLastName("Stark");
+    lead.setId(55L);
+    Metadata metadata = new Metadata(tenantId, userId, LEAD, null, null, EntityAction.CREATED);
+
+    var leadEvent = new LeadEvent(lead, null, metadata);
+
+    Workflow workflowMock = mock(Workflow.class);
+    given(workflowMock.getId()).willReturn(workflowId);
+
+    Set<AbstractWorkflowAction> actions = new HashSet<>();
+
+    given(workflowMock.getWorkflowActions()).willReturn(actions);
+    WorkflowTrigger workflowTriggerMock = mock(WorkflowTrigger.class);
+    given(workflowTriggerMock.getTriggerType()).willReturn(TriggerType.EVENT);
+    given(workflowTriggerMock.getTriggerFrequency()).willReturn(TriggerFrequency.CREATED);
+    given(workflowMock.getWorkflowTrigger()).willReturn(workflowTriggerMock);
+
+    List<Workflow> workflows = Arrays.asList(workflowMock);
+
+    given(workflowService.findActiveBy(tenantId, LEAD, TriggerFrequency.CREATED)).willReturn(workflows);
+    doNothing().when(leadUpdatedCommandPublisher).execute(any(Metadata.class), any(ReassignDetail.class));
+
+    //when
+    workflowProcessor.process(leadEvent);
+
+    //Then
     verifyNoInteractions(leadUpdatedCommandPublisher);
   }
 

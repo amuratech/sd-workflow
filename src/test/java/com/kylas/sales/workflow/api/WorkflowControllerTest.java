@@ -16,6 +16,7 @@ import com.kylas.sales.workflow.api.response.WorkflowDetail;
 import com.kylas.sales.workflow.api.response.WorkflowSummary;
 import com.kylas.sales.workflow.common.dto.ActionDetail.EditPropertyAction;
 import com.kylas.sales.workflow.common.dto.ActionDetail.EditPropertyAction.ValueType;
+import com.kylas.sales.workflow.common.dto.ActionDetail.ReassignAction;
 import com.kylas.sales.workflow.common.dto.ActionResponse;
 import com.kylas.sales.workflow.common.dto.User;
 import com.kylas.sales.workflow.common.dto.WorkflowCondition;
@@ -107,7 +108,7 @@ class WorkflowControllerTest {
         {
           List<ValueType> mockList = List.of(ARRAY, PLAIN);
           List<ValueType> valueTypeList = new ArrayList<>();
-          workflowRequest.getActions().forEach(action -> {
+          workflowRequest.getActions().stream().filter(action -> action.getType().equals(ActionType.EDIT_PROPERTY)).forEach(action -> {
             EditPropertyAction payload = (EditPropertyAction) action.getPayload();
             valueTypeList.add(payload.getValueType());
           });
@@ -117,10 +118,9 @@ class WorkflowControllerTest {
               && workflowRequest.getTrigger().getName().equals(TriggerType.EVENT)
               && workflowRequest.getTrigger().getTriggerFrequency().equals(TriggerFrequency.CREATED)
               && workflowRequest.getCondition().getConditionType().equals(ConditionType.FOR_ALL)
-              && workflowRequest.getActions().stream().allMatch(action -> action.getType().equals(ActionType.EDIT_PROPERTY)
               && valueTypeList.containsAll(mockList)
-              && workflowRequest.getActions().size() == 33
-              && workflowRequest.isActive());
+              && workflowRequest.getActions().size() == 34
+              && workflowRequest.isActive();
         }
     ))).willReturn(Mono.just(new WorkflowSummary(1L)));
     //when
@@ -160,6 +160,10 @@ class WorkflowControllerTest {
               .stream()
               .anyMatch(webhookAction ->
                   webhookAction.getType().equals(ActionType.WEBHOOK))
+              && workflowRequest.getActions()
+              .stream()
+              .anyMatch(webhookAction ->
+                  webhookAction.getType().equals(ActionType.REASSIGN))
               && valueTypeList.size() == 33
               && valueTypeList.containsAll(mockList);
         }
@@ -196,7 +200,8 @@ class WorkflowControllerTest {
         Set.of(
             new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("salutation", 1319, PLAIN)),
             new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("dnd", true, PLAIN)),
-            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("city", "PUNE", PLAIN)));
+            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("city", "PUNE", PLAIN)),
+            new ActionResponse(ActionType.REASSIGN, new ReassignAction(20003L)));
     User user = new User(5000L, "Tony Stark");
     WorkflowDetail workflowDetail = new WorkflowDetail(1L, "Workflow 1", "Workflow Description", EntityType.LEAD, trigger, condition, actions, user,
         user, null, null, null, 0L, null, true);
@@ -204,7 +209,7 @@ class WorkflowControllerTest {
         {
           List<ValueType> mockList = List.of(PLAIN);
           List<ValueType> valueTypeList = new ArrayList<>();
-          workflowRequest.getActions().forEach(action -> {
+          workflowRequest.getActions().stream().filter(action -> action.getType().equals(ActionType.EDIT_PROPERTY)).forEach(action -> {
             EditPropertyAction payload = (EditPropertyAction) action.getPayload();
             valueTypeList.add(payload.getValueType());
           });
@@ -214,8 +219,7 @@ class WorkflowControllerTest {
               && workflowRequest.getTrigger().getName().equals(TriggerType.EVENT)
               && workflowRequest.getTrigger().getTriggerFrequency().equals(TriggerFrequency.CREATED)
               && workflowRequest.getCondition().getConditionType().equals(ConditionType.FOR_ALL)
-              && workflowRequest.getActions().stream().allMatch(actionResponse -> actionResponse.getType().equals(ActionType.EDIT_PROPERTY))
-              && valueTypeList.size() == actions.size()
+              && valueTypeList.size() == 3
               && valueTypeList.containsAll(mockList)
               && workflowRequest.isActive();
         }
@@ -932,13 +936,80 @@ class WorkflowControllerTest {
                 JSONAssert.assertEquals(
                     "{\"code\":\"01701006\"}",
                     json,
-                        JSONCompareMode.LENIENT);
+                    JSONCompareMode.LENIENT);
               } catch (JSONException e) {
                 fail(e.getMessage());
               }
             })
         .expectComplete()
         .verify();
+  }
+
+  @Test
+  public void givenWorkflow_withReassignAction_shouldCreateIt() {
+    //given
+    var requestPayload = getResourceAsString("classpath:contracts/reassign/create-workflow-with-reassign-action-request.json");
+    given(workflowService.create(argThat(workflowRequest -> {
+      return workflowRequest.getActions().stream().allMatch(action -> action.getType().equals(ActionType.REASSIGN));
+    }))).willReturn(Mono.just(new WorkflowSummary(1L)));
+
+    //when
+    var workflowResponse = buildWebClient()
+        .post()
+        .uri("/v1/workflows")
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(requestPayload).retrieve()
+        .bodyToMono(String.class);
+
+    //then
+    var expectedResponse =
+        getResourceAsString("classpath:contracts/workflow/api/create-workflow-response.json");
+    StepVerifier.create(workflowResponse)
+        .assertNext(json -> {
+          try {
+            JSONAssert.assertEquals(expectedResponse, json, false);
+          } catch (JSONException e) {
+            fail(e.getMessage());
+          }
+        }).verifyComplete();
+  }
+
+  @Test
+  public void givenWorkflow_withReassignAction_shouldUpdateIt() {
+    //given
+    var requestPayload = getResourceAsString("classpath:contracts/reassign/update-workflow-with-reassign-action-request.json");
+    WorkflowTrigger trigger = new WorkflowTrigger(TriggerType.EVENT, TriggerFrequency.CREATED);
+    WorkflowCondition condition = new WorkflowCondition(ConditionType.FOR_ALL, null);
+    Set<ActionResponse> actions =
+        Set.of(
+            new ActionResponse(ActionType.REASSIGN, new ReassignAction(20003L)));
+    User user = new User(5000L, "Tony Stark");
+    WorkflowDetail workflowDetail = new WorkflowDetail(1L, "Workflow 1", "Workflow Description", EntityType.LEAD, trigger, condition, actions, user,
+        user, null, null, null, 0L, null, true);
+    given(workflowService.update(eq(1L), argThat(workflowRequest -> {
+      return workflowRequest.getActions().stream().allMatch(action -> action.getType().equals(ActionType.REASSIGN));
+    }))).willReturn(Mono.just(workflowDetail));
+
+    //when
+    var workflowResponse = buildWebClient()
+        .put()
+        .uri("/v1/workflows/1")
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(requestPayload)
+        .retrieve()
+        .bodyToMono(String.class);
+
+    //then
+    var expectedResponse =
+        getResourceAsString("classpath:contracts/reassign/update-workflow-reassign-action-response.json");
+    StepVerifier.create(workflowResponse)
+        .assertNext(json -> {
+          try {
+            JSONAssert.assertEquals(expectedResponse, json, false);
+          } catch (JSONException e) {
+            fail(e.getMessage());
+          }
+        }).verifyComplete();
   }
 
   private String getResourceAsString(String resourcePath) {

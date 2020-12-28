@@ -302,6 +302,12 @@
           }
         ]
       }
+    },
+    {
+      "type": "REASSIGN",
+      "payload": {
+        "ownerId": 20003
+      }
     }
   ]
 }

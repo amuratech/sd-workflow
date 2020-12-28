@@ -285,6 +285,12 @@
         "value": 1323,
         "valueType": "PLAIN"
       }
+    },
+    {
+      "type": "REASSIGN",
+      "payload": {
+        "ownerId": 20003
+      }
     }
   ]
 }

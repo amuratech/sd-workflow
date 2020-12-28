@@ -9,6 +9,7 @@ import com.kylas.sales.workflow.common.dto.ActionDetail.EditPropertyAction.Value
 import com.kylas.sales.workflow.common.dto.ActionResponse;
 import com.kylas.sales.workflow.domain.exception.InvalidActionException;
 import com.kylas.sales.workflow.domain.exception.InvalidValueTypeException;
+import com.kylas.sales.workflow.domain.processor.lead.LeadFieldValueType;
 import com.kylas.sales.workflow.domain.workflow.Workflow;
 import java.util.Arrays;
 import javax.persistence.Convert;
@@ -72,6 +73,7 @@ public class EditPropertyAction extends AbstractWorkflowAction implements com.ky
     }
     this.setName(payload.getName());
     this.setValue(payload.getValue());
+    this.setValueType(payload.getValueType());
     return this;
   }
 
@@ -84,9 +86,14 @@ public class EditPropertyAction extends AbstractWorkflowAction implements com.ky
     if (isNull(valueType)) {
       return true;
     }
-    if (Arrays.stream(ActionDetail.EditPropertyAction.FieldValueType.values()).anyMatch(value -> value.name().equalsIgnoreCase(name))) {
-      return !ActionDetail.EditPropertyAction.FieldValueType.valueOf(name).getFieldValueType().equals(valueType);
+    LeadFieldValueType leadFieldValueType = Arrays.stream(LeadFieldValueType.values()).filter(value -> value.getFieldName().equals(name)).findAny()
+        .orElse(LeadFieldValueType.OTHER);
+    if (leadFieldValueType.equals(LeadFieldValueType.OTHER) && valueType.equals(ValueType.PLAIN)) {
+      return false;
     }
-    return false;
+    if (leadFieldValueType.getValueType().equals(valueType)) {
+      return false;
+    }
+    return true;
   }
 }

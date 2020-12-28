@@ -1,30 +1,19 @@
 package com.kylas.sales.workflow.domain.processor;
 
-import static com.kylas.sales.workflow.common.dto.ActionDetail.EditPropertyAction.FieldValueType.companyPhones;
-import static com.kylas.sales.workflow.common.dto.ActionDetail.EditPropertyAction.FieldValueType.emails;
-import static com.kylas.sales.workflow.common.dto.ActionDetail.EditPropertyAction.FieldValueType.phoneNumbers;
-import static com.kylas.sales.workflow.common.dto.ActionDetail.EditPropertyAction.FieldValueType.products;
-import static com.kylas.sales.workflow.common.dto.ActionDetail.EditPropertyAction.FieldValueType.valueOf;
-import static com.kylas.sales.workflow.common.dto.ActionDetail.EditPropertyAction.ValueType.ARRAY;
-import static java.util.Collections.emptyList;
 import static java.util.Objects.isNull;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kylas.sales.workflow.api.WorkflowService;
-import com.kylas.sales.workflow.common.dto.ActionDetail.EditPropertyAction.FieldValueType;
 import com.kylas.sales.workflow.domain.processor.exception.WorkflowExecutionException;
-import com.kylas.sales.workflow.domain.processor.lead.Email;
 import com.kylas.sales.workflow.domain.processor.lead.Lead;
 import com.kylas.sales.workflow.domain.processor.lead.LeadDetail;
-import com.kylas.sales.workflow.domain.processor.lead.PhoneNumber;
-import com.kylas.sales.workflow.domain.processor.lead.Product;
 import com.kylas.sales.workflow.domain.workflow.TriggerFrequency;
 import com.kylas.sales.workflow.domain.workflow.Workflow;
 import com.kylas.sales.workflow.domain.workflow.action.AbstractWorkflowAction;
 import com.kylas.sales.workflow.domain.workflow.action.EditPropertyAction;
+import com.kylas.sales.workflow.domain.workflow.action.ValueConverter;
 import com.kylas.sales.workflow.domain.workflow.action.WorkflowAction.ActionType;
+import com.kylas.sales.workflow.domain.workflow.action.reassign.ReassignAction;
+import com.kylas.sales.workflow.domain.workflow.action.reassign.ReassignDetail;
 import com.kylas.sales.workflow.domain.workflow.action.webhook.WebhookAction;
 import com.kylas.sales.workflow.domain.workflow.action.webhook.WebhookService;
 import com.kylas.sales.workflow.error.ErrorCode;
@@ -50,13 +39,15 @@ public class WorkflowProcessor {
   private final WorkflowService workflowService;
   private final LeadUpdatedCommandPublisher leadUpdatedCommandPublisher;
   private final WebhookService webhookService;
+  private final ValueConverter valueConverter;
 
   @Autowired
   public WorkflowProcessor(WorkflowService workflowService,
-      LeadUpdatedCommandPublisher leadUpdatedCommandPublisher, WebhookService webhookService) {
+      LeadUpdatedCommandPublisher leadUpdatedCommandPublisher, WebhookService webhookService, ValueConverter valueConverter) {
     this.workflowService = workflowService;
     this.leadUpdatedCommandPublisher = leadUpdatedCommandPublisher;
     this.webhookService = webhookService;
+    this.valueConverter = valueConverter;
   }
 
   public void process(LeadEvent event) {
@@ -96,6 +87,10 @@ public class WorkflowProcessor {
     workflowActions.stream().filter(workflowAction -> workflowAction.getType().equals(ActionType.WEBHOOK))
         .map(workflowAction -> (WebhookAction) workflowAction).forEach(webhookAction ->
         webhookService.execute(webhookAction, entity));
+
+    workflowActions.stream().filter(workflowAction -> workflowAction.getType().equals(ActionType.REASSIGN))
+        .map(workflowAction -> (ReassignAction) workflowAction).findFirst().ifPresent(
+        reassignAction -> leadUpdatedCommandPublisher.execute(metadata, convertToReassignDetail(entity.getId(), reassignAction.getOwnerId())));
   }
 
   private void processEditPropertyActions(Set<EditPropertyAction> editPropertyActions, Metadata metadata) {
@@ -107,43 +102,25 @@ public class WorkflowProcessor {
         EvaluationContext context = SimpleEvaluationContext.forReadWriteDataBinding().build();
         ExpressionParser parser = new SpelExpressionParser();
         parser.parseExpression(editPropertyAction.getName())
-            .setValue(context, lead,
-                getValue(editPropertyAction));
+            .setValue(context, lead, valueConverter.getValue(editPropertyAction, Lead.class.getDeclaredField(editPropertyAction.getName())));
       } catch (SpelEvaluationException e) {
         log.error("Exception for EditPropertyAction with Id {}, name {} and value {} with errorMessage {} ", editPropertyAction.getId(),
             editPropertyAction.getName(),
             editPropertyAction.getValue(), e.getMessageCode());
         throw new WorkflowExecutionException(ErrorCode.UPDATE_PROPERTY);
+      } catch (NoSuchFieldException e) {
+        log.error("Exception for EditPropertyAc"
+                + "tion with Id {}, name {} and value {} with errorMessage {} ", editPropertyAction.getId(),
+            editPropertyAction.getName(),
+            editPropertyAction.getValue(), e.getMessage());
       }
-      log.info("Publishing command to execute actionId {}, with new metadata {} ", editPropertyAction.getId(), metadata);
     });
+    log.info("Publishing command to execute edit property actions on entity with Id {}, with new metadata {} ", metadata.getEntityId(), metadata);
     leadUpdatedCommandPublisher.execute(metadata, lead);
   }
 
-  private Object getValue(EditPropertyAction editPropertyAction) {
-    return ARRAY.equals(editPropertyAction.getValueType()) ? convertToList(valueOf(editPropertyAction.getName()),
-        editPropertyAction.getValue())
-        : editPropertyAction.getValue();
+  private ReassignDetail convertToReassignDetail(Long entityId, Long ownerId) {
+    return new ReassignDetail(entityId, ownerId);
   }
 
-  private List<?> convertToList(FieldValueType fieldValueType, Object value) {
-    ObjectMapper objectMapper = new ObjectMapper();
-    try {
-      if (fieldValueType.equals(products)) {
-        return objectMapper.readValue(String.valueOf(value), new TypeReference<List<Product>>() {
-        });
-      }
-      if (fieldValueType.equals(phoneNumbers) || fieldValueType.equals(companyPhones)) {
-        return objectMapper.readValue(String.valueOf(value), new TypeReference<List<PhoneNumber>>() {
-        });
-      }
-      if (fieldValueType.equals(emails)) {
-        return objectMapper.readValue(String.valueOf(value), new TypeReference<List<Email>>() {
-        });
-      }
-    } catch (JsonProcessingException e) {
-      e.printStackTrace();
-    }
-    return emptyList();
-  }
 }

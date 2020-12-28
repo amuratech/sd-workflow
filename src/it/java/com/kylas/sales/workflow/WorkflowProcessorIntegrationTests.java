@@ -63,6 +63,9 @@ public class WorkflowProcessorIntegrationTests {
   static final String SALES_LEAD_UPDATE_QUEUE = "q.workflow.lead.update.sales";
   static final String SALES_LEAD_UPDATE_QUEUE_NEW = "q.workflow.lead.update.sales_new";
   static final String LEAD_UPDATE_COMMAND_QUEUE = "workflow.lead.update";
+  static final String SALES_LEAD_REASSIGN_QUEUE = "workflow.lead.reassign.sales";
+  static final String SALES_LEAD_REASSIGN_QUEUE_NEW = "workflow.lead.reassign.sales_new";
+  static final String LEAD_REASSIGN_COMMAND_QUEUE = "workflow.lead.reassign";
 
   private static RabbitMQContainer rabbitMQContainer =
       new RabbitMQContainer("rabbitmq:3.7-management-alpine");
@@ -332,6 +335,65 @@ public class WorkflowProcessorIntegrationTests {
     }
   }
 
+  @Nested
+  @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
+  @AutoConfigureTestDatabase(replace = Replace.NONE)
+  @ContextConfiguration(initializers = {TestMqSetup.class, TestDatabaseInitializer.class})
+  @DisplayName("Tests that publish reassign event when lead created/updated")
+  class ReassignIntegrationTests {
+
+    @Test
+    @Sql("/test-scripts/insert-reassign-lead-workflow.sql")
+    public void givenLeadCreatedEvent_shouldPublish_reassignEvent() throws IOException, InterruptedException, JSONException {
+      //given
+      String authenticationToken = "some-token";
+      User aUser = UserStub.aUser(12L, 99L, true, true, true, true, true)
+          .withName("user 1");
+      given(authService.getLoggedInUser()).willReturn(aUser);
+      given(authService.getAuthenticationToken()).willReturn(authenticationToken);
+
+      String resourceAsString = getResourceAsString("/contracts/mq/events/lead-created-reassign-event.json");
+      LeadEvent leadEvent = objectMapper.readValue(resourceAsString, LeadEvent.class);
+      initializeRabbitMqListener(LEAD_REASSIGN_COMMAND_QUEUE, SALES_LEAD_REASSIGN_QUEUE);
+      //when
+      rabbitTemplate.convertAndSend(SALES_EXCHANGE, LeadEvent.getLeadCreatedEventName(),
+          leadEvent);
+      //then
+      mockMqListener.latch.await(3, TimeUnit.SECONDS);
+      JSONAssert
+          .assertEquals(getResourceAsString("/contracts/mq/command/lead-reassign-patch-command.json"), mockMqListener.actualMessage,
+              JSONCompareMode.STRICT);
+
+      Workflow workflow = workflowFacade.get(301);
+      Assertions.assertThat(workflow.getWorkflowExecutedEvent().getLastTriggeredAt()).isNotNull();
+      Assertions.assertThat(workflow.getWorkflowExecutedEvent().getTriggerCount()).isEqualTo(152);
+    }
+
+    @Test
+    @Sql("/test-scripts/insert-reassign-update-lead-workflow.sql")
+    public void givenLeadUpdatedEvent_shouldPublish_reassignEvent() throws IOException, InterruptedException, JSONException {
+      //given
+      User aUser = UserStub.aUser(12L, 99L, true, true, true, true, true)
+          .withName("user 1");
+      given(authService.getLoggedInUser()).willReturn(aUser);
+
+      String resourceAsString = getResourceAsString("/contracts/mq/events/sales-lead-reassigned-event-payload.json");
+      LeadEvent leadEvent = objectMapper.readValue(resourceAsString, LeadEvent.class);
+      initializeRabbitMqListener(LEAD_REASSIGN_COMMAND_QUEUE, SALES_LEAD_REASSIGN_QUEUE_NEW);
+      //when
+      rabbitTemplate.convertAndSend(SALES_EXCHANGE, LeadEvent.getLeadUpdatedEventName(),
+          leadEvent);
+      //then
+      mockMqListener.latch.await(3, TimeUnit.SECONDS);
+      JSONAssert
+          .assertEquals(getResourceAsString("/contracts/mq/command/lead-reassign-patch-command-2.json"), mockMqListener.actualMessage,
+              JSONCompareMode.STRICT);
+
+      Workflow workflow = workflowFacade.get(301);
+      Assertions.assertThat(workflow.getWorkflowExecutedEvent().getLastTriggeredAt()).isNotNull();
+      Assertions.assertThat(workflow.getWorkflowExecutedEvent().getTriggerCount()).isEqualTo(152);
+    }
+  }
 
   static class MockMqListener {
 
@@ -374,7 +436,10 @@ public class WorkflowProcessorIntegrationTests {
     public void initialize(ConfigurableApplicationContext configurableApplicationContext) {
       var withSales =
           rabbitMQContainer.withExchange(SALES_EXCHANGE, "topic").withQueue(SALES_LEAD_UPDATE_QUEUE);
+      rabbitMQContainer.withExchange(SALES_EXCHANGE, "topic").withQueue(SALES_LEAD_REASSIGN_QUEUE);
+      rabbitMQContainer.withExchange(SALES_EXCHANGE, "topic").withQueue(SALES_LEAD_REASSIGN_QUEUE_NEW);
       rabbitMQContainer.withExchange(WORKFLOW_EXCHANGE, "topic").withQueue(LEAD_UPDATE_COMMAND_QUEUE);
+      rabbitMQContainer.withExchange(WORKFLOW_EXCHANGE, "topic").withQueue(LEAD_REASSIGN_COMMAND_QUEUE);
       rabbitMQContainer.withExchange(WORKFLOW_EXCHANGE, "topic").withQueue(SALES_LEAD_UPDATE_QUEUE_NEW);
 
       withSales.start();

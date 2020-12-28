@@ -119,14 +119,20 @@ public class WorkflowIntegrationTests {
                     new CustomComparator(
                         JSONCompareMode.STRICT,
                         new Customization("actions[0].id", (o1, o2) -> true),
+                        new Customization("actions[0].type", (o1, o2) -> true),
                         new Customization("actions[1].id", (o1, o2) -> true),
                         new Customization("actions[2].id", (o1, o2) -> true),
+                        new Customization("actions[3].id", (o1, o2) -> true),
                         new Customization("actions[0].payload", (o1, o2) -> true),
                         new Customization("actions[1].payload", (o1, o2) -> true),
                         new Customization("actions[2].payload", (o1, o2) -> true),
+                        new Customization("actions[3].payload", (o1, o2) -> true),
+                        new Customization("actions[3].type", (o1, o2) -> true),
                         new Customization("lastTriggeredAt", (o1, o2) -> true),
                         new Customization("updatedAt", (o1, o2) -> true),
-                        new Customization("createdAt", (o1, o2) -> true)));
+                        new Customization("createdAt", (o1, o2) -> true),
+                        new Customization("actions[1].type", (o1, o2) -> true),
+                        new Customization("actions[2].type", (o1, o2) -> true)));
               } catch (JSONException e) {
                 fail(e.getMessage());
               }
@@ -166,7 +172,11 @@ public class WorkflowIntegrationTests {
                         new Customization("createdAt", (o1, o2) -> true),
                         new Customization("updatedAt", (o1, o2) -> true),
                         new Customization("actions[0].id", (o1, o2) -> true),
-                        new Customization("actions[0].payload", (o1, o2) -> true)));
+                        new Customization("actions[1].id", (o1, o2) -> true),
+                        new Customization("actions[0].type", (o1, o2) -> true),
+                        new Customization("actions[1].type", (o1, o2) -> true),
+                        new Customization("actions[0].payload", (o1, o2) -> true),
+                        new Customization("actions[1].payload", (o1, o2) -> true)));
               } catch (JSONException e) {
                 fail(e.getMessage());
               }
@@ -245,7 +255,15 @@ public class WorkflowIntegrationTests {
                         new Customization("content[0].updatedAt", (o1, o2) -> true),
                         new Customization("content[1].lastTriggeredAt", (o1, o2) -> true),
                         new Customization("content[1].createdAt", (o1, o2) -> true),
-                        new Customization("content[1].updatedAt", (o1, o2) -> true)));
+                        new Customization("content[1].updatedAt", (o1, o2) -> true),
+                        new Customization("content[0].actions[1].id", (o1, o2) -> true),
+                        new Customization("content[0].actions[0].type", (o1, o2) -> true),
+                        new Customization("content[0].actions[1].type", (o1, o2) -> true),
+                        new Customization("content[1].actions[0].payload", (o1, o2) -> true),
+                        new Customization("content[0].actions[0].payload", (o1, o2) -> true),
+                        new Customization("content[0].actions[1].payload", (o1, o2) -> true),
+                        new Customization("content[1].actions[0].type", (o1, o2) -> true),
+                        new Customization("content[1].actions[1].type", (o1, o2) -> true)));
               } catch (JSONException e) {
                 fail(e.getMessage());
               }

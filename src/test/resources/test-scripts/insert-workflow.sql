@@ -2,6 +2,7 @@ DELETE FROM workflow_executed_event;
 DELETE FROM parameter;
 DELETE FROM webhook_action;
 DELETE FROM edit_property_action;
+DELETE FROM reassign_Action;
 DELETE FROM abstract_workflow_action;
 DELETE FROM workflow_condition;
 DELETE FROM workflow_trigger;

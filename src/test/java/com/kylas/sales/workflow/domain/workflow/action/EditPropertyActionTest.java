@@ -89,7 +89,8 @@ class EditPropertyActionTest {
   public void givenEditPropertyAction_withValueTypeObject_shouldCreate() {
     //given
     ConversionAssociation conversionAssociation = new ConversionAssociation(1L, 2L, 3L, 4L, 5L);
-    var editPropertyAction = new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("product", conversionAssociation, OBJECT));
+    var editPropertyAction = new ActionResponse(ActionType.EDIT_PROPERTY,
+        new EditPropertyAction("conversionAssociation", conversionAssociation, OBJECT));
     Set<ActionResponse> actionResponses = new HashSet<>();
     actionResponses.add(editPropertyAction);
     //when
@@ -100,7 +101,7 @@ class EditPropertyActionTest {
     assertThat(actions.size()).isEqualTo(1);
     com.kylas.sales.workflow.domain.workflow.action.EditPropertyAction action = (com.kylas.sales.workflow.domain.workflow.action.EditPropertyAction) actions
         .iterator().next();
-    assertThat(action.getName()).isEqualTo("product");
+    assertThat(action.getName()).isEqualTo("conversionAssociation");
     assertThat(action.getValue()).isInstanceOf(ConversionAssociation.class);
     ConversionAssociation actualConversionAssociation = (ConversionAssociation) action.getValue();
     assertThat(actualConversionAssociation.getId()).isEqualTo(1);

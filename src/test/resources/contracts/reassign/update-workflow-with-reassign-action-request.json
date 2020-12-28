@@ -1,0 +1,24 @@
+{
+  "name": "Workflow 1",
+  "description": "Workflow Description",
+  "entityType": "LEAD",
+  "trigger": {
+    "name": "EVENT",
+    "triggerFrequency": "CREATED",
+    "payload": {
+    }
+  },
+  "condition": {
+    "conditionType": "FOR_ALL",
+    "values": []
+  },
+  "actions": [
+    {
+      "id": "08518b20-23f9-11eb-adc1-0242ac120002",
+      "type": "REASSIGN",
+      "payload": {
+        "ownerId": 20003
+      }
+    }
+  ]
+}
