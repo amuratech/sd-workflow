@@ -19,7 +19,7 @@ podTemplate(
                         credentialsId: 'sd-charts-github-api-token',
                         variable     : 'API_TOKEN']]) {
         stage('Initialise Helm') {
-          sh script: "helm init --client-only --kubeconfig=${KUBECONFIG}", label: 'Initialize helm'
+          sh script: "helm init --client-only --stable-repo-url https://charts.helm.sh/stable --kubeconfig=${KUBECONFIG}", label: 'Initialize helm'
         }
         stage('Update Helm repository') {
           sh script: "helm repo add sd-charts 'https://${API_TOKEN}@raw.githubusercontent.com/amuratech/sd-charts/master/'",
