@@ -1,0 +1,99 @@
+{
+  "createdAt": "2020-03-16T18:35:41.226+0000",
+  "updatedAt": "2020-03-31T11:04:00.743+0000",
+  "createdBy": 7,
+  "updatedBy": 7,
+  "recordActions": {
+    "read": true,
+    "update": true,
+    "delete": true,
+    "email": false,
+    "call": false,
+    "sms": false,
+    "task": false,
+    "note": false
+  },
+  "metaData": {
+    "idNameStore": {
+      "updatedBy": {
+        "7": "Marcus Rashford"
+      },
+      "createdBy": {
+        "7": "Marcus Rashford"
+      },
+      "ownerId": {
+        "7": "Marcus Rashford"
+      }
+    }
+  },
+  "id": 122,
+  "name": "Demo",
+  "entityType": "DEAL",
+  "unqualifiedReasons": [
+    "Wrong number",
+    "Did not pick phone"
+  ],
+  "lostReasons": [
+    "Over budget",
+    "Not interested"
+  ],
+  "stages": [
+    {
+      "createdAt": "2020-03-16T18:35:41.230+0000",
+      "updatedAt": "2020-03-16T18:35:41.230+0000",
+      "createdBy": 7,
+      "updatedBy": 7,
+      "recordActions": null,
+      "metaData": null,
+      "id": 400,
+      "name": "Open",
+      "description": null,
+      "forecastingType": "OPEN",
+      "position": 1,
+      "winLikelihood": 100
+    },
+    {
+      "createdAt": "2020-03-16T18:35:41.233+0000",
+      "updatedAt": "2020-03-31T11:17:34.020+0000",
+      "createdBy": 7,
+      "updatedBy": 7,
+      "recordActions": null,
+      "metaData": null,
+      "id": 401,
+      "name": "Won",
+      "description": null,
+      "forecastingType": "CLOSED_WON",
+      "position": 6,
+      "winLikelihood": 100
+    },
+    {
+      "createdAt": "2020-03-16T18:35:41.236+0000",
+      "updatedAt": "2020-03-31T11:17:34.020+0000",
+      "createdBy": 7,
+      "updatedBy": 7,
+      "recordActions": null,
+      "metaData": null,
+      "id": 402,
+      "name": "Closed Unqualified",
+      "description": null,
+      "forecastingType": "CLOSED_UNQUALIFIED",
+      "position": 7,
+      "winLikelihood": 0
+    },
+    {
+      "createdAt": "2020-03-16T18:35:41.241+0000",
+      "updatedAt": "2020-03-31T11:17:34.021+0000",
+      "createdBy": 7,
+      "updatedBy": 7,
+      "recordActions": null,
+      "metaData": null,
+      "id": 403,
+      "name": "Closed Lost",
+      "description": null,
+      "forecastingType": "CLOSED_LOST",
+      "position": 8,
+      "winLikelihood": 0
+    }
+  ],
+  "active": true
+}

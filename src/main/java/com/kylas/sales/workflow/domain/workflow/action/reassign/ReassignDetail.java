@@ -15,8 +15,8 @@ import lombok.Getter;
 @AllArgsConstructor
 public class ReassignDetail implements Serializable, Actionable {
 
-  private Long entityId;
-  private Long ownerId;
+  private final Long entityId;
+  private final Long ownerId;
 
   @Override
   @JsonIgnore

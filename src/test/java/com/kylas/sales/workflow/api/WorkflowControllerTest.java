@@ -39,7 +39,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.Set;
 import org.apache.commons.io.FileUtils;
 import org.json.JSONException;
 import org.junit.jupiter.api.Test;
@@ -196,8 +195,8 @@ class WorkflowControllerTest {
     ObjectMapper objectMapper = new ObjectMapper();
     WorkflowTrigger trigger = new WorkflowTrigger(TriggerType.EVENT, TriggerFrequency.CREATED);
     WorkflowCondition condition = new WorkflowCondition(ConditionType.FOR_ALL, null);
-    Set<ActionResponse> actions =
-        Set.of(
+    List<ActionResponse> actions =
+        List.of(
             new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("salutation", 1319, PLAIN)),
             new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("dnd", true, PLAIN)),
             new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("city", "PUNE", PLAIN)),
@@ -376,7 +375,7 @@ class WorkflowControllerTest {
             createdBy,
             updatedBy,
             new Date());
-    given(workflowService.get(workflowId)).willReturn(workflowDetail);
+    given(workflowService.get(workflowId)).willReturn(Mono.just(workflowDetail));
     // when
     var workflowResponse =
         buildWebClient()
@@ -432,7 +431,7 @@ class WorkflowControllerTest {
             createdBy,
             updatedBy,
             new Date());
-    given(workflowService.activate(workflowId)).willReturn(workflowDetail);
+    given(workflowService.activate(workflowId)).willReturn(Mono.just(workflowDetail));
     // when
     var workflowResponse =
         buildWebClient()
@@ -481,7 +480,7 @@ class WorkflowControllerTest {
             createdBy,
             updatedBy,
             new Date());
-    given(workflowService.deactivate(workflowId)).willReturn(workflowDetail);
+    given(workflowService.deactivate(workflowId)).willReturn(Mono.just(workflowDetail));
     // when
     var workflowResponse =
         buildWebClient()
@@ -980,9 +979,8 @@ class WorkflowControllerTest {
     var requestPayload = getResourceAsString("classpath:contracts/reassign/update-workflow-with-reassign-action-request.json");
     WorkflowTrigger trigger = new WorkflowTrigger(TriggerType.EVENT, TriggerFrequency.CREATED);
     WorkflowCondition condition = new WorkflowCondition(ConditionType.FOR_ALL, null);
-    Set<ActionResponse> actions =
-        Set.of(
-            new ActionResponse(ActionType.REASSIGN, new ReassignAction(20003L)));
+    List<ActionResponse> actions =
+        List.of(new ActionResponse(ActionType.REASSIGN, new ReassignAction(20003L)));
     User user = new User(5000L, "Tony Stark");
     WorkflowDetail workflowDetail = new WorkflowDetail(1L, "Workflow 1", "Workflow Description", EntityType.LEAD, trigger, condition, actions, user,
         user, null, null, null, 0L, null, true);

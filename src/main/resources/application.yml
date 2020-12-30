@@ -54,3 +54,5 @@ client:
     basePath: http://localhost:8081
   config:
     basePath: http://localhost:8086
+  sales:
+    basePath: http://localhost:8082

@@ -33,8 +33,11 @@
       "type": "EDIT_PROPERTY",
       "payload": {
         "name": "pipeline",
-        "value": 123,
-        "valueType": "PLAIN"
+        "value": {
+          "id": 123,
+          "name": "Default Lead Pipeline"
+        },
+        "valueType": "OBJECT"
       }
     },
     {

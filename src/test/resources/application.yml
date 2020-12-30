@@ -23,3 +23,5 @@ client:
     basePath: http://localhost:9090/iam
   config:
     basePath: http://localhost:9090/config
+  sales:
+    basePath: http://localhost:9090/sales

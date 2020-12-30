@@ -8,7 +8,7 @@ import com.kylas.sales.workflow.common.dto.WorkflowTrigger;
 import com.kylas.sales.workflow.domain.user.Action;
 import com.kylas.sales.workflow.domain.workflow.EntityType;
 import java.util.Date;
-import java.util.Set;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -22,7 +22,7 @@ public class WorkflowDetail {
   private final EntityType entityType;
   private final WorkflowTrigger trigger;
   private final WorkflowCondition condition;
-  private final Set<ActionResponse> actions;
+  private final List<ActionResponse> actions;
   private final User createdBy;
   private final User updatedBy;
   private final Date createdAt;

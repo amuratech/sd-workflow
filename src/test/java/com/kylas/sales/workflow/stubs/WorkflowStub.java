@@ -15,6 +15,7 @@ import com.kylas.sales.workflow.domain.workflow.EntityType;
 import com.kylas.sales.workflow.domain.workflow.TriggerFrequency;
 import com.kylas.sales.workflow.domain.workflow.TriggerType;
 import com.kylas.sales.workflow.domain.workflow.action.WorkflowAction.ActionType;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
@@ -121,7 +122,7 @@ public class WorkflowStub {
     var workflowTrigger = new WorkflowTrigger(triggerType, triggerFrequency);
     var condition = new WorkflowCondition(conditionType);
     var action = new ActionResponse(actionType, new EditPropertyAction(propertyName, propertyValue, propertyValueType));
-    var actions = new HashSet<ActionResponse>();
+    var actions = new ArrayList<ActionResponse>();
     actions.add(action);
     Action allowedActions = new Action();
     allowedActions.setRead(canRead);

@@ -50,8 +50,8 @@ public class WorkflowController {
   }
 
   @GetMapping(value = "/{id}", produces = APPLICATION_JSON_VALUE)
-  public ResponseEntity getWorkflow(@PathVariable("id") long workflowId) {
-    return ResponseEntity.ok(workflowService.get(workflowId));
+  public Mono<WorkflowDetail> getWorkflow(@PathVariable("id") long workflowId) {
+    return workflowService.get(workflowId);
   }
 
   @PutMapping(value = "/{id}", consumes = APPLICATION_JSON_VALUE, produces = APPLICATION_JSON_VALUE)
@@ -94,12 +94,12 @@ public class WorkflowController {
   }
 
   @PostMapping(value = "/{id}/deactivate", produces = APPLICATION_JSON_VALUE)
-  public ResponseEntity<WorkflowDetail> deactivate(@PathVariable("id") long workflowId) {
-    return ResponseEntity.ok(workflowService.deactivate(workflowId));
+  public Mono<WorkflowDetail> deactivate(@PathVariable("id") long workflowId) {
+    return workflowService.deactivate(workflowId);
   }
 
   @PostMapping(value = "/{id}/activate", produces = APPLICATION_JSON_VALUE)
-  public ResponseEntity<WorkflowDetail> activate(@PathVariable("id") long workflowId) {
-    return ResponseEntity.ok(workflowService.activate(workflowId));
+  public Mono<WorkflowDetail> activate(@PathVariable("id") long workflowId) {
+    return workflowService.activate(workflowId);
   }
 }

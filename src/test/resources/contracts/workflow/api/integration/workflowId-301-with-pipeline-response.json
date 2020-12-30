@@ -1,0 +1,47 @@
+{
+  "id": 301,
+  "name": "Workflow 1",
+  "description": "Workflow 1",
+  "entityType": "LEAD",
+  "trigger": {
+    "name": "EVENT",
+    "triggerFrequency": "CREATED"
+  },
+  "condition": {
+    "conditionType": "FOR_ALL"
+  },
+  "actions": [
+    {
+      "id": "a0eebc55-9c0b-4ef8-bb6d-6bb9bd380a11",
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "pipeline",
+        "value": {
+          "id": 122,
+          "name": "Demo"
+        },
+        "valueType": "OBJECT"
+      }
+    }
+  ],
+  "createdBy": {
+    "id": 12,
+    "name": "Steve"
+  },
+  "updatedBy": {
+    "id": 12,
+    "name": "Steve"
+  },
+  "createdAt": "2020-10-20T23:17:59.442+0000",
+  "updatedAt": "2020-10-20T23:17:59.442+0000",
+  "lastTriggeredAt": "2020-10-21T23:17:59.442+0000",
+  "triggerCount": 151,
+  "active": true,
+  "recordActions": {
+    "read": true,
+    "update": true,
+    "write": true,
+    "readAll": false,
+    "updateAll": false
+  }
+}

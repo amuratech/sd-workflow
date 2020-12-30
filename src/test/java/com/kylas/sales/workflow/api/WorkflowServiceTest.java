@@ -130,7 +130,7 @@ class WorkflowServiceTest {
     given(workflowSpy.getId()).willReturn(workflowId);
     given(workflowFacade.get(workflowId)).willReturn(workflowSpy);
     // when
-    WorkflowDetail workflowDetail = workflowService.get(workflowId);
+    var workflowDetail = workflowService.get(workflowId).block();
     // then
     assertThat(workflowDetail.getId()).isEqualTo(workflowId);
     assertThat(workflowDetail.getName()).isEqualTo("Workflow 1");
@@ -157,7 +157,7 @@ class WorkflowServiceTest {
     Workflow workflow = aWorkflowActivationStub(true);
     given(workflowFacade.activate(workflowId)).willReturn(workflow);
     // when
-    WorkflowDetail activatedWorkflow = workflowService.activate(workflowId);
+    var activatedWorkflow = workflowService.activate(workflowId).block();
     // then
     assertThat(activatedWorkflow.isActive()).isTrue();
     assertThat(activatedWorkflow.getId()).isEqualTo(1000L);
@@ -195,7 +195,7 @@ class WorkflowServiceTest {
     Workflow workflow = aWorkflowActivationStub(false);
     given(workflowFacade.deactivate(workflowId)).willReturn(workflow);
     // when
-    WorkflowDetail activatedWorkflow = workflowService.deactivate(workflowId);
+    var activatedWorkflow = workflowService.deactivate(workflowId).block();
     // then
     assertThat(activatedWorkflow.isActive()).isFalse();
     assertThat(activatedWorkflow.getId()).isEqualTo(1000L);

@@ -12,6 +12,7 @@ public enum LeadFieldValueType {
   EMAILS("emails", ValueType.ARRAY),
   COMPANY_PHONES("companyPhones", ValueType.ARRAY),
   CONVERSION_ASSOCIATION("conversionAssociation", ValueType.OBJECT),
+  PIPELINE("pipeline", ValueType.OBJECT),
   OTHER("other", ValueType.PLAIN);
 
   private final String fieldName;

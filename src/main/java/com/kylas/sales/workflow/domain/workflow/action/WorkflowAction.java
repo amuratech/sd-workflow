@@ -4,6 +4,7 @@ import com.kylas.sales.workflow.common.dto.ActionResponse;
 import com.kylas.sales.workflow.domain.workflow.Workflow;
 import com.kylas.sales.workflow.domain.workflow.action.reassign.ReassignAction;
 import com.kylas.sales.workflow.domain.workflow.action.webhook.WebhookAction;
+import reactor.core.publisher.Mono;
 
 public interface WorkflowAction {
 
@@ -17,7 +18,7 @@ public interface WorkflowAction {
       }
 
       @Override
-      public ActionResponse toActionResponse(AbstractWorkflowAction workflowAction) {
+      public Mono<ActionResponse> toActionResponse(AbstractWorkflowAction workflowAction) {
         return EditPropertyAction.toActionResponse((EditPropertyAction) workflowAction);
       }
     },
@@ -28,8 +29,8 @@ public interface WorkflowAction {
       }
 
       @Override
-      public ActionResponse toActionResponse(AbstractWorkflowAction workflowAction) {
-        return WebhookAction.toActionResponse((WebhookAction) workflowAction);
+      public Mono<ActionResponse> toActionResponse(AbstractWorkflowAction workflowAction) {
+        return Mono.just(WebhookAction.toActionResponse((WebhookAction) workflowAction));
       }
     },
     REASSIGN {
@@ -39,13 +40,13 @@ public interface WorkflowAction {
       }
 
       @Override
-      public ActionResponse toActionResponse(AbstractWorkflowAction workflowAction) {
-        return ReassignAction.toActionResponse((ReassignAction) workflowAction);
+      public Mono<ActionResponse> toActionResponse(AbstractWorkflowAction workflowAction) {
+        return Mono.just(ReassignAction.toActionResponse((ReassignAction) workflowAction));
       }
     };
 
     public abstract AbstractWorkflowAction create(ActionResponse action);
 
-    public abstract ActionResponse toActionResponse(AbstractWorkflowAction workflowAction);
+    public abstract Mono<ActionResponse> toActionResponse(AbstractWorkflowAction workflowAction);
   }
 }
