@@ -40,9 +40,9 @@ INSERT INTO webhook_action (id, workflow_id, name, description, method, authoriz
 VALUES
 ('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a12',301,'LastNameWebhook','Last name by webhook', 'GET', 'NONE', 'https://webhook.site/3e0d9676-ad3c-4cf2-a449-ca334e43b815');
 
-INSERT INTO reassign_action (id, workflow_id,owner_id)
+INSERT INTO reassign_action (id, workflow_id,owner_id, name)
 VALUES
-('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',301,2000);
+('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',301,2000, 'Tony Stark');
 
 INSERT INTO parameter (id, name, entity, attribute, webhook_action_id)
 OVERRIDING SYSTEM VALUE VALUES

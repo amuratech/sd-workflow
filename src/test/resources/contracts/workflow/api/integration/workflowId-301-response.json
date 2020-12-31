@@ -25,7 +25,8 @@
       "id": "08518b20-23f9-11eb-adc1-0242ac120007",
       "type": "REASSIGN",
       "payload": {
-        "ownerId": 20003
+        "id": 20003,
+        "name": "Tony Stark"
       }
     }
   ],

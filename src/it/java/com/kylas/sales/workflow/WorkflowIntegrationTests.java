@@ -85,7 +85,7 @@ public class WorkflowIntegrationTests {
   @Test
   @Sql("/test-scripts/integration/insert-lead-workflow-for-integration-test.sql")
   public void givenWorkflowUpdateRequest_shouldUpdate() throws IOException {
-    // given
+
     stubFor(
         get("/iam/v1/users/12")
             .withHeader(AUTHORIZATION, matching("Bearer " + authenticationToken))
@@ -95,6 +95,17 @@ public class WorkflowIntegrationTests {
                     .withStatus(200)
                     .withBody(
                         getResourceAsString("/contracts/user/responses/user-details-by-id.json"))));
+
+    stubFor(
+        get("/iam/v1/users/20003")
+            .withHeader(AUTHORIZATION, matching("Bearer " + authenticationToken))
+            .willReturn(
+                aResponse()
+                    .withHeader(CONTENT_TYPE, APPLICATION_JSON_VALUE)
+                    .withStatus(200)
+                    .withBody(
+                        getResourceAsString("/contracts/user/responses/user-details-by-id.json"))));
+
     var workflowRequest =
         getResourceAsString("/contracts/workflow/api/update-workflow-request.json");
     // when
@@ -146,6 +157,16 @@ public class WorkflowIntegrationTests {
     // given
     stubFor(
         get("/iam/v1/users/12")
+            .withHeader(AUTHORIZATION, matching("Bearer " + authenticationToken))
+            .willReturn(
+                aResponse()
+                    .withHeader("Content-Type", "application/json")
+                    .withStatus(200)
+                    .withBody(
+                        getResourceAsString("/contracts/user/responses/user-details-by-id.json"))));
+
+    stubFor(
+        get("/iam/v1/users/20003")
             .withHeader(AUTHORIZATION, matching("Bearer " + authenticationToken))
             .willReturn(
                 aResponse()
@@ -271,6 +292,16 @@ public class WorkflowIntegrationTests {
     // given
     stubFor(
         get("/iam/v1/users/12")
+            .withHeader(AUTHORIZATION, matching("Bearer " + authenticationToken))
+            .willReturn(
+                aResponse()
+                    .withHeader("Content-Type", "application/json")
+                    .withStatus(200)
+                    .withBody(
+                        getResourceAsString("/contracts/user/responses/user-details-by-id.json"))));
+
+    stubFor(
+        get("/iam/v1/users/20003")
             .withHeader(AUTHORIZATION, matching("Bearer " + authenticationToken))
             .willReturn(
                 aResponse()

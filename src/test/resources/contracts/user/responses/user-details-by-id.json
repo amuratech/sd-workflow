@@ -105,6 +105,26 @@
         "readAll": true,
         "updateAll": true
       }
+    },
+    {
+      "id": 20003,
+      "name": "workflow",
+      "description": "has permission to workflow resource",
+      "limits": 50,
+      "units": "count",
+      "action": {
+        "read": true,
+        "write": true,
+        "update": true,
+        "delete": false,
+        "email": false,
+        "call": false,
+        "sms": false,
+        "task": false,
+        "note": false,
+        "readAll": true,
+        "updateAll": true
+      }
     }
   ]
 }

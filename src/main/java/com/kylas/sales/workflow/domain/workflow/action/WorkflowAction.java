@@ -41,7 +41,7 @@ public interface WorkflowAction {
 
       @Override
       public Mono<ActionResponse> toActionResponse(AbstractWorkflowAction workflowAction, String authenticationToken) {
-        return Mono.just(ReassignAction.toActionResponse((ReassignAction) workflowAction));
+        return ReassignAction.toActionResponse((ReassignAction) workflowAction, authenticationToken);
       }
     };
 

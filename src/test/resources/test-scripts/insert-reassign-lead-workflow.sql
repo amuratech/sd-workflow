@@ -39,10 +39,10 @@ VALUES
 ('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',301),
 ('b0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',302);
 
-INSERT INTO reassign_action (id, workflow_id, owner_id)
+INSERT INTO reassign_action (id, workflow_id, owner_id, name)
 VALUES
-('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',301,2000),
-('b0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',302,2000);
+('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',301,2000, 'Tony Stark'),
+('b0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',302,2000, 'Tony Stark');
 
 
 INSERT INTO workflow_executed_event(id, workflow_id, last_triggered_at, trigger_count)

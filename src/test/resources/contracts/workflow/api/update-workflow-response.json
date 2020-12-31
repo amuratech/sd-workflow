@@ -38,7 +38,8 @@
     {
       "type": "REASSIGN",
       "payload": {
-        "ownerId": 20003
+        "id": 20003,
+        "name": "Tony Stark"
       }
     }
   ],
