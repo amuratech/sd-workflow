@@ -1,6 +1,7 @@
 package com.kylas.sales.workflow.domain;
 
 import static com.kylas.sales.workflow.common.dto.ActionDetail.EditPropertyAction.ValueType.PLAIN;
+import static com.kylas.sales.workflow.common.dto.WorkflowCondition.TriggerType.NEW_VALUE;
 import static com.kylas.sales.workflow.domain.workflow.TriggerFrequency.CREATED;
 import static com.kylas.sales.workflow.domain.workflow.action.WorkflowAction.ActionType.EDIT_PROPERTY;
 import static com.kylas.sales.workflow.domain.workflow.action.WorkflowAction.ActionType.WEBHOOK;
@@ -28,7 +29,6 @@ import com.kylas.sales.workflow.domain.workflow.TriggerType;
 import com.kylas.sales.workflow.domain.workflow.Workflow;
 import com.kylas.sales.workflow.domain.workflow.WorkflowCondition;
 import com.kylas.sales.workflow.domain.workflow.action.EditPropertyAction;
-import com.kylas.sales.workflow.domain.workflow.action.webhook.CryptoService;
 import com.kylas.sales.workflow.domain.workflow.action.webhook.Parameter;
 import com.kylas.sales.workflow.domain.workflow.action.webhook.attribute.AttributeFactory.WebhookEntity;
 import com.kylas.sales.workflow.security.AuthService;
@@ -69,8 +69,6 @@ class WorkflowFacadeTest {
   UserService userService;
   @Autowired
   WorkflowFacade workflowFacade;
-  @Autowired
-  CryptoService cryptoService;
 
   @Transactional
   @Test
@@ -130,7 +128,7 @@ class WorkflowFacadeTest {
         .willReturn(Mono.just(aUser));
     var action = new ActionResponse(EDIT_PROPERTY, new ActionDetail.EditPropertyAction("firstName", "Tony", PLAIN));
 
-    ConditionExpression expression = new ConditionExpression(Operator.EQUAL, "firstName", "Tony");
+    ConditionExpression expression = new ConditionExpression(Operator.EQUAL, "firstName", "Tony", NEW_VALUE);
 
     var workflowRequest = WorkflowStub.anConditionBasedEditPropertyWorkflowRequest(
         "SomeRandomName", "desc", EntityType.LEAD, expression, Set.of(action));

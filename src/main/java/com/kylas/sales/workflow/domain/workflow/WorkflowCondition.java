@@ -52,9 +52,10 @@ public class WorkflowCondition {
     this.expression = expression;
   }
 
-  private WorkflowCondition(Long id, ConditionType type, Workflow workflow) {
+  private WorkflowCondition(Long id, ConditionType type, ConditionExpression expression, Workflow workflow) {
     this.id = id;
     this.type = type;
+    this.expression = expression;
     this.workflow = workflow;
   }
 
@@ -73,7 +74,7 @@ public class WorkflowCondition {
   }
 
   public WorkflowCondition update(com.kylas.sales.workflow.common.dto.WorkflowCondition condition) {
-    return new WorkflowCondition(this.id, condition.getConditionType(), this.workflow);
+    return new WorkflowCondition(this.id, condition.getConditionType(), condition.getExpression(), this.workflow);
   }
 
   public boolean isSatisfiedBy(Object entity) {

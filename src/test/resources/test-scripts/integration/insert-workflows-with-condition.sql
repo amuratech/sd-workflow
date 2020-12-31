@@ -29,8 +29,8 @@ OVERRIDING SYSTEM VALUE VALUES
 
 INSERT INTO workflow_condition (id, type, expression, workflow_id)
 OVERRIDING SYSTEM VALUE VALUES
-(201, 'CONDITION_BASED','{"name": "firstName", "value": "Tony", "operand1": null, "operand2": null, "operator": "EQUAL"}', 301),
-(202, 'CONDITION_BASED','{"name": "firstName", "value": "Steve", "operand1": null, "operand2": null, "operator": "EQUAL"}', 302),
+(201, 'CONDITION_BASED','{"name": "firstName", "value": "Tony", "operand1": null, "operand2": null, "operator": "EQUAL", "triggerOn":"NEW_VALUE"}', 301),
+(202, 'CONDITION_BASED','{"name": "firstName", "value": "Steve", "operand1": null, "operand2": null, "operator": "EQUAL", "triggerOn":"NEW_VALUE"}', 302),
 (203, 'FOR_ALL', null, 303);
 
 INSERT INTO abstract_workflow_action(id, workflow_id)

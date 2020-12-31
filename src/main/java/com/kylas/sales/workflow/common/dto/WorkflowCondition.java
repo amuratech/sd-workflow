@@ -41,11 +41,6 @@ public class WorkflowCondition {
     this.expression = expression;
   }
 
-  public WorkflowCondition(@JsonProperty("conditionType") ConditionType conditionType) {
-    this.conditionType = conditionType;
-    this.expression = null;
-  }
-
   @Getter
   @JsonIgnoreProperties(ignoreUnknown = true)
   public static class ConditionExpression implements Serializable {
@@ -55,6 +50,7 @@ public class WorkflowCondition {
     private final Operator operator;
     private final String name;
     private final Object value;
+    private final TriggerType triggerOn;
 
     @JsonCreator
     public ConditionExpression(
@@ -62,28 +58,32 @@ public class WorkflowCondition {
         @JsonProperty("operand2") ConditionExpression operand2,
         @JsonProperty("operator") String operator,
         @JsonProperty("name") String name,
-        @JsonProperty("value") Object value) {
+        @JsonProperty("value") Object value,
+        @JsonProperty("triggerOn") String triggerOn) {
       this.operand1 = operand1;
       this.operand2 = operand2;
       this.operator = Operator.getByName(operator);
       this.name = name;
       this.value = value;
+      this.triggerOn = TriggerType.valueOf(triggerOn);
     }
 
-    public ConditionExpression(ConditionExpression operand1, ConditionExpression operand2, Operator operator) {
+    public ConditionExpression(ConditionExpression operand1, ConditionExpression operand2, Operator operator, TriggerType triggerType) {
       this.operand1 = operand1;
       this.operand2 = operand2;
       this.operator = operator;
       this.name = null;
       this.value = null;
+      this.triggerOn = triggerType;
     }
 
-    public ConditionExpression(Operator operator, String name, Object value) {
+    public ConditionExpression(Operator operator, String name, Object value, TriggerType triggerType) {
       this.operator = operator;
       this.name = name;
       this.value = value;
       operand1 = null;
       operand2 = null;
+      this.triggerOn = triggerType;
     }
 
     public void validate() {
@@ -130,9 +130,9 @@ public class WorkflowCondition {
           return !isNull(actualValue);
         case IS_NULL:
           return isNull(actualValue);
-        case CONTAIN:
+        case CONTAINS:
           return actualValue.contains(String.valueOf(value));
-        case NOT_CONTAIN:
+        case NOT_CONTAINS:
           return !actualValue.contains(String.valueOf(value));
         case GREATER:
           return Double.parseDouble(actualValue) > Double.parseDouble(String.valueOf(value));
@@ -142,6 +142,10 @@ public class WorkflowCondition {
           return Double.parseDouble(actualValue) < Double.parseDouble(String.valueOf(value));
         case LESS_OR_EQUAL:
           return Double.parseDouble(actualValue) <= Double.parseDouble(String.valueOf(value));
+        case IN:
+          return Arrays.asList(String.valueOf(value).split("\\s*,\\s*")).contains(actualValue);
+        case NOT_IN:
+          return !Arrays.asList(String.valueOf(value).split("\\s*,\\s*")).contains(actualValue);
       }
       throw new InvalidConditionException();
     }
@@ -160,8 +164,10 @@ public class WorkflowCondition {
     LESS_OR_EQUAL,
     IS_NOT_NULL,
     IS_NULL,
-    CONTAIN,
-    NOT_CONTAIN;
+    CONTAINS,
+    NOT_CONTAINS,
+    IN,
+    NOT_IN;
 
     public static Operator getByName(String operatorName) {
       return Arrays.stream(values())
@@ -173,5 +179,11 @@ public class WorkflowCondition {
     public String getName() {
       return name().toLowerCase();
     }
+  }
+
+  @Getter
+  @AllArgsConstructor
+  public enum TriggerType {
+    NEW_VALUE
   }
 }

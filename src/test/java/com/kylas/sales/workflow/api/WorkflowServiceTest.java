@@ -120,7 +120,7 @@ class WorkflowServiceTest {
                 TriggerType.EVENT, CREATED));
     WorkflowCondition condition =
         WorkflowCondition.createNew(
-            new com.kylas.sales.workflow.common.dto.WorkflowCondition(ConditionType.FOR_ALL));
+            new com.kylas.sales.workflow.common.dto.WorkflowCondition(ConditionType.FOR_ALL, null));
     Set<AbstractWorkflowAction> actions = new HashSet<>();
     EditPropertyAction editPropertyAction = new EditPropertyAction();
     UUID id = UUID.randomUUID();
@@ -183,7 +183,7 @@ class WorkflowServiceTest {
                 TriggerType.EVENT, CREATED)));
     workflow.setWorkflowCondition(
         WorkflowCondition.createNew(
-            new com.kylas.sales.workflow.common.dto.WorkflowCondition(ConditionType.FOR_ALL)));
+            new com.kylas.sales.workflow.common.dto.WorkflowCondition(ConditionType.FOR_ALL, null)));
     workflow.setWorkflowActions(Collections.emptySet());
     workflow.setCreatedBy(new User(4000L, 1000L, Collections.emptySet()));
     workflow.setUpdatedBy(new User(4000L, 1000L, Collections.emptySet()));
@@ -219,7 +219,7 @@ class WorkflowServiceTest {
                 TriggerType.EVENT, CREATED));
     WorkflowCondition condition =
         WorkflowCondition.createNew(
-            new com.kylas.sales.workflow.common.dto.WorkflowCondition(ConditionType.FOR_ALL));
+            new com.kylas.sales.workflow.common.dto.WorkflowCondition(ConditionType.FOR_ALL, null));
     Set<AbstractWorkflowAction> actions = new HashSet<>();
     EditPropertyAction editPropertyAction = new EditPropertyAction();
     UUID id = UUID.randomUUID();
@@ -289,7 +289,7 @@ class WorkflowServiceTest {
                 TriggerType.EVENT, CREATED));
     WorkflowCondition condition =
         WorkflowCondition.createNew(
-            new com.kylas.sales.workflow.common.dto.WorkflowCondition(ConditionType.FOR_ALL));
+            new com.kylas.sales.workflow.common.dto.WorkflowCondition(ConditionType.FOR_ALL, null));
     Set<AbstractWorkflowAction> actions = new HashSet<>();
     EditPropertyAction editPropertyAction = new EditPropertyAction();
     UUID id = UUID.randomUUID();
@@ -361,7 +361,7 @@ class WorkflowServiceTest {
                 TriggerType.EVENT, CREATED));
     WorkflowCondition condition =
         WorkflowCondition.createNew(
-            new com.kylas.sales.workflow.common.dto.WorkflowCondition(ConditionType.FOR_ALL));
+            new com.kylas.sales.workflow.common.dto.WorkflowCondition(ConditionType.FOR_ALL, null));
     Set<AbstractWorkflowAction> actions = new HashSet<>();
     EditPropertyAction editPropertyAction = new EditPropertyAction();
     UUID id = UUID.randomUUID();
@@ -390,7 +390,7 @@ class WorkflowServiceTest {
                 TriggerType.EVENT, CREATED));
     WorkflowCondition condition =
         WorkflowCondition.createNew(
-            new com.kylas.sales.workflow.common.dto.WorkflowCondition(ConditionType.FOR_ALL));
+            new com.kylas.sales.workflow.common.dto.WorkflowCondition(ConditionType.FOR_ALL, null));
     Set<AbstractWorkflowAction> actions = new HashSet<>();
     EditPropertyAction editPropertyAction = new EditPropertyAction();
     UUID id = UUID.randomUUID();

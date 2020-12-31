@@ -37,7 +37,7 @@ public class WorkflowStub {
       boolean active
   ) {
     var triggerRequest = new WorkflowTrigger(triggerType, triggerFrequency);
-    var conditionRequest = new WorkflowCondition(conditionType);
+    var conditionRequest = new WorkflowCondition(conditionType, null);
     var actionRequest = new ActionResponse(actionType, new EditPropertyAction(propertyName, propertyValue, propertyValueType));
     var actionRequests = new HashSet<ActionResponse>();
     actionRequests.add(actionRequest);
@@ -64,7 +64,7 @@ public class WorkflowStub {
       ConditionType conditionType,
       Set<ActionResponse> actionRequests) {
     var triggerRequest = new WorkflowTrigger(triggerType, triggerFrequency);
-    var conditionRequest = new WorkflowCondition(conditionType);
+    var conditionRequest = new WorkflowCondition(conditionType, null);
     return new WorkflowRequest(name, description, entityType, triggerRequest, conditionRequest, actionRequests, true);
   }
 
@@ -78,7 +78,7 @@ public class WorkflowStub {
       boolean active,
       Set<ActionResponse> actions) {
     var triggerRequest = new WorkflowTrigger(triggerType, triggerFrequency);
-    var conditionRequest = new WorkflowCondition(conditionType);
+    var conditionRequest = new WorkflowCondition(conditionType, null);
     return new WorkflowRequest(name, description, entityType, triggerRequest, conditionRequest, actions, active);
   }
 
@@ -97,7 +97,7 @@ public class WorkflowStub {
       boolean active
   ) {
     var triggerRequest = new WorkflowTrigger(triggerType, triggerFrequency);
-    var conditionRequest = new WorkflowCondition(conditionType);
+    var conditionRequest = new WorkflowCondition(conditionType, null);
     var actionRequest = new ActionResponse(actionId, actionType, new EditPropertyAction(propertyName, propertyValue, propertyValueType));
     var actionRequests = new HashSet<ActionResponse>();
     actionRequests.add(actionRequest);
@@ -120,7 +120,7 @@ public class WorkflowStub {
       boolean canCreate, boolean canRead, User createdBy, User updatedBy, Date createdAndUpdatedAt
   ) {
     var workflowTrigger = new WorkflowTrigger(triggerType, triggerFrequency);
-    var condition = new WorkflowCondition(conditionType);
+    var condition = new WorkflowCondition(conditionType, null);
     var action = new ActionResponse(actionType, new EditPropertyAction(propertyName, propertyValue, propertyValueType));
     var actions = new ArrayList<ActionResponse>();
     actions.add(action);
