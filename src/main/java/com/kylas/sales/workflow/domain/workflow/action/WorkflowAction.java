@@ -18,8 +18,8 @@ public interface WorkflowAction {
       }
 
       @Override
-      public Mono<ActionResponse> toActionResponse(AbstractWorkflowAction workflowAction) {
-        return EditPropertyAction.toActionResponse((EditPropertyAction) workflowAction);
+      public Mono<ActionResponse> toActionResponse(AbstractWorkflowAction workflowAction, String authenticationToken) {
+        return EditPropertyAction.toActionResponse((EditPropertyAction) workflowAction, authenticationToken);
       }
     },
     WEBHOOK {
@@ -29,7 +29,7 @@ public interface WorkflowAction {
       }
 
       @Override
-      public Mono<ActionResponse> toActionResponse(AbstractWorkflowAction workflowAction) {
+      public Mono<ActionResponse> toActionResponse(AbstractWorkflowAction workflowAction, String authenticationToken) {
         return Mono.just(WebhookAction.toActionResponse((WebhookAction) workflowAction));
       }
     },
@@ -40,13 +40,13 @@ public interface WorkflowAction {
       }
 
       @Override
-      public Mono<ActionResponse> toActionResponse(AbstractWorkflowAction workflowAction) {
+      public Mono<ActionResponse> toActionResponse(AbstractWorkflowAction workflowAction, String authenticationToken) {
         return Mono.just(ReassignAction.toActionResponse((ReassignAction) workflowAction));
       }
     };
 
     public abstract AbstractWorkflowAction create(ActionResponse action);
 
-    public abstract Mono<ActionResponse> toActionResponse(AbstractWorkflowAction workflowAction);
+    public abstract Mono<ActionResponse> toActionResponse(AbstractWorkflowAction workflowAction, String authenticationToken);
   }
 }

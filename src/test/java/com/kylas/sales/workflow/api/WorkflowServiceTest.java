@@ -28,6 +28,7 @@ import com.kylas.sales.workflow.domain.workflow.action.AbstractWorkflowAction;
 import com.kylas.sales.workflow.domain.workflow.action.EditPropertyAction;
 import com.kylas.sales.workflow.domain.workflow.action.WorkflowAction.ActionType;
 import com.kylas.sales.workflow.matchers.PageableMatcher;
+import com.kylas.sales.workflow.security.AuthService;
 import com.kylas.sales.workflow.stubs.UserStub;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -57,9 +58,14 @@ import reactor.test.StepVerifier;
 @ExtendWith(MockitoExtension.class)
 class WorkflowServiceTest {
 
-  @InjectMocks private WorkflowService workflowService;
+  @InjectMocks
+  private WorkflowService workflowService;
 
-  @Mock private WorkflowFacade workflowFacade;
+  @Mock
+  private WorkflowFacade workflowFacade;
+
+  @Mock
+  private AuthService authService;
 
   @Test
   public void givenWorkflowRequest_shouldCreateIt() {
@@ -129,6 +135,7 @@ class WorkflowServiceTest {
     Workflow workflowSpy = Mockito.spy(workflow);
     given(workflowSpy.getId()).willReturn(workflowId);
     given(workflowFacade.get(workflowId)).willReturn(workflowSpy);
+    given(authService.getAuthenticationToken()).willReturn("some-token");
     // when
     var workflowDetail = workflowService.get(workflowId).block();
     // then

@@ -16,7 +16,6 @@ import com.kylas.sales.workflow.domain.processor.lead.LeadFieldValueType;
 import com.kylas.sales.workflow.domain.service.PipelineService;
 import com.kylas.sales.workflow.domain.workflow.Workflow;
 import com.kylas.sales.workflow.domain.workflow.action.webhook.attribute.AttributeFactory.LeadAttribute;
-import com.kylas.sales.workflow.security.AuthService;
 import java.util.Arrays;
 import javax.persistence.Convert;
 import javax.persistence.Entity;
@@ -61,9 +60,9 @@ public class EditPropertyAction extends AbstractWorkflowAction implements com.ky
     return new EditPropertyAction(payload.getName(), payload.getValue(), payload.getValueType());
   }
 
-  public static Mono<ActionResponse> toActionResponse(EditPropertyAction action) {
+  public static Mono<ActionResponse> toActionResponse(EditPropertyAction action, String authenticationToken) {
     if (action.name.equals(LeadAttribute.PIPELINE.getName())) {
-      return NameResolver.getPipeline(action.value)
+      return NameResolver.getPipeline(action.value, authenticationToken)
           .map(idName -> new ActionResponse(action.getId(), EDIT_PROPERTY,
               new ActionDetail.EditPropertyAction(action.name, idName, action.valueType)));
     }
@@ -115,16 +114,15 @@ public class EditPropertyAction extends AbstractWorkflowAction implements com.ky
   private static class NameResolver {
 
     private static PipelineService pipelineService;
-    private static AuthService authService;
     private static ObjectMapper objectMapper;
 
-    public static Mono<IdName> getPipeline(Object pipeline) {
+    public static Mono<IdName> getPipeline(Object pipeline, String authenticationToken) {
       if (isNull(pipeline)) {
         return Mono.empty();
       }
       try {
         var pipelineIdName = objectMapper.readValue(String.valueOf(pipeline), IdName.class);
-        return pipelineService.getPipeline(pipelineIdName.getId(), authService.getAuthenticationToken());
+        return pipelineService.getPipeline(pipelineIdName.getId(), authenticationToken);
       } catch (JsonProcessingException e) {
         log.error("Exception while extracting pipelineId from {}", pipeline);
         throw new InvalidActionException();
@@ -134,11 +132,6 @@ public class EditPropertyAction extends AbstractWorkflowAction implements com.ky
     @Autowired
     public void setPipelineService(PipelineService pipelineService) {
       NameResolver.pipelineService = pipelineService;
-    }
-
-    @Autowired
-    public void setAuthService(AuthService authService) {
-      NameResolver.authService = authService;
     }
 
     @Autowired

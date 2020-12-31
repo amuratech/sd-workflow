@@ -15,6 +15,7 @@ import com.kylas.sales.workflow.domain.workflow.EntityType;
 import com.kylas.sales.workflow.domain.workflow.TriggerFrequency;
 import com.kylas.sales.workflow.domain.workflow.Workflow;
 import com.kylas.sales.workflow.domain.workflow.WorkflowExecutedEvent;
+import com.kylas.sales.workflow.security.AuthService;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -31,10 +32,12 @@ import reactor.core.publisher.Mono;
 public class WorkflowService {
 
   private final WorkflowFacade workflowFacade;
+  private final AuthService authService;
 
   @Autowired
-  public WorkflowService(WorkflowFacade workflowFacade) {
+  public WorkflowService(WorkflowFacade workflowFacade, AuthService authService) {
     this.workflowFacade = workflowFacade;
+    this.authService = authService;
   }
 
   public Mono<WorkflowSummary> create(WorkflowRequest workflowRequest) {
@@ -48,14 +51,17 @@ public class WorkflowService {
   }
 
   public Mono<WorkflowDetail> get(long workflowId) {
-    return toWorkflowDetail(workflowFacade.get(workflowId));
+    String authToken = authService.getAuthenticationToken();
+    return toWorkflowDetail(workflowFacade.get(workflowId), authToken);
   }
 
   public Mono<WorkflowDetail> update(long workflowId, WorkflowRequest workflowRequest) {
-    return workflowFacade.update(workflowId, workflowRequest).flatMap(this::toWorkflowDetail);
+    String authToken = authService.getAuthenticationToken();
+    return workflowFacade.update(workflowId, workflowRequest)
+        .flatMap(workflow -> toWorkflowDetail(workflow, authToken));
   }
 
-  private Mono<WorkflowDetail> toWorkflowDetail(Workflow workflow) {
+  private Mono<WorkflowDetail> toWorkflowDetail(Workflow workflow, String authenticationToken) {
     var workflowTrigger =
         new WorkflowTrigger(
             workflow.getWorkflowTrigger().getTriggerType(),
@@ -73,7 +79,7 @@ public class WorkflowService {
             : WorkflowExecutedEvent.createNew(workflow);
     return Flux
         .fromIterable(workflow.getWorkflowActions())
-        .flatMap(workflowAction -> workflowAction.getType().toActionResponse(workflowAction))
+        .flatMap(workflowAction -> workflowAction.getType().toActionResponse(workflowAction, authenticationToken))
         .collectList()
         .map(actionResponses ->
             new WorkflowDetail(
@@ -85,9 +91,10 @@ public class WorkflowService {
 
   public Mono<Page<WorkflowDetail>> list(Pageable pageable) {
     Page<Workflow> list = workflowFacade.list(pageable);
+    String authToken = authService.getAuthenticationToken();
     return Flux
         .fromIterable(list.getContent())
-        .flatMap(this::toWorkflowDetail)
+        .flatMap(workflow -> toWorkflowDetail(workflow, authToken))
         .collectList()
         .map(workflowDetails -> new PageImpl<>(workflowDetails, list.getPageable(), list.getTotalElements()));
   }
@@ -97,11 +104,13 @@ public class WorkflowService {
   }
 
   public Mono<WorkflowDetail> deactivate(long workflowId) {
-    return toWorkflowDetail(workflowFacade.deactivate(workflowId));
+    String authToken = authService.getAuthenticationToken();
+    return toWorkflowDetail(workflowFacade.deactivate(workflowId), authToken);
   }
 
   public Mono<WorkflowDetail> activate(long workflowId) {
-    return toWorkflowDetail(workflowFacade.activate(workflowId));
+    String authToken = authService.getAuthenticationToken();
+    return toWorkflowDetail(workflowFacade.activate(workflowId), authToken);
   }
 
   public Mono<Page<WorkflowDetail>> search(
@@ -111,8 +120,9 @@ public class WorkflowService {
             .map(filter -> new WorkflowFilter(filter.getOperator(), filter.getFieldName(), filter.getFieldType(), filter.getValue()))
             .collect(Collectors.toSet()));
     Page<Workflow> list = workflowFacade.search(pageable, workflowFilters);
+    String authToken = authService.getAuthenticationToken();
     return Flux.fromIterable(list)
-        .flatMap(this::toWorkflowDetail)
+        .flatMap(workflow -> toWorkflowDetail(workflow, authToken))
         .collectList()
         .map(workflowDetails -> new PageImpl<>(workflowDetails, list.getPageable(), list.getTotalElements()));
   }
