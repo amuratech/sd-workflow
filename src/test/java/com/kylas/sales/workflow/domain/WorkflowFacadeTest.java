@@ -1,7 +1,7 @@
 package com.kylas.sales.workflow.domain;
 
 import static com.kylas.sales.workflow.common.dto.ActionDetail.EditPropertyAction.ValueType.PLAIN;
-import static com.kylas.sales.workflow.common.dto.WorkflowCondition.TriggerType.NEW_VALUE;
+import static com.kylas.sales.workflow.common.dto.condition.WorkflowCondition.TriggerType.NEW_VALUE;
 import static com.kylas.sales.workflow.domain.workflow.TriggerFrequency.CREATED;
 import static com.kylas.sales.workflow.domain.workflow.action.WorkflowAction.ActionType.EDIT_PROPERTY;
 import static com.kylas.sales.workflow.domain.workflow.action.WorkflowAction.ActionType.WEBHOOK;
@@ -14,8 +14,8 @@ import com.kylas.sales.workflow.common.dto.ActionDetail;
 import com.kylas.sales.workflow.common.dto.ActionDetail.WebhookAction;
 import com.kylas.sales.workflow.common.dto.ActionDetail.WebhookAction.AuthorizationType;
 import com.kylas.sales.workflow.common.dto.ActionResponse;
-import com.kylas.sales.workflow.common.dto.WorkflowCondition.ConditionExpression;
-import com.kylas.sales.workflow.common.dto.WorkflowCondition.Operator;
+import com.kylas.sales.workflow.common.dto.condition.Operator;
+import com.kylas.sales.workflow.common.dto.condition.WorkflowCondition.ConditionExpression;
 import com.kylas.sales.workflow.config.TestDatabaseInitializer;
 import com.kylas.sales.workflow.domain.exception.InsufficientPrivilegeException;
 import com.kylas.sales.workflow.domain.exception.InvalidActionException;

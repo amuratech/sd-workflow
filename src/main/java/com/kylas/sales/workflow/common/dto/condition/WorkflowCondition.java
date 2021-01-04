@@ -1,14 +1,16 @@
-package com.kylas.sales.workflow.common.dto;
+package com.kylas.sales.workflow.common.dto.condition;
 
-import static com.kylas.sales.workflow.common.dto.WorkflowCondition.Operator.AND;
-import static com.kylas.sales.workflow.common.dto.WorkflowCondition.Operator.IS_NOT_NULL;
-import static com.kylas.sales.workflow.common.dto.WorkflowCondition.Operator.IS_NULL;
-import static com.kylas.sales.workflow.common.dto.WorkflowCondition.Operator.OR;
+import static com.kylas.sales.workflow.common.dto.condition.ExpressionField.getFieldByName;
+import static com.kylas.sales.workflow.common.dto.condition.Operator.AND;
+import static com.kylas.sales.workflow.common.dto.condition.Operator.IS_NOT_NULL;
+import static com.kylas.sales.workflow.common.dto.condition.Operator.IS_NULL;
+import static com.kylas.sales.workflow.common.dto.condition.Operator.OR;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static org.apache.commons.beanutils.BeanUtils.getNestedProperty;
 import static org.apache.commons.lang3.StringUtils.isAnyBlank;
 import static org.apache.commons.lang3.StringUtils.isBlank;
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -16,13 +18,18 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.kylas.sales.workflow.domain.exception.InvalidConditionException;
+import com.kylas.sales.workflow.domain.processor.lead.IdName;
+import com.kylas.sales.workflow.domain.service.IdNameResolver;
 import com.kylas.sales.workflow.domain.workflow.ConditionType;
 import java.io.Serializable;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
+import java.util.List;
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.beanutils.NestedNullException;
 
 @Getter
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -45,6 +52,8 @@ public class WorkflowCondition {
   @JsonIgnoreProperties(ignoreUnknown = true)
   public static class ConditionExpression implements Serializable {
 
+    @Getter(AccessLevel.NONE)
+    private final List<String> ID_NAME_PROPERTIES = List.of("pipeline", "pipelineStage", "products");
     private final ConditionExpression operand1;
     private final ConditionExpression operand2;
     private final Operator operator;
@@ -64,7 +73,7 @@ public class WorkflowCondition {
       this.operand2 = operand2;
       this.operator = Operator.getByName(operator);
       this.name = name;
-      this.value = value;
+      this.value = ID_NAME_PROPERTIES.contains(name) ? IdNameResolver.serialize(value) : value;
       this.triggerOn = TriggerType.valueOf(triggerOn);
     }
 
@@ -111,11 +120,17 @@ public class WorkflowCondition {
         log.info("Condition job operator {} expects non-blank value.", operator);
         throw new InvalidConditionException();
       }
+      if (ID_NAME_PROPERTIES.contains(name)) {
+        IdNameResolver.getIdNameFrom(value);
+      }
     }
 
     public boolean isSatisfiedBy(Object entity) throws IllegalAccessException, NoSuchMethodException, InvocationTargetException {
 
-      String actualValue = nonNull(name) ? getNestedProperty(entity, name) : null;
+      String actualValue = getActualValue(entity);
+      if (isNotBlank(name) && ID_NAME_PROPERTIES.contains(name)) {
+        return idNameSatisfiedBy(actualValue);
+      }
 
       switch (operator) {
         case AND:
@@ -149,35 +164,31 @@ public class WorkflowCondition {
       }
       throw new InvalidConditionException();
     }
-  }
 
-  @Getter
-  @AllArgsConstructor
-  public enum Operator {
-    AND,
-    OR,
-    EQUAL,
-    NOT_EQUAL,
-    GREATER,
-    GREATER_OR_EQUAL,
-    LESS,
-    LESS_OR_EQUAL,
-    IS_NOT_NULL,
-    IS_NULL,
-    CONTAINS,
-    NOT_CONTAINS,
-    IN,
-    NOT_IN;
-
-    public static Operator getByName(String operatorName) {
-      return Arrays.stream(values())
-          .filter(operator -> operator.getName().equalsIgnoreCase(operatorName))
-          .findAny()
-          .orElseThrow(InvalidConditionException::new);
+    private boolean idNameSatisfiedBy(Object actualValue) {
+      IdName conditionValue = IdNameResolver.getIdNameFrom(value);
+      switch (operator) {
+        case EQUAL:
+          return Long.parseLong(String.valueOf(actualValue)) == conditionValue.getId();
+        case NOT_EQUAL:
+          return Long.parseLong(String.valueOf(actualValue)) != conditionValue.getId();
+        case IS_NOT_NULL:
+          return !isNull(actualValue);
+        case IS_NULL:
+          return isNull(actualValue);
+      }
+      throw new InvalidConditionException();
     }
 
-    public String getName() {
-      return name().toLowerCase();
+    private String getActualValue(Object entity) throws IllegalAccessException, InvocationTargetException, NoSuchMethodException {
+      String actualValue = null;
+      if (nonNull(name)) {
+        try {
+          actualValue = getNestedProperty(entity, getFieldByName(name));
+        } catch (NestedNullException ignored) {
+        }
+      }
+      return actualValue;
     }
   }
 

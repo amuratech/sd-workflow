@@ -12,7 +12,7 @@
     "expression": {
       "operand1": null,
       "operand2": null,
-      "operator": "EQUAL",
+      "operator": "equal",
       "name": "firstName",
       "value": "Tony",
       "triggerOn": "NEW_VALUE"

@@ -4,16 +4,13 @@ import static com.kylas.sales.workflow.domain.workflow.action.WorkflowAction.Act
 import static java.util.Objects.isNull;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kylas.sales.workflow.common.dto.ActionDetail;
 import com.kylas.sales.workflow.common.dto.ActionDetail.EditPropertyAction.ValueType;
 import com.kylas.sales.workflow.common.dto.ActionResponse;
 import com.kylas.sales.workflow.domain.exception.InvalidActionException;
 import com.kylas.sales.workflow.domain.exception.InvalidValueTypeException;
-import com.kylas.sales.workflow.domain.processor.lead.IdName;
 import com.kylas.sales.workflow.domain.processor.lead.LeadFieldValueType;
-import com.kylas.sales.workflow.domain.service.PipelineService;
+import com.kylas.sales.workflow.domain.service.IdNameResolver;
 import com.kylas.sales.workflow.domain.workflow.Workflow;
 import com.kylas.sales.workflow.domain.workflow.action.webhook.attribute.AttributeFactory.LeadAttribute;
 import java.util.Arrays;
@@ -25,8 +22,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 
 @Entity
@@ -62,7 +57,7 @@ public class EditPropertyAction extends AbstractWorkflowAction implements com.ky
 
   public static Mono<ActionResponse> toActionResponse(EditPropertyAction action, String authenticationToken) {
     if (action.name.equals(LeadAttribute.PIPELINE.getName())) {
-      return NameResolver.getPipeline(action.value, authenticationToken)
+      return IdNameResolver.getPipeline(action.value, authenticationToken)
           .map(idName -> new ActionResponse(action.getId(), EDIT_PROPERTY,
               new ActionDetail.EditPropertyAction(action.name, idName, action.valueType)));
     }
@@ -110,33 +105,4 @@ public class EditPropertyAction extends AbstractWorkflowAction implements com.ky
     return true;
   }
 
-  @Component
-  private static class NameResolver {
-
-    private static PipelineService pipelineService;
-    private static ObjectMapper objectMapper;
-
-    public static Mono<IdName> getPipeline(Object pipeline, String authenticationToken) {
-      if (isNull(pipeline)) {
-        return Mono.empty();
-      }
-      try {
-        var pipelineIdName = objectMapper.readValue(String.valueOf(pipeline), IdName.class);
-        return pipelineService.getPipeline(pipelineIdName.getId(), authenticationToken);
-      } catch (JsonProcessingException e) {
-        log.error("Exception while extracting pipelineId from {}", pipeline);
-        throw new InvalidActionException();
-      }
-    }
-
-    @Autowired
-    public void setPipelineService(PipelineService pipelineService) {
-      NameResolver.pipelineService = pipelineService;
-    }
-
-    @Autowired
-    public void setObjectMapper(ObjectMapper objectMapper) {
-      NameResolver.objectMapper = objectMapper;
-    }
-  }
 }

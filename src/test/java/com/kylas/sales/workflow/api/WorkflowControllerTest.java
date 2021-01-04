@@ -19,8 +19,9 @@ import com.kylas.sales.workflow.common.dto.ActionDetail.EditPropertyAction.Value
 import com.kylas.sales.workflow.common.dto.ActionDetail.ReassignAction;
 import com.kylas.sales.workflow.common.dto.ActionResponse;
 import com.kylas.sales.workflow.common.dto.User;
-import com.kylas.sales.workflow.common.dto.WorkflowCondition;
 import com.kylas.sales.workflow.common.dto.WorkflowTrigger;
+import com.kylas.sales.workflow.common.dto.condition.Operator;
+import com.kylas.sales.workflow.common.dto.condition.WorkflowCondition;
 import com.kylas.sales.workflow.config.TestDatabaseInitializer;
 import com.kylas.sales.workflow.domain.exception.InsufficientPrivilegeException;
 import com.kylas.sales.workflow.domain.exception.InvalidActionException;
@@ -1008,6 +1009,33 @@ class WorkflowControllerTest {
             fail(e.getMessage());
           }
         }).verifyComplete();
+  }
+
+  @Test
+  public void givenWorkflowRequest_withIdNameCondition_shouldCreateIt() throws JSONException {
+    //given
+    var requestPayload =
+        getResourceAsString("classpath:contracts/workflow/api/workflow-request-with-idName-condition.json");
+    given(workflowService.create(argThat(workflowRequest ->
+        workflowRequest.getName().equalsIgnoreCase("Workflow 1")
+            && workflowRequest.getDescription().equalsIgnoreCase("Workflow Description")
+            && workflowRequest.getCondition().getConditionType().equals(ConditionType.CONDITION_BASED)
+            && workflowRequest.getCondition().getExpression().getName().equals("pipeline")
+            && workflowRequest.getCondition().getExpression().getOperator().equals(Operator.EQUAL)
+            && workflowRequest.getCondition().getExpression().getValue().equals("{\"id\":242,\"name\":\"Lead Routing Pipeline\"}"))
+    )).willReturn(Mono.just(new WorkflowSummary(1L)));
+    //when
+    var workflowResponse = buildWebClient()
+        .post()
+        .uri("/v1/workflows")
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(requestPayload)
+        .retrieve()
+        .bodyToMono(String.class).block();
+    //then
+    var expectedResponse =
+        getResourceAsString("classpath:contracts/workflow/api/create-workflow-response.json");
+    JSONAssert.assertEquals(expectedResponse, workflowResponse, false);
   }
 
   private String getResourceAsString(String resourcePath) {

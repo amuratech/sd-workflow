@@ -4,7 +4,7 @@ import static com.kylas.sales.workflow.domain.workflow.ConditionType.CONDITION_B
 import static com.kylas.sales.workflow.domain.workflow.ConditionType.FOR_ALL;
 import static java.util.Objects.isNull;
 
-import com.kylas.sales.workflow.common.dto.WorkflowCondition.ConditionExpression;
+import com.kylas.sales.workflow.common.dto.condition.WorkflowCondition.ConditionExpression;
 import com.kylas.sales.workflow.domain.exception.InvalidConditionException;
 import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
 import java.lang.reflect.InvocationTargetException;
@@ -59,12 +59,12 @@ public class WorkflowCondition {
     this.workflow = workflow;
   }
 
-  public static WorkflowCondition createNew(com.kylas.sales.workflow.common.dto.WorkflowCondition condition) {
+  public static WorkflowCondition createNew(com.kylas.sales.workflow.common.dto.condition.WorkflowCondition condition) {
     validate(condition);
     return new WorkflowCondition(condition.getConditionType(), condition.getExpression());
   }
 
-  private static void validate(com.kylas.sales.workflow.common.dto.WorkflowCondition condition) {
+  private static void validate(com.kylas.sales.workflow.common.dto.condition.WorkflowCondition condition) {
     if (condition.getConditionType().equals(CONDITION_BASED)) {
       if (isNull(condition.getExpression())) {
         throw new InvalidConditionException();
@@ -73,7 +73,8 @@ public class WorkflowCondition {
     }
   }
 
-  public WorkflowCondition update(com.kylas.sales.workflow.common.dto.WorkflowCondition condition) {
+  public WorkflowCondition update(com.kylas.sales.workflow.common.dto.condition.WorkflowCondition condition) {
+    validate(condition);
     return new WorkflowCondition(this.id, condition.getConditionType(), condition.getExpression(), this.workflow);
   }
 

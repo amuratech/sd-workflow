@@ -1,20 +1,31 @@
 package com.kylas.sales.workflow.domain.workflow;
 
-import static com.kylas.sales.workflow.common.dto.WorkflowCondition.Operator.AND;
-import static com.kylas.sales.workflow.common.dto.WorkflowCondition.Operator.EQUAL;
-import static com.kylas.sales.workflow.common.dto.WorkflowCondition.Operator.GREATER;
-import static com.kylas.sales.workflow.common.dto.WorkflowCondition.Operator.IN;
-import static com.kylas.sales.workflow.common.dto.WorkflowCondition.Operator.LESS;
-import static com.kylas.sales.workflow.common.dto.WorkflowCondition.Operator.NOT_IN;
-import static com.kylas.sales.workflow.common.dto.WorkflowCondition.Operator.OR;
-import static com.kylas.sales.workflow.common.dto.WorkflowCondition.TriggerType.NEW_VALUE;
+import static com.kylas.sales.workflow.common.dto.condition.Operator.AND;
+import static com.kylas.sales.workflow.common.dto.condition.Operator.EQUAL;
+import static com.kylas.sales.workflow.common.dto.condition.Operator.GREATER;
+import static com.kylas.sales.workflow.common.dto.condition.Operator.IN;
+import static com.kylas.sales.workflow.common.dto.condition.Operator.IS_NOT_NULL;
+import static com.kylas.sales.workflow.common.dto.condition.Operator.IS_NULL;
+import static com.kylas.sales.workflow.common.dto.condition.Operator.LESS;
+import static com.kylas.sales.workflow.common.dto.condition.Operator.NOT_EQUAL;
+import static com.kylas.sales.workflow.common.dto.condition.Operator.NOT_IN;
+import static com.kylas.sales.workflow.common.dto.condition.Operator.OR;
+import static com.kylas.sales.workflow.common.dto.condition.WorkflowCondition.TriggerType.NEW_VALUE;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.kylas.sales.workflow.common.dto.WorkflowCondition.ConditionExpression;
-import com.kylas.sales.workflow.common.dto.WorkflowCondition.Operator;
+import com.kylas.sales.workflow.common.dto.condition.Operator;
+import com.kylas.sales.workflow.common.dto.condition.WorkflowCondition.ConditionExpression;
+import com.kylas.sales.workflow.config.TestDatabaseInitializer;
 import com.kylas.sales.workflow.domain.processor.lead.IdName;
 import com.kylas.sales.workflow.domain.processor.lead.LeadDetail;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase.Replace;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.test.context.ContextConfiguration;
 
 class WorkflowConditionTest {
 
@@ -239,6 +250,84 @@ class WorkflowConditionTest {
     entity.setLastName("Stark");
 
     assertThat(condition.isSatisfiedBy(entity)).isTrue();
+  }
+
+  @Nested
+  @DisplayName("Condition tests for IdName values")
+  @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
+  @AutoConfigureTestDatabase(replace = Replace.NONE)
+  @ContextConfiguration(initializers = {TestDatabaseInitializer.class})
+  public class IdNameConditionTest {
+
+    @Test
+    public void givenEquals_onSameIds_evaluatesTrue() {
+      var condition = new WorkflowCondition();
+      condition.setType(ConditionType.CONDITION_BASED);
+      Object pipeline = "{\"id\":242,\"name\":\"Routing pipeline\"}";
+      condition.setExpression(new ConditionExpression(EQUAL, "pipeline", pipeline, NEW_VALUE));
+      var entity = stubLeadDetail();
+      entity.setPipeline(new IdName(242L, "Routing pipeline"));
+
+      assertThat(condition.isSatisfiedBy(entity)).isTrue();
+    }
+
+    @Test
+    public void givenEquals_onDifferentIds_evaluatesFalse() {
+      var condition = new WorkflowCondition();
+      condition.setType(ConditionType.CONDITION_BASED);
+      Object pipeline = "{\"id\":242,\"name\":\"Routing pipeline\"}";
+      condition.setExpression(new ConditionExpression(EQUAL, "pipeline", pipeline, NEW_VALUE));
+      var entity = stubLeadDetail();
+      entity.setPipeline(new IdName(243L, "Routing pipeline"));
+
+      assertThat(condition.isSatisfiedBy(entity)).isFalse();
+    }
+
+    @Test
+    public void givenNotEquals_onSameIds_evaluatesFalse() {
+      var condition = new WorkflowCondition();
+      condition.setType(ConditionType.CONDITION_BASED);
+      Object pipeline = "{\"id\":242,\"name\":\"Routing pipeline\"}";
+      condition.setExpression(new ConditionExpression(NOT_EQUAL, "pipeline", pipeline, NEW_VALUE));
+      var entity = stubLeadDetail();
+      entity.setPipeline(new IdName(242L, "Routing pipeline"));
+
+      assertThat(condition.isSatisfiedBy(entity)).isFalse();
+    }
+
+    @Test
+    public void givenNotEquals_onDifferentIds_evaluatesTrue() {
+      var condition = new WorkflowCondition();
+      condition.setType(ConditionType.CONDITION_BASED);
+      Object pipeline = "{\"id\":242,\"name\":\"Routing pipeline\"}";
+      condition.setExpression(new ConditionExpression(NOT_EQUAL, "pipeline", pipeline, NEW_VALUE));
+      var entity = stubLeadDetail();
+      entity.setPipeline(new IdName(243L, "Routing pipeline"));
+
+      assertThat(condition.isSatisfiedBy(entity)).isTrue();
+    }
+
+    @Test
+    public void givenIsNullOperator_withNullValue_evaluatesTrue() {
+      var condition = new WorkflowCondition();
+      condition.setType(ConditionType.CONDITION_BASED);
+      condition.setExpression(new ConditionExpression(IS_NULL, "pipeline", null, NEW_VALUE));
+      var entity = stubLeadDetail();
+      entity.setPipeline(null);
+
+      assertThat(condition.isSatisfiedBy(entity)).isTrue();
+    }
+
+    @Test
+    public void givenIsNotNullOperator_withSomeValue_evaluatesTrue() {
+      var condition = new WorkflowCondition();
+      condition.setType(ConditionType.CONDITION_BASED);
+      condition.setExpression(new ConditionExpression(IS_NOT_NULL, "pipeline", null, NEW_VALUE));
+      var entity = stubLeadDetail();
+      entity.setPipeline(new IdName(242L, "Some-Name"));
+
+      assertThat(condition.isSatisfiedBy(entity)).isTrue();
+    }
   }
 
   private LeadDetail stubLeadDetail() {

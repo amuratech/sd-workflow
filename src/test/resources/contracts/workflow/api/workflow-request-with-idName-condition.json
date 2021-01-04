@@ -1,0 +1,33 @@
+{
+  "name": "Workflow 1",
+  "description": "Workflow Description",
+  "entityType": "LEAD",
+  "trigger": {
+    "name": "EVENT",
+    "triggerFrequency": "CREATED",
+    "payload": {
+    }
+  },
+  "condition": {
+    "conditionType": "CONDITION_BASED",
+    "expression": {
+      "triggerOn": "NEW_VALUE",
+      "name": "pipeline",
+      "operator": "EQUAL",
+      "value": {
+        "id": 242,
+        "name": "Lead Routing Pipeline"
+      }
+    }
+  },
+  "actions": [
+    {
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "salutation",
+        "value": 1319,
+        "valueType": "PLAIN"
+      }
+    }
+  ]
+}
