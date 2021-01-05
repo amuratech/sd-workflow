@@ -1,12 +1,14 @@
 package com.kylas.sales.workflow.domain.workflow;
 
 import static com.kylas.sales.workflow.common.dto.condition.Operator.AND;
+import static com.kylas.sales.workflow.common.dto.condition.Operator.BETWEEN;
 import static com.kylas.sales.workflow.common.dto.condition.Operator.EQUAL;
 import static com.kylas.sales.workflow.common.dto.condition.Operator.GREATER;
 import static com.kylas.sales.workflow.common.dto.condition.Operator.IN;
 import static com.kylas.sales.workflow.common.dto.condition.Operator.IS_NOT_NULL;
 import static com.kylas.sales.workflow.common.dto.condition.Operator.IS_NULL;
 import static com.kylas.sales.workflow.common.dto.condition.Operator.LESS;
+import static com.kylas.sales.workflow.common.dto.condition.Operator.NOT_BETWEEN;
 import static com.kylas.sales.workflow.common.dto.condition.Operator.NOT_EQUAL;
 import static com.kylas.sales.workflow.common.dto.condition.Operator.NOT_IN;
 import static com.kylas.sales.workflow.common.dto.condition.Operator.OR;
@@ -326,6 +328,26 @@ class WorkflowConditionTest {
       var entity = stubLeadDetail();
       entity.setPipeline(new IdName(242L, "Some-Name"));
 
+      assertThat(condition.isSatisfiedBy(entity)).isTrue();
+    }
+
+    @Test
+    public void givenBetweenOperator_havingValueInBetween_evaluatesTrue() {
+      var condition = new WorkflowCondition();
+      condition.setType(ConditionType.CONDITION_BASED);
+      condition.setExpression(new ConditionExpression(BETWEEN, "requirementBudget", "[12,20]", NEW_VALUE));
+      var entity = stubLeadDetail();
+      entity.setRequirementBudget(15D);
+      assertThat(condition.isSatisfiedBy(entity)).isTrue();
+    }
+
+    @Test
+    public void givenNotBetweenOperator_havingValueOutsideRange_evaluatesTrue() {
+      var condition = new WorkflowCondition();
+      condition.setType(ConditionType.CONDITION_BASED);
+      condition.setExpression(new ConditionExpression(NOT_BETWEEN, "requirementBudget", "[12,20]", NEW_VALUE));
+      var entity = stubLeadDetail();
+      entity.setRequirementBudget(25D);
       assertThat(condition.isSatisfiedBy(entity)).isTrue();
     }
   }

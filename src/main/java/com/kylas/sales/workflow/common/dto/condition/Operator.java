@@ -21,6 +21,8 @@ public enum Operator {
   IS_NULL,
   CONTAINS,
   NOT_CONTAINS,
+  BETWEEN,
+  NOT_BETWEEN,
   IN,
   NOT_IN;
 

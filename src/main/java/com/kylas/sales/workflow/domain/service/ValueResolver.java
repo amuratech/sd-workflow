@@ -6,6 +6,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kylas.sales.workflow.domain.exception.InvalidActionException;
 import com.kylas.sales.workflow.domain.processor.lead.IdName;
+import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -13,7 +14,7 @@ import reactor.core.publisher.Mono;
 
 @Service
 @Slf4j
-public class IdNameResolver {
+public class ValueResolver {
 
   private static PipelineService pipelineService;
   private static ObjectMapper objectMapper;
@@ -49,13 +50,22 @@ public class IdNameResolver {
     }
   }
 
+  public static List getListFrom(String value) {
+    try {
+      return objectMapper.readValue(value, List.class);
+    } catch (JsonProcessingException e) {
+      log.error("Exception while serializing value {}", value);
+      throw new IllegalArgumentException();
+    }
+  }
+
   @Autowired
   public void setPipelineService(PipelineService pipelineService) {
-    IdNameResolver.pipelineService = pipelineService;
+    ValueResolver.pipelineService = pipelineService;
   }
 
   @Autowired
   public void setObjectMapper(ObjectMapper objectMapper) {
-    IdNameResolver.objectMapper = objectMapper;
+    ValueResolver.objectMapper = objectMapper;
   }
 }

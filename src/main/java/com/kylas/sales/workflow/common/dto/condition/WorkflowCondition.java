@@ -2,9 +2,13 @@ package com.kylas.sales.workflow.common.dto.condition;
 
 import static com.kylas.sales.workflow.common.dto.condition.ExpressionField.getFieldByName;
 import static com.kylas.sales.workflow.common.dto.condition.Operator.AND;
+import static com.kylas.sales.workflow.common.dto.condition.Operator.BETWEEN;
 import static com.kylas.sales.workflow.common.dto.condition.Operator.IS_NOT_NULL;
 import static com.kylas.sales.workflow.common.dto.condition.Operator.IS_NULL;
+import static com.kylas.sales.workflow.common.dto.condition.Operator.NOT_BETWEEN;
 import static com.kylas.sales.workflow.common.dto.condition.Operator.OR;
+import static java.lang.Double.parseDouble;
+import static java.lang.String.valueOf;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static org.apache.commons.beanutils.BeanUtils.getNestedProperty;
@@ -19,7 +23,7 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.kylas.sales.workflow.domain.exception.InvalidConditionException;
 import com.kylas.sales.workflow.domain.processor.lead.IdName;
-import com.kylas.sales.workflow.domain.service.IdNameResolver;
+import com.kylas.sales.workflow.domain.service.ValueResolver;
 import com.kylas.sales.workflow.domain.workflow.ConditionType;
 import java.io.Serializable;
 import java.lang.reflect.InvocationTargetException;
@@ -30,6 +34,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.beanutils.NestedNullException;
+import org.apache.commons.lang3.Range;
 
 @Getter
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -73,7 +78,7 @@ public class WorkflowCondition {
       this.operand2 = operand2;
       this.operator = Operator.getByName(operator);
       this.name = name;
-      this.value = ID_NAME_PROPERTIES.contains(name) ? IdNameResolver.serialize(value) : value;
+      this.value = ID_NAME_PROPERTIES.contains(name) ? ValueResolver.serialize(value) : value;
       this.triggerOn = TriggerType.valueOf(triggerOn);
     }
 
@@ -116,12 +121,19 @@ public class WorkflowCondition {
         log.error("Condition value can not be null.");
         throw new InvalidConditionException();
       }
-      if (isBlank(String.valueOf(value))) {
-        log.info("Condition job operator {} expects non-blank value.", operator);
+      if (isBlank(valueOf(value))) {
+        log.info("Condition operator {} expects non-blank value.", operator);
         throw new InvalidConditionException();
       }
+      if (operator.equals(BETWEEN) || operator.equals(NOT_BETWEEN)) {
+        List range = ValueResolver.getListFrom(valueOf(value));
+        if (range.size() != 2) {
+          log.info("Condition operator {} expects two values.", operator);
+          throw new InvalidConditionException();
+        }
+      }
       if (ID_NAME_PROPERTIES.contains(name)) {
-        IdNameResolver.getIdNameFrom(value);
+        ValueResolver.getIdNameFrom(value);
       }
     }
 
@@ -138,40 +150,50 @@ public class WorkflowCondition {
         case OR:
           return operand1.isSatisfiedBy(entity) || operand2.isSatisfiedBy(entity);
         case EQUAL:
-          return actualValue.equals(String.valueOf(value));
+          return actualValue.equals(valueOf(value));
         case NOT_EQUAL:
-          return !actualValue.equals(String.valueOf(value));
+          return !actualValue.equals(valueOf(value));
         case IS_NOT_NULL:
           return !isNull(actualValue);
         case IS_NULL:
           return isNull(actualValue);
         case CONTAINS:
-          return actualValue.contains(String.valueOf(value));
+          return actualValue.contains(valueOf(value));
         case NOT_CONTAINS:
-          return !actualValue.contains(String.valueOf(value));
+          return !actualValue.contains(valueOf(value));
+        case BETWEEN:
+          var betweenValues = ValueResolver.getListFrom(valueOf(value));
+          return Range
+              .between(parseDouble(valueOf(betweenValues.get(0))), parseDouble(valueOf(betweenValues.get(1))))
+              .contains(parseDouble(actualValue));
+        case NOT_BETWEEN:
+          var notBetweenValues = ValueResolver.getListFrom(valueOf(value));
+          return !Range
+              .between(parseDouble(valueOf(notBetweenValues.get(0))), parseDouble(valueOf(notBetweenValues.get(1))))
+              .contains(parseDouble(actualValue));
         case GREATER:
-          return Double.parseDouble(actualValue) > Double.parseDouble(String.valueOf(value));
+          return parseDouble(actualValue) > parseDouble(valueOf(value));
         case GREATER_OR_EQUAL:
-          return Double.parseDouble(actualValue) >= Double.parseDouble(String.valueOf(value));
+          return parseDouble(actualValue) >= parseDouble(valueOf(value));
         case LESS:
-          return Double.parseDouble(actualValue) < Double.parseDouble(String.valueOf(value));
+          return parseDouble(actualValue) < parseDouble(valueOf(value));
         case LESS_OR_EQUAL:
-          return Double.parseDouble(actualValue) <= Double.parseDouble(String.valueOf(value));
+          return parseDouble(actualValue) <= parseDouble(valueOf(value));
         case IN:
-          return Arrays.asList(String.valueOf(value).split("\\s*,\\s*")).contains(actualValue);
+          return Arrays.asList(valueOf(value).split("\\s*,\\s*")).contains(actualValue);
         case NOT_IN:
-          return !Arrays.asList(String.valueOf(value).split("\\s*,\\s*")).contains(actualValue);
+          return !Arrays.asList(valueOf(value).split("\\s*,\\s*")).contains(actualValue);
       }
       throw new InvalidConditionException();
     }
 
     private boolean idNameSatisfiedBy(Object actualValue) {
-      IdName conditionValue = IdNameResolver.getIdNameFrom(value);
+      IdName conditionValue = ValueResolver.getIdNameFrom(value);
       switch (operator) {
         case EQUAL:
-          return Long.parseLong(String.valueOf(actualValue)) == conditionValue.getId();
+          return Long.parseLong(valueOf(actualValue)) == conditionValue.getId();
         case NOT_EQUAL:
-          return Long.parseLong(String.valueOf(actualValue)) != conditionValue.getId();
+          return Long.parseLong(valueOf(actualValue)) != conditionValue.getId();
         case IS_NOT_NULL:
           return !isNull(actualValue);
         case IS_NULL:
