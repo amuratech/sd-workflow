@@ -29,7 +29,7 @@ public class LayoutService {
       var createLayoutJson = readFromFile("/layout/list.json");
       return objectMapper.readValue(createLayoutJson, ListLayout.class);
     } catch (IOException e) {
-      log.error("Error occurred while trying to locate list view: ", e);
+      log.error("Error occurred while trying to locate list view: ");
       throw new LayoutNotFoundException();
     }
   }

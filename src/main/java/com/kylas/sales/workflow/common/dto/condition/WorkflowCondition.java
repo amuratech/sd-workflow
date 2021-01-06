@@ -150,9 +150,13 @@ public class WorkflowCondition {
         case OR:
           return operand1.isSatisfiedBy(entity) || operand2.isSatisfiedBy(entity);
         case EQUAL:
-          return actualValue.equals(valueOf(value));
+          return value instanceof Number
+              ? Double.parseDouble(actualValue) == Double.parseDouble(valueOf(value))
+              : actualValue.equals(valueOf(value));
         case NOT_EQUAL:
-          return !actualValue.equals(valueOf(value));
+          return value instanceof Number
+              ? Double.parseDouble(actualValue) != Double.parseDouble(valueOf(value))
+              : !actualValue.equals(valueOf(value));
         case IS_NOT_NULL:
           return !isNull(actualValue);
         case IS_NULL:

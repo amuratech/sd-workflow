@@ -78,7 +78,7 @@ public class ValueConverter implements AttributeConverter<Object, String> {
         return objectMapper.readValue(valueOf(value), type);
       }
     } catch (JsonProcessingException e) {
-      log.error("error in converting to list or array due to invalid json {}", value, e);
+      log.error("error in converting to list or array due to invalid json {}", value);
     }
     return emptyList();
   }

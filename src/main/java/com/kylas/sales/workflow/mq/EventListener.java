@@ -41,8 +41,7 @@ public class EventListener {
       internalAuthProvider.loginWith(metadata.getUserId(), metadata.getTenantId());
       workflowProcessor.process(leadCreatedEvent);
     } catch (JsonProcessingException e) {
-      e.printStackTrace();
-      log.error(e.getMessage(), e);
+      log.error(e.getMessage());
     }
   }
   @RabbitListener(queues = SALES_LEAD_UPDATED_QUEUE)
@@ -56,8 +55,7 @@ public class EventListener {
       internalAuthProvider.loginWith(metadata.getUserId(), metadata.getTenantId());
       workflowProcessor.process(leadCreatedEvent);
     } catch (JsonProcessingException e) {
-      e.printStackTrace();
-      log.error(e.getMessage(), e);
+      log.error(e.getMessage());
     }
   }
 }

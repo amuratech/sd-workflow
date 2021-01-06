@@ -254,6 +254,30 @@ class WorkflowConditionTest {
     assertThat(condition.isSatisfiedBy(entity)).isTrue();
   }
 
+  @Test
+  public void givenEquals_onSameNumbers_evaluatesTrue() {
+    var condition = new WorkflowCondition();
+    condition.setType(ConditionType.CONDITION_BASED);
+    Object pipeline = 500.50;
+    condition.setExpression(new ConditionExpression(EQUAL, "companyAnnualRevenue", pipeline, NEW_VALUE));
+    var entity = stubLeadDetail();
+    entity.setCompanyAnnualRevenue(500.50D);
+
+    assertThat(condition.isSatisfiedBy(entity)).isTrue();
+  }
+
+  @Test
+  public void givenNotEquals_onDifferentNumbers_evaluatesTrue() {
+    var condition = new WorkflowCondition();
+    condition.setType(ConditionType.CONDITION_BASED);
+    Object pipeline = 500.50;
+    condition.setExpression(new ConditionExpression(NOT_EQUAL, "companyAnnualRevenue", pipeline, NEW_VALUE));
+    var entity = stubLeadDetail();
+    entity.setCompanyAnnualRevenue(500D);
+
+    assertThat(condition.isSatisfiedBy(entity)).isTrue();
+  }
+
   @Nested
   @DisplayName("Condition tests for IdName values")
   @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)

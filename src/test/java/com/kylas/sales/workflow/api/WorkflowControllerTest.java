@@ -101,7 +101,7 @@ class WorkflowControllerTest {
   }
 
   @Test
-  public void givenWorkflow_withDifferentValueTypes_shouldCreateIt() {
+  public void givenWorkflow_withDifferentValueTypes_shouldCreateIt() throws IOException {
     //given
     var requestPayload = getResourceAsString("classpath:contracts/workflow/api/create-workflow-request.json");
     given(workflowService.create(argThat(workflowRequest ->
@@ -145,7 +145,7 @@ class WorkflowControllerTest {
   }
 
   @Test
-  public void givenWorkflowWithMultipleActions_andDifferentValueTypes_shouldCreateIt() {
+  public void givenWorkflowWithMultipleActions_andDifferentValueTypes_shouldCreateIt() throws IOException {
     //given
     var requestPayload = getResourceAsString("classpath:contracts/workflow/api/create-multiple-actions-workflow.json");
     given(workflowService.create(argThat(
@@ -190,7 +190,7 @@ class WorkflowControllerTest {
   }
 
   @Test
-  public void givenWorkflowUpdate_withDifferentValueTypes_shouldUpdateIt() {
+  public void givenWorkflowUpdate_withDifferentValueTypes_shouldUpdateIt() throws IOException {
     //given
     var requestPayload = getResourceAsString("classpath:contracts/workflow/api/update-workflow-request.json");
     ObjectMapper objectMapper = new ObjectMapper();
@@ -246,7 +246,7 @@ class WorkflowControllerTest {
   }
 
   @Test
-  public void givenDeactivatedWorkflow_shouldCreateIt() {
+  public void givenDeactivatedWorkflow_shouldCreateIt() throws IOException {
     //given
     var requestPayload = getResourceAsString("classpath:contracts/workflow/api/create-deactivated-workflow-request.json");
     given(workflowService.create(argThat(workflowRequest ->
@@ -291,7 +291,7 @@ class WorkflowControllerTest {
   }
 
   @Test
-  public void givenActionWithoutNameWorkflow_shouldThrow() {
+  public void givenActionWithoutNameWorkflow_shouldThrow() throws IOException {
     //given
     var requestPayload = getResourceAsString("classpath:contracts/workflow/api/create-workflow-request.json");
 
@@ -318,7 +318,7 @@ class WorkflowControllerTest {
   }
 
   @Test
-  public void shouldReturnValidResponseForInsufficientPrivilegeException() {
+  public void shouldReturnValidResponseForInsufficientPrivilegeException() throws IOException {
     // given
     var requestPayload =
         getResourceAsString("classpath:contracts/workflow/api/create-workflow-request.json");
@@ -350,7 +350,7 @@ class WorkflowControllerTest {
   }
 
   @Test
-  public void givenWorkflowId_shouldGetIt() {
+  public void givenWorkflowId_shouldGetIt() throws IOException {
     // given
     long workflowId = 101L;
 
@@ -407,7 +407,7 @@ class WorkflowControllerTest {
   }
 
   @Test
-  public void givenWorkflowId_shouldActivateIt() {
+  public void givenWorkflowId_shouldActivateIt() throws IOException {
     // given
     long workflowId = 101L;
     User createdBy = new User(101L, "Tony Start");
@@ -456,7 +456,7 @@ class WorkflowControllerTest {
   }
 
   @Test
-  public void givenWorkflowId_shouldDeactivateIt() {
+  public void givenWorkflowId_shouldDeactivateIt() throws IOException {
     // given
     long workflowId = 101L;
     User createdBy = new User(101L, "Tony Start");
@@ -531,7 +531,7 @@ class WorkflowControllerTest {
   }
 
   @Test
-  public void givenListRequest_shouldGetPageableListingPage() {
+  public void givenListRequest_shouldGetPageableListingPage() throws IOException {
     // given
 
     User createdBy = new User(101L, "Tony Start");
@@ -616,7 +616,7 @@ class WorkflowControllerTest {
   }
 
   @Test
-  public void givenSearchRequest_tryToSortOnLastTriggeredAt_shouldGetPageableListingPage() {
+  public void givenSearchRequest_tryToSortOnLastTriggeredAt_shouldGetPageableListingPage() throws IOException {
     // given
 
     User createdBy = new User(101L, "Tony Start");
@@ -711,7 +711,7 @@ class WorkflowControllerTest {
   }
 
   @Test
-  public void givenSearchRequest_tryToSortOnLastUpdatedAt_shouldGetPageableListingPage() {
+  public void givenSearchRequest_tryToSortOnLastUpdatedAt_shouldGetPageableListingPage() throws IOException {
     // given
 
     User createdBy = new User(101L, "Tony Start");
@@ -807,7 +807,7 @@ class WorkflowControllerTest {
   }
 
   @Test
-  public void givenFilterSearchRequest_shouldSearch() {
+  public void givenFilterSearchRequest_shouldSearch() throws IOException {
     // given
     User createdBy = new User(101L, "Tony Start");
     var updatedBy = new User(102L, "Steve Roger");
@@ -906,18 +906,17 @@ class WorkflowControllerTest {
 
 
   @Test
-  public void givenInvalidFilter_shouldThrow() {
+  public void givenInvalidFilter_shouldThrow() throws IOException {
     // given
     User createdBy = new User(101L, "Tony Start");
     var updatedBy = new User(102L, "Steve Roger");
-
 
     Sort sortByLastTriggeredAt = Sort.by(Order.desc("lastUpdatedAt"));
     List<Filter> filters = new ArrayList<>();
     filters.add(new Filter("equals", "entityType", "string", "LEAD"));
     FilterRequest expectedFilter = new FilterRequest(filters);
     given(
-        workflowService.search(any(),any())).willThrow(new InvalidFilterException());
+        workflowService.search(any(), any())).willThrow(new InvalidFilterException());
     // when
     var workflowResponse =
         buildWebClient()
@@ -946,7 +945,7 @@ class WorkflowControllerTest {
   }
 
   @Test
-  public void givenWorkflow_withReassignAction_shouldCreateIt() {
+  public void givenWorkflow_withReassignAction_shouldCreateIt() throws IOException {
     //given
     var requestPayload = getResourceAsString("classpath:contracts/reassign/create-workflow-with-reassign-action-request.json");
     given(workflowService.create(argThat(workflowRequest -> {
@@ -975,7 +974,7 @@ class WorkflowControllerTest {
   }
 
   @Test
-  public void givenWorkflow_withReassignAction_shouldUpdateIt() {
+  public void givenWorkflow_withReassignAction_shouldUpdateIt() throws IOException {
     //given
     var requestPayload = getResourceAsString("classpath:contracts/reassign/update-workflow-with-reassign-action-request.json");
     WorkflowTrigger trigger = new WorkflowTrigger(TriggerType.EVENT, TriggerFrequency.CREATED);
@@ -1012,7 +1011,7 @@ class WorkflowControllerTest {
   }
 
   @Test
-  public void givenWorkflowRequest_withIdNameCondition_shouldCreateIt() throws JSONException {
+  public void givenWorkflowRequest_withIdNameCondition_shouldCreateIt() throws JSONException, IOException {
     //given
     var requestPayload =
         getResourceAsString("classpath:contracts/workflow/api/workflow-request-with-idName-condition.json");
@@ -1038,15 +1037,9 @@ class WorkflowControllerTest {
     JSONAssert.assertEquals(expectedResponse, workflowResponse, false);
   }
 
-  private String getResourceAsString(String resourcePath) {
+  private String getResourceAsString(String resourcePath) throws IOException {
     var resource = resourceLoader.getResource(resourcePath);
-    File file = null;
-    try {
-      file = resource.getFile();
-      return FileUtils.readFileToString(file, "UTF-8");
-    } catch (IOException e) {
-      e.printStackTrace();
-    }
-    return null;
+    File file = resource.getFile();
+    return FileUtils.readFileToString(file, "UTF-8");
   }
 }

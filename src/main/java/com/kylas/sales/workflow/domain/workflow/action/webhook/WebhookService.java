@@ -247,7 +247,7 @@ public class WebhookService {
       var property = PropertyUtils.getNestedProperty(entity, parameter.fetchPathToField());
       return List.of(nonNull(property) ? property.toString() : "");
     } catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
-      log.error("Exception while building webhook request to be executed.", e);
+      log.error("Exception while building webhook request to be executed.");
       throw new WorkflowExecutionException(ErrorCode.INVALID_PARAMETER);
     }
   }
