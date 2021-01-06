@@ -55,7 +55,7 @@ public class ReassignAction extends AbstractWorkflowAction implements WorkflowAc
   }
 
   @Override
-  public AbstractWorkflowAction update(ActionResponse actionResponse) {
+  public ReassignAction update(ActionResponse actionResponse) {
     var payload = (ActionDetail.ReassignAction) actionResponse.getPayload();
     if (isNull(payload.getId())) {
       throw new InvalidActionException();
