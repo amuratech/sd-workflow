@@ -100,6 +100,26 @@ class WorkflowConditionTest {
   }
 
   @Test
+  public void givenEquals_matchingStringsIgnoringCase_evaluatesTrue() {
+    var condition = new WorkflowCondition();
+    condition.setType(ConditionType.CONDITION_BASED);
+    condition.setExpression(new ConditionExpression(EQUAL, "firstName", "Tony", NEW_VALUE));
+    var entity = stubLeadDetail();
+    entity.setFirstName("tony");
+    assertThat(condition.isSatisfiedBy(entity)).isTrue();
+  }
+
+  @Test
+  public void givenNotEquals_matchingStringsIgnoringCase_evaluatesFalse() {
+    var condition = new WorkflowCondition();
+    condition.setType(ConditionType.CONDITION_BASED);
+    condition.setExpression(new ConditionExpression(NOT_EQUAL, "firstName", "Tony", NEW_VALUE));
+    var entity = stubLeadDetail();
+    entity.setFirstName("tony");
+    assertThat(condition.isSatisfiedBy(entity)).isFalse();
+  }
+
+  @Test
   public void givenIsNullOperator_onNullValue_evaluatesTrue() {
     var condition = new WorkflowCondition();
     condition.setType(ConditionType.CONDITION_BASED);

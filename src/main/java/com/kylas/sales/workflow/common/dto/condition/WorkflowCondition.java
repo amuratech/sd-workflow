@@ -153,11 +153,11 @@ public class WorkflowCondition {
         case EQUAL:
           return value instanceof Number
               ? Double.parseDouble(actualValue) == Double.parseDouble(valueOf(value))
-              : actualValue.equals(valueOf(value));
+              : actualValue.equalsIgnoreCase(valueOf(value));
         case NOT_EQUAL:
           return value instanceof Number
               ? Double.parseDouble(actualValue) != Double.parseDouble(valueOf(value))
-              : !actualValue.equals(valueOf(value));
+              : !actualValue.equalsIgnoreCase(valueOf(value));
         case IS_NOT_NULL:
           return !isNull(actualValue);
         case IS_NULL:
