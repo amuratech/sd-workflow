@@ -4,6 +4,7 @@ import static com.kylas.sales.workflow.common.dto.ActionDetail.EditPropertyActio
 import static com.kylas.sales.workflow.common.dto.condition.WorkflowCondition.TriggerType.NEW_VALUE;
 import static com.kylas.sales.workflow.domain.workflow.TriggerFrequency.CREATED;
 import static com.kylas.sales.workflow.domain.workflow.action.WorkflowAction.ActionType.EDIT_PROPERTY;
+import static com.kylas.sales.workflow.domain.workflow.action.WorkflowAction.ActionType.REASSIGN;
 import static com.kylas.sales.workflow.domain.workflow.action.WorkflowAction.ActionType.WEBHOOK;
 import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -29,6 +30,7 @@ import com.kylas.sales.workflow.domain.workflow.TriggerType;
 import com.kylas.sales.workflow.domain.workflow.Workflow;
 import com.kylas.sales.workflow.domain.workflow.WorkflowCondition;
 import com.kylas.sales.workflow.domain.workflow.action.EditPropertyAction;
+import com.kylas.sales.workflow.domain.workflow.action.reassign.ReassignAction;
 import com.kylas.sales.workflow.domain.workflow.action.webhook.Parameter;
 import com.kylas.sales.workflow.domain.workflow.action.webhook.attribute.AttributeFactory.WebhookEntity;
 import com.kylas.sales.workflow.security.AuthService;
@@ -363,6 +365,54 @@ class WorkflowFacadeTest {
   @Transactional
   @Test
   @Sql("/test-scripts/create-webhook-workflow.sql")
+  public void givenWorkflowUpdateRequest_updatingWebhookWithDifferentActionType_shouldUpdateIt() {
+    //given
+    User aUser = UserStub.aUser(11L, 99L, true, true, true, true, true)
+        .withName("user 1");
+    given(authService.getLoggedInUser()).willReturn(aUser);
+
+    given(userService.getUserDetails(11L, authService.getAuthenticationToken()))
+        .willReturn(Mono.just(aUser));
+
+    var actionRequest = new ActionResponse(UUID.fromString("a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a12"), REASSIGN,
+        new ActionDetail.ReassignAction(2000L, "Tony Stark"));
+    Set<ActionResponse> actions = Set.of(actionRequest);
+
+    var workflowRequest = WorkflowStub
+        .aWorkflowRequestWithActions("UpdatedWorkflowName", "UpdatedWorkflowProperty", EntityType.LEAD, TriggerType.EVENT, CREATED,
+            ConditionType.FOR_ALL, actions);
+    //when
+    var updatedWorkflow = workflowFacade.update(301L, workflowRequest);
+    //then
+    StepVerifier.create(updatedWorkflow)
+        .expectNextMatches(workflow -> {
+          assertThat(workflow.getId())
+              .isNotNull()
+              .isGreaterThan(0L);
+
+          assertThat(workflow.getWorkflowTrigger().getTriggerFrequency()).isEqualTo(CREATED);
+          assertThat(workflow.getWorkflowTrigger().getTriggerType()).isEqualTo(TriggerType.EVENT);
+
+          assertThat(workflow.getWorkflowActions().size()).isEqualTo(1);
+          assertThat(workflow.getWorkflowActions()).hasSize(1);
+          var reassignAction = workflow.getWorkflowActions().stream()
+              .filter(action -> action.getType().equals(REASSIGN))
+              .findFirst();
+          assertThat(reassignAction).isPresent();
+          var actionDetail = (com.kylas.sales.workflow.domain.workflow.action.reassign.ReassignAction) reassignAction.get();
+
+          assertThat(actionDetail.getId()).isNotEqualTo(UUID.fromString("a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a12"));
+          assertThat(actionDetail.getName()).isEqualTo("Tony Stark");
+          assertThat(actionDetail.getOwnerId()).isEqualTo(2000L);
+          return true;
+        })
+        .verifyComplete();
+  }
+
+
+  @Transactional
+  @Test
+  @Sql("/test-scripts/create-webhook-workflow.sql")
   public void givenWorkflowUpdateRequest_withEmptyParam_shouldUpdateIt() {
     //given
     User aUser = UserStub.aUser(11L, 99L, true, true, true, true, true)
@@ -494,6 +544,127 @@ class WorkflowFacadeTest {
         })
         .verifyComplete();
   }
+
+  @Transactional
+  @Test
+  @Sql("/test-scripts/insert-workflow.sql")
+  public void givenWorkflowUpdateRequest_withDifferentActionType_shouldUpdateExistingAction() {
+    //given
+    User aUser = UserStub.aUser(11L, 99L, true, true, true, true, true)
+        .withName("user 1");
+    given(authService.getLoggedInUser()).willReturn(aUser);
+
+    given(userService.getUserDetails(11L, authService.getAuthenticationToken()))
+        .willReturn(
+            Mono.just(
+                aUser));
+    var workflowRequest = WorkflowStub
+        .anExistingReassignWorkflowRequest("Reassign Lead", "Reassign a lead",
+            EntityType.LEAD, TriggerType.EVENT, CREATED,
+            ConditionType.FOR_ALL, UUID.fromString("a0eebc55-9c0b-4ef8-bb6d-6bb9bd380a11"), REASSIGN, 2000L, "Tony Stark",
+            true);
+    //when
+    var workflowMono = workflowFacade.update(301L, workflowRequest);
+    //then
+    StepVerifier.create(workflowMono)
+        .expectNextMatches(workflow -> {
+          assertThat(workflow.getId())
+              .isNotNull()
+              .isGreaterThan(0L);
+
+          assertThat(workflow.getWorkflowTrigger().getTriggerFrequency()).isEqualTo(CREATED);
+          assertThat(workflow.getWorkflowTrigger().getTriggerType()).isEqualTo(TriggerType.EVENT);
+
+          assertThat(workflow.getWorkflowActions().size()).isEqualTo(1);
+          ReassignAction workflowAction = (ReassignAction) workflow.getWorkflowActions().iterator().next();
+          assertThat(workflowAction.getName()).isEqualTo("Tony Stark");
+          assertThat(workflowAction.getOwnerId()).isEqualTo(2000L);
+          assertThat(workflowAction.getId()).isNotEqualTo(UUID.fromString("a0eebc55-9c0b-4ef8-bb6d-6bb9bd380a11"));
+          return true;
+        })
+        .verifyComplete();
+  }
+
+  @Transactional
+  @Test
+  @Sql("/test-scripts/insert-reassign-lead-workflow.sql")
+  public void givenWorkflowUpdateRequest_withReassignAction_shouldUpdateIt() {
+    //given
+    User aUser = UserStub.aUser(11L, 99L, true, true, true, true, true)
+        .withName("user 1");
+    given(authService.getLoggedInUser()).willReturn(aUser);
+
+    given(userService.getUserDetails(11L, authService.getAuthenticationToken()))
+        .willReturn(
+            Mono.just(
+                aUser));
+    var workflowRequest = WorkflowStub
+        .anExistingReassignWorkflowRequest("Reassign Lead", "Reassign a lead",
+            EntityType.LEAD, TriggerType.EVENT, CREATED,
+            ConditionType.FOR_ALL, UUID.fromString("a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11"), REASSIGN, 2001L, "Tony Stark Changed",
+            true);
+    //when
+    var workflowMono = workflowFacade.update(301L, workflowRequest);
+    //then
+    StepVerifier.create(workflowMono)
+        .expectNextMatches(workflow -> {
+          assertThat(workflow.getId())
+              .isNotNull()
+              .isGreaterThan(0L);
+
+          assertThat(workflow.getWorkflowTrigger().getTriggerFrequency()).isEqualTo(CREATED);
+          assertThat(workflow.getWorkflowTrigger().getTriggerType()).isEqualTo(TriggerType.EVENT);
+
+          assertThat(workflow.getWorkflowActions().size()).isEqualTo(1);
+          ReassignAction workflowAction = (ReassignAction) workflow.getWorkflowActions().iterator().next();
+          assertThat(workflowAction.getName()).isEqualTo("Tony Stark Changed");
+          assertThat(workflowAction.getOwnerId()).isEqualTo(2001L);
+          assertThat(workflowAction.getId()).isEqualTo(UUID.fromString("a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11"));
+          return true;
+        })
+        .verifyComplete();
+  }
+
+  @Transactional
+  @Test
+  @Sql("/test-scripts/insert-reassign-lead-workflow.sql")
+  public void givenWorkflowUpdateRequest_updatingReassignActionWithDifferentActionType_shouldUpdateIt() {
+    //given
+    User aUser = UserStub.aUser(11L, 99L, true, true, true, true, true)
+        .withName("user 1");
+    given(authService.getLoggedInUser()).willReturn(aUser);
+
+    given(userService.getUserDetails(11L, authService.getAuthenticationToken()))
+        .willReturn(
+            Mono.just(
+                aUser));
+    var workflowRequest = WorkflowStub
+        .anExistingEditPropertyWorkflowRequest("Edit Lead Property", "Edit Lead Property",
+            EntityType.LEAD, TriggerType.EVENT, CREATED,
+            ConditionType.FOR_ALL, UUID.fromString("a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11"), EDIT_PROPERTY, "lastName", "Stark", PLAIN,
+            true);
+    //when
+    var workflowMono = workflowFacade.update(301L, workflowRequest);
+    //then
+    StepVerifier.create(workflowMono)
+        .expectNextMatches(workflow -> {
+          assertThat(workflow.getId())
+              .isNotNull()
+              .isGreaterThan(0L);
+
+          assertThat(workflow.getWorkflowTrigger().getTriggerFrequency()).isEqualTo(CREATED);
+          assertThat(workflow.getWorkflowTrigger().getTriggerType()).isEqualTo(TriggerType.EVENT);
+
+          assertThat(workflow.getWorkflowActions().size()).isEqualTo(1);
+          EditPropertyAction workflowAction = (EditPropertyAction) workflow.getWorkflowActions().iterator().next();
+          assertThat(workflowAction.getName()).isEqualTo("lastName");
+          assertThat(workflowAction.getValue()).isEqualTo("Stark");
+          assertThat(workflowAction.getId()).isNotEqualTo(UUID.fromString("a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11"));
+          return true;
+        })
+        .verifyComplete();
+  }
+
 
   @Transactional
   @Test

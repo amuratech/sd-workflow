@@ -147,7 +147,8 @@ public class WorkflowFacade {
             requestedAction ->
                 existingActions.stream()
                     .filter(
-                        existingAction -> existingAction.getId().equals(requestedAction.getId()))
+                        existingAction -> existingAction.getId().equals(requestedAction.getId()) && existingAction.getType()
+                            .equals(requestedAction.getType()))
                     .findFirst()
                     .map(workflowAction -> workflowAction.update(requestedAction))
                     .orElseGet(() -> requestedAction.getType().create(requestedAction)))
