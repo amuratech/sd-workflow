@@ -5,6 +5,7 @@ import com.kylas.sales.workflow.api.response.WorkflowDetail;
 import com.kylas.sales.workflow.api.response.WorkflowEntry;
 import com.kylas.sales.workflow.common.dto.ActionDetail.EditPropertyAction;
 import com.kylas.sales.workflow.common.dto.ActionDetail.EditPropertyAction.ValueType;
+import com.kylas.sales.workflow.common.dto.ActionDetail.ReassignAction;
 import com.kylas.sales.workflow.common.dto.ActionResponse;
 import com.kylas.sales.workflow.common.dto.User;
 import com.kylas.sales.workflow.common.dto.WorkflowTrigger;
@@ -100,6 +101,27 @@ public class WorkflowStub {
     var triggerRequest = new WorkflowTrigger(triggerType, triggerFrequency);
     var conditionRequest = new WorkflowCondition(conditionType, null);
     var actionRequest = new ActionResponse(actionId, actionType, new EditPropertyAction(propertyName, propertyValue, propertyValueType));
+    var actionRequests = new HashSet<ActionResponse>();
+    actionRequests.add(actionRequest);
+    return new WorkflowRequest(name, description, entityType, triggerRequest, conditionRequest, actionRequests, active);
+  }
+
+  public static WorkflowRequest anExistingReassignWorkflowRequest(
+      String name,
+      String description,
+      EntityType entityType,
+      TriggerType triggerType,
+      TriggerFrequency triggerFrequency,
+      ConditionType conditionType,
+      UUID actionId,
+      ActionType actionType,
+      Long ownerId,
+      String userName,
+      boolean active
+  ) {
+    var triggerRequest = new WorkflowTrigger(triggerType, triggerFrequency);
+    var conditionRequest = new WorkflowCondition(conditionType, null);
+    var actionRequest = new ActionResponse(actionId, actionType, new ReassignAction(ownerId, userName));
     var actionRequests = new HashSet<ActionResponse>();
     actionRequests.add(actionRequest);
     return new WorkflowRequest(name, description, entityType, triggerRequest, conditionRequest, actionRequests, active);
