@@ -394,6 +394,43 @@ class WorkflowConditionTest {
       entity.setRequirementBudget(25D);
       assertThat(condition.isSatisfiedBy(entity)).isTrue();
     }
+
+    @Test
+    public void givenEquals_onSameIdsSource_evaluatesTrue() {
+      var condition = new WorkflowCondition();
+      condition.setType(ConditionType.CONDITION_BASED);
+      Object source = 100;
+      condition.setExpression(new ConditionExpression(EQUAL, "source", source, NEW_VALUE));
+      var entity = stubLeadDetail();
+      entity.setSource(new IdName(100L, "Google"));
+
+      assertThat(condition.isSatisfiedBy(entity)).isTrue();
+    }
+
+    @Test
+    public void givenNotEquals_onDifferentIdsCampaign_evaluatesTrue() {
+      var condition = new WorkflowCondition();
+      condition.setType(ConditionType.CONDITION_BASED);
+      Object campaign = 100;
+      condition.setExpression(new ConditionExpression(NOT_EQUAL, "campaign", campaign, NEW_VALUE));
+      var entity = stubLeadDetail();
+      entity.setCampaign(new IdName(101L, "Organic"));
+
+      assertThat(condition.isSatisfiedBy(entity)).isTrue();
+    }
+
+    @Test
+    public void  givenEquals_onDifferentIdsSalutation_evaluatesFalse() {
+      var condition = new WorkflowCondition();
+      condition.setType(ConditionType.CONDITION_BASED);
+      Object salutation = 11;
+      condition.setExpression(new ConditionExpression(EQUAL, "salutation", salutation, NEW_VALUE));
+      var entity = stubLeadDetail();
+      entity.setSalutation(new IdName(11L, "Miss"));
+
+      assertThat(condition.isSatisfiedBy(entity)).isTrue();
+    }
+
   }
 
   private LeadDetail stubLeadDetail() {

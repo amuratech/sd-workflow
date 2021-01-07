@@ -9,7 +9,11 @@ import lombok.Getter;
 public enum ExpressionField {
   PIPELINE("pipeline", "pipeline.id"),
   PIPELINE_STAGE("pipelineStage", "pipelineStage.id"),
-  PRODUCT("product", "product.id");
+  PRODUCT("product", "product.id"),
+  SOURCE("source","source.id"),
+  CAMPAIGN("campaign","campaign.id"),
+  SALUTATION("salutation","salutation.id");
+
 
   private final String name;
   private final String fieldName;
