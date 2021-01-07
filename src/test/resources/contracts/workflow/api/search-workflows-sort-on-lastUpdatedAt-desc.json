@@ -3,26 +3,7 @@
     {
       "id": 101,
       "name": "Workflow 1",
-      "description": "Workflow 1",
       "entityType": "LEAD",
-      "trigger": {
-        "name": "EVENT",
-        "triggerFrequency": "CREATED"
-      },
-      "condition": {
-        "conditionType": "FOR_ALL"
-      },
-      "actions": [
-        {
-          "id": null,
-          "type": "EDIT_PROPERTY",
-          "payload": {
-            "name": "lastName",
-            "value": "Stark",
-            "valueType": "PLAIN"
-          }
-        }
-      ],
       "createdBy": {
         "id": 101,
         "name": "Tony Start"
@@ -31,8 +12,8 @@
         "id": 102,
         "name": "Steve Roger"
       },
-      "createdAt": "2020-11-17T08:49:43.754+0000",
-      "updatedAt": "2020-11-17T08:49:43.754+0000",
+      "createdAt": "2021-01-06T14:15:18.087+0000",
+      "updatedAt": "2021-01-06T14:15:18.087+0000",
       "lastTriggeredAt": null,
       "triggerCount": 0,
       "active": true,
@@ -47,26 +28,7 @@
     {
       "id": 102,
       "name": "Workflow 2",
-      "description": "Workflow 2",
       "entityType": "LEAD",
-      "trigger": {
-        "name": "EVENT",
-        "triggerFrequency": "CREATED"
-      },
-      "condition": {
-        "conditionType": "FOR_ALL"
-      },
-      "actions": [
-        {
-          "id": null,
-          "type": "EDIT_PROPERTY",
-          "payload": {
-            "name": "firstName",
-            "value": "Tony",
-            "valueType": "PLAIN"
-          }
-        }
-      ],
       "createdBy": {
         "id": 101,
         "name": "Tony Start"
@@ -75,8 +37,8 @@
         "id": 102,
         "name": "Steve Roger"
       },
-      "createdAt": "2020-11-17T08:49:43.755+0000",
-      "updatedAt": "2020-11-17T08:49:43.755+0000",
+      "createdAt": "2021-01-06T14:15:18.087+0000",
+      "updatedAt": "2021-01-06T14:15:18.087+0000",
       "lastTriggeredAt": null,
       "triggerCount": 0,
       "active": true,
@@ -95,23 +57,23 @@
       "unsorted": false,
       "empty": false
     },
+    "offset": 0,
     "pageNumber": 0,
     "pageSize": 10,
-    "offset": 0,
-    "unpaged": false,
-    "paged": true
+    "paged": true,
+    "unpaged": false
   },
   "totalElements": 12,
   "totalPages": 2,
   "last": false,
-  "first": true,
+  "size": 10,
+  "number": 0,
   "sort": {
     "sorted": true,
     "unsorted": false,
     "empty": false
   },
-  "number": 0,
+  "first": true,
   "numberOfElements": 2,
-  "size": 10,
   "empty": false
 }

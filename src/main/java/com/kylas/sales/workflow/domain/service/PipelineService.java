@@ -15,7 +15,7 @@ public class PipelineService {
   private final String clientBasePath;
 
   @Autowired
-  public PipelineService(@Value("${client.sales.basePath}") String clientBasePath) {
+  public PipelineService(@Value("${client.search.basePath}") String clientBasePath) {
     this.clientBasePath = clientBasePath;
   }
 
@@ -26,9 +26,22 @@ public class PipelineService {
         .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + authenticationToken)
         .build()
         .get()
-        .uri(uriBuilder -> uriBuilder.path("/v1/pipelines/" + pipelineId).build())
+        .uri(uriBuilder -> uriBuilder.path("/v1/summaries/pipeline").queryParam("id",pipelineId).build())
         .accept(MediaType.APPLICATION_JSON)
         .retrieve()
         .bodyToMono(IdName.class);
+  }
+
+  public Mono<IdName> getPipelineStage(Long pipelineStageId, String authenticationToken) {
+    return WebClient.builder()
+            .baseUrl(clientBasePath)
+            .defaultHeader(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE)
+            .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + authenticationToken)
+            .build()
+            .get()
+            .uri(uriBuilder -> uriBuilder.path("/v1/summaries/pipeline-stage").queryParam("id",pipelineStageId).build())
+            .accept(MediaType.APPLICATION_JSON)
+            .retrieve()
+            .bodyToMono(IdName.class);
   }
 }

@@ -5,6 +5,7 @@ import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 import com.kylas.sales.workflow.api.request.FilterRequest;
 import com.kylas.sales.workflow.api.request.WorkflowRequest;
 import com.kylas.sales.workflow.api.response.WorkflowDetail;
+import com.kylas.sales.workflow.api.response.WorkflowEntry;
 import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -73,7 +74,7 @@ public class WorkflowController {
       value = "/search",
       consumes = APPLICATION_JSON_VALUE,
       produces = APPLICATION_JSON_VALUE)
-  public Mono<Page<WorkflowDetail>> search(
+  public Page<WorkflowEntry> search(
       @PageableDefault(page = 0, size = 10) Pageable pageable, @RequestBody(required = false) FilterRequest filterRequest) {
 
     Pageable lastTriggeredAt = pageable.getSort().stream()

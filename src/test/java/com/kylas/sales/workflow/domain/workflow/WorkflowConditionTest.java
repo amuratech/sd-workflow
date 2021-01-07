@@ -289,7 +289,7 @@ class WorkflowConditionTest {
     public void givenEquals_onSameIds_evaluatesTrue() {
       var condition = new WorkflowCondition();
       condition.setType(ConditionType.CONDITION_BASED);
-      Object pipeline = "{\"id\":242,\"name\":\"Routing pipeline\"}";
+      Object pipeline = new IdName(242L, "Routing pipeline");
       condition.setExpression(new ConditionExpression(EQUAL, "pipeline", pipeline, NEW_VALUE));
       var entity = stubLeadDetail();
       entity.setPipeline(new IdName(242L, "Routing pipeline"));
@@ -301,7 +301,7 @@ class WorkflowConditionTest {
     public void givenEquals_onDifferentIds_evaluatesFalse() {
       var condition = new WorkflowCondition();
       condition.setType(ConditionType.CONDITION_BASED);
-      Object pipeline = "{\"id\":242,\"name\":\"Routing pipeline\"}";
+      Object pipeline = new IdName(242L, "Routing pipeline");
       condition.setExpression(new ConditionExpression(EQUAL, "pipeline", pipeline, NEW_VALUE));
       var entity = stubLeadDetail();
       entity.setPipeline(new IdName(243L, "Routing pipeline"));
@@ -313,7 +313,7 @@ class WorkflowConditionTest {
     public void givenNotEquals_onSameIds_evaluatesFalse() {
       var condition = new WorkflowCondition();
       condition.setType(ConditionType.CONDITION_BASED);
-      Object pipeline = "{\"id\":242,\"name\":\"Routing pipeline\"}";
+      Object pipeline = new IdName(242L, "Routing pipeline");
       condition.setExpression(new ConditionExpression(NOT_EQUAL, "pipeline", pipeline, NEW_VALUE));
       var entity = stubLeadDetail();
       entity.setPipeline(new IdName(242L, "Routing pipeline"));
@@ -325,7 +325,7 @@ class WorkflowConditionTest {
     public void givenNotEquals_onDifferentIds_evaluatesTrue() {
       var condition = new WorkflowCondition();
       condition.setType(ConditionType.CONDITION_BASED);
-      Object pipeline = "{\"id\":242,\"name\":\"Routing pipeline\"}";
+      Object pipeline = new IdName(242L, "Routing pipeline");
       condition.setExpression(new ConditionExpression(NOT_EQUAL, "pipeline", pipeline, NEW_VALUE));
       var entity = stubLeadDetail();
       entity.setPipeline(new IdName(243L, "Routing pipeline"));

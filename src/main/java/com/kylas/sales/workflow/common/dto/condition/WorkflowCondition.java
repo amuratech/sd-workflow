@@ -35,6 +35,7 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.beanutils.NestedNullException;
 import org.apache.commons.lang3.Range;
+import reactor.core.publisher.Mono;
 
 @Getter
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -78,7 +79,7 @@ public class WorkflowCondition {
       this.operand2 = operand2;
       this.operator = Operator.getByName(operator);
       this.name = name;
-      this.value = ID_NAME_PROPERTIES.contains(name) ? ValueResolver.serialize(value) : value;
+      this.value = value;
       this.triggerOn = TriggerType.valueOf(triggerOn);
     }
 
@@ -215,6 +216,25 @@ public class WorkflowCondition {
         }
       }
       return actualValue;
+    }
+
+    public Mono<ConditionExpression> nameResolved(String authenticationToken) {
+      if (operator.equals(AND) || operator.equals(OR)) {
+        var resolvedOperand1 = this.operand1.nameResolved(authenticationToken);
+        var resolvedOperand2 = this.operand2.nameResolved(authenticationToken);
+        return Mono
+            .zip(resolvedOperand1, resolvedOperand2)
+            .map(objects -> new ConditionExpression(objects.getT1(), objects.getT2(), operator.getName(), name, value, triggerOn.name()));
+      }
+
+      if (ID_NAME_PROPERTIES.contains(name)) {
+        var idNameMono = name.equals("pipeline") ? ValueResolver.getPipeline(value, authenticationToken)
+            : name.equals("pipelineStage") ? ValueResolver.getPipelineStage(value, authenticationToken)
+                : ValueResolver.getProduct(value, authenticationToken);
+        return idNameMono
+            .map(idName -> new ConditionExpression(operand1, operand2, operator.getName(), name, idName, triggerOn.name()));
+      }
+      return Mono.just(this);
     }
   }
 

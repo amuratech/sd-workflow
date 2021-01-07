@@ -2,6 +2,7 @@ package com.kylas.sales.workflow.stubs;
 
 import com.kylas.sales.workflow.api.request.WorkflowRequest;
 import com.kylas.sales.workflow.api.response.WorkflowDetail;
+import com.kylas.sales.workflow.api.response.WorkflowEntry;
 import com.kylas.sales.workflow.common.dto.ActionDetail.EditPropertyAction;
 import com.kylas.sales.workflow.common.dto.ActionDetail.EditPropertyAction.ValueType;
 import com.kylas.sales.workflow.common.dto.ActionResponse;
@@ -128,6 +129,17 @@ public class WorkflowStub {
     allowedActions.setRead(canRead);
     allowedActions.setWrite(canCreate);
     return new WorkflowDetail(id, name, description, entityType, workflowTrigger, condition, actions, createdBy, updatedBy, createdAndUpdatedAt,
+        createdAndUpdatedAt, null, 0L, allowedActions, active);
+  }
+
+  public static WorkflowEntry workflowEntry(
+      long id, String name, EntityType entityType, boolean active, boolean canCreate,
+      boolean canRead, User createdBy, User updatedBy, Date createdAndUpdatedAt) {
+    Action allowedActions = new Action();
+    allowedActions.setRead(canRead);
+    allowedActions.setWrite(canCreate);
+    return new WorkflowEntry(
+        id, name, entityType, createdBy, updatedBy, createdAndUpdatedAt,
         createdAndUpdatedAt, null, 0L, allowedActions, active);
   }
 

@@ -13,6 +13,7 @@ import com.kylas.sales.workflow.api.request.FilterRequest;
 import com.kylas.sales.workflow.api.request.FilterRequest.Filter;
 import com.kylas.sales.workflow.api.request.WorkflowRequest;
 import com.kylas.sales.workflow.api.response.WorkflowDetail;
+import com.kylas.sales.workflow.api.response.WorkflowEntry;
 import com.kylas.sales.workflow.api.response.WorkflowSummary;
 import com.kylas.sales.workflow.common.dto.ActionDetail;
 import com.kylas.sales.workflow.common.dto.ActionResponse;
@@ -187,7 +188,6 @@ class WorkflowServiceTest {
     workflow.setWorkflowActions(Collections.emptySet());
     workflow.setCreatedBy(new User(4000L, 1000L, Collections.emptySet()));
     workflow.setUpdatedBy(new User(4000L, 1000L, Collections.emptySet()));
-    workflow.setWorkflowCondition(new WorkflowCondition());
     var workflowExecutedEvent = new WorkflowExecutedEvent();
     workflowExecutedEvent.setLastTriggeredAt(new Date());
     workflowExecutedEvent.setTriggerCount(30L);
@@ -314,41 +314,21 @@ class WorkflowServiceTest {
         .willReturn(workflowPageable);
     PageRequest pageable = PageRequest.of(0, 10, sortByLastTriggeredAt);
     // when
-    Mono<Page<WorkflowDetail>> workflowPages =
-        workflowService.search(pageable, Optional.empty());
-    // then
-    StepVerifier.create(workflowPages)
-        .assertNext(
-            workflowDetails -> {
-              assertThat(workflowDetails.getTotalElements()).isEqualTo(12);
-              assertThat(workflowDetails.getNumber()).isEqualTo(0);
-              assertThat(workflowDetails.getTotalPages()).isEqualTo(2);
-              assertThat(workflowDetails.isFirst()).isTrue();
-              assertThat(workflowDetails.isLast()).isFalse();
+    Page<WorkflowEntry> workflowEntries = workflowService.search(pageable, Optional.empty());
 
-              assertThat(workflowDetails.getContent().size()).isEqualTo(1);
+    assertThat(workflowEntries.getTotalElements()).isEqualTo(12);
+    assertThat(workflowEntries.getNumber()).isEqualTo(0);
+    assertThat(workflowEntries.getTotalPages()).isEqualTo(2);
+    assertThat(workflowEntries.isFirst()).isTrue();
+    assertThat(workflowEntries.isLast()).isFalse();
 
-              WorkflowDetail workflowDetail = workflowDetails.getContent().get(0);
-              assertThat(workflowDetail.getId()).isEqualTo(100L);
-              assertThat(workflowDetail.getName()).isEqualTo("Workflow 1");
-              assertThat(workflowDetail.getDescription()).isEqualTo("Workflow 1");
-              assertThat(workflowDetail.getEntityType()).isEqualTo(LEAD);
+    assertThat(workflowEntries.getContent().size()).isEqualTo(1);
 
-              assertThat(workflowDetail.getTrigger().getName()).isEqualTo(TriggerType.EVENT);
-              assertThat(workflowDetail.getTrigger().getTriggerFrequency())
-                  .isEqualTo(CREATED);
-
-              assertThat(workflowDetail.getActions().size()).isEqualTo(1);
-              ActionResponse response = workflowDetail.getActions().iterator().next();
-              assertThat(response.getType()).isEqualTo(ActionType.EDIT_PROPERTY);
-              var payload =
-              (ActionDetail.EditPropertyAction) response.getPayload();
-          assertThat(payload.getName()).isEqualTo("firstName");
-              assertThat(payload.getValue()).isEqualTo("tony");
-
-              assertThat(workflowDetail.getAllowedActions().canRead()).isTrue();
-            })
-        .verifyComplete();
+    WorkflowEntry workflowDetail = workflowEntries.getContent().get(0);
+    assertThat(workflowDetail.getId()).isEqualTo(100L);
+    assertThat(workflowDetail.getName()).isEqualTo("Workflow 1");
+    assertThat(workflowDetail.getEntityType()).isEqualTo(LEAD);
+    assertThat(workflowDetail.getAllowedActions().canRead()).isTrue();
   }
 
   @Test
@@ -416,43 +396,25 @@ class WorkflowServiceTest {
     filters.add(new Filter("equals", "status", "string", "Active"));
     FilterRequest filterRequest = new FilterRequest(filters);
 
-    given(workflowFacade.search(argThat(new PageableMatcher(0, 10, sortByLastTriggeredAt)), argThat(workflowFilters -> workflowFilters.get().size() == 1)))
+    given(workflowFacade
+        .search(argThat(new PageableMatcher(0, 10, sortByLastTriggeredAt)), argThat(workflowFilters -> workflowFilters.get().size() == 1)))
         .willReturn(workflowPageable);
     PageRequest pageable = PageRequest.of(0, 10, sortByLastTriggeredAt);
     // when
-    Mono<Page<WorkflowDetail>> workflowPages =
-        workflowService.search(pageable, Optional.of(filterRequest));
+    Page<WorkflowEntry> workflowEntries = workflowService.search(pageable, Optional.of(filterRequest));
+
     // then
-    StepVerifier.create(workflowPages)
-        .assertNext(
-            workflowDetails -> {
-              assertThat(workflowDetails.getTotalElements()).isEqualTo(12);
-              assertThat(workflowDetails.getNumber()).isEqualTo(0);
-              assertThat(workflowDetails.getTotalPages()).isEqualTo(2);
-              assertThat(workflowDetails.isFirst()).isTrue();
-              assertThat(workflowDetails.isLast()).isFalse();
+    assertThat(workflowEntries.getTotalElements()).isEqualTo(12);
+    assertThat(workflowEntries.getNumber()).isEqualTo(0);
+    assertThat(workflowEntries.getTotalPages()).isEqualTo(2);
+    assertThat(workflowEntries.isFirst()).isTrue();
+    assertThat(workflowEntries.isLast()).isFalse();
 
-              assertThat(workflowDetails.getContent().size()).isEqualTo(1);
+    assertThat(workflowEntries.getContent().size()).isEqualTo(1);
 
-              WorkflowDetail workflowDetail = workflowDetails.getContent().get(0);
-              assertThat(workflowDetail.getId()).isEqualTo(100L);
-              assertThat(workflowDetail.getName()).isEqualTo("Workflow 1");
-              assertThat(workflowDetail.getDescription()).isEqualTo("Workflow 1");
-              assertThat(workflowDetail.getEntityType()).isEqualTo(LEAD);
-
-              assertThat(workflowDetail.getTrigger().getName()).isEqualTo(TriggerType.EVENT);
-              assertThat(workflowDetail.getTrigger().getTriggerFrequency())
-                  .isEqualTo(CREATED);
-
-              assertThat(workflowDetail.getActions().size()).isEqualTo(1);
-              ActionResponse actionResponseResponse = workflowDetail.getActions().iterator().next();
-              assertThat(actionResponseResponse.getType()).isEqualTo(ActionType.EDIT_PROPERTY);
-              var actionDetail = (ActionDetail.EditPropertyAction) actionResponseResponse.getPayload();
-              assertThat(actionDetail.getName()).isEqualTo("firstName");
-              assertThat(actionDetail.getValue()).isEqualTo("tony");
-
-              assertThat(workflowDetail.getAllowedActions().canRead()).isTrue();
-            })
-        .verifyComplete();
+    WorkflowEntry workflowDetail = workflowEntries.getContent().get(0);
+    assertThat(workflowDetail.getId()).isEqualTo(100L);
+    assertThat(workflowDetail.getName()).isEqualTo("Workflow 1");
+    assertThat(workflowDetail.getEntityType()).isEqualTo(LEAD);
   }
 }

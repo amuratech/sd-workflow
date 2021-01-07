@@ -3,34 +3,7 @@
     {
       "id": 301,
       "name": "Workflow 1",
-      "description": "Workflow 1",
       "entityType": "LEAD",
-      "trigger": {
-        "name": "EVENT",
-        "triggerFrequency": "CREATED"
-      },
-      "condition": {
-        "conditionType": "FOR_ALL"
-      },
-      "actions": [
-        {
-          "id": "a0eebc55-9c0b-4ef8-bb6d-6bb9bd380a11",
-          "type": "EDIT_PROPERTY",
-          "payload": {
-            "name": "firstName",
-            "value": "Tony 301",
-            "valueType": "PLAIN"
-          }
-        },
-        {
-          "id": "08518b20-23f9-11eb-adc1-0242ac120007",
-          "type": "REASSIGN",
-          "payload": {
-            "id": 20003,
-            "name": "Tony Stark"
-          }
-        }
-      ],
       "createdBy": {
         "id": 12,
         "name": "Steve"
@@ -39,9 +12,9 @@
         "id": 12,
         "name": "Steve"
       },
-      "createdAt": "2020-10-20T17:47:59.442+0000",
-      "updatedAt": "2020-10-20T17:47:59.442+0000",
-      "lastTriggeredAt": "2020-10-21T17:47:59.442+0000",
+      "createdAt": "2020-10-20T23:17:59.442+0000",
+      "updatedAt": "2020-10-20T23:17:59.442+0000",
+      "lastTriggeredAt": "2020-10-21T23:17:59.442+0000",
       "triggerCount": 151,
       "active": true,
       "recordActions": {
@@ -55,26 +28,7 @@
     {
       "id": 302,
       "name": "Workflow 2",
-      "description": "Workflow 2",
       "entityType": "LEAD",
-      "trigger": {
-        "name": "EVENT",
-        "triggerFrequency": "CREATED"
-      },
-      "condition": {
-        "conditionType": "FOR_ALL"
-      },
-      "actions": [
-        {
-          "id": "b0eebc55-9c0b-4ef8-bb6d-6bb9bd380a11",
-          "type": "EDIT_PROPERTY",
-          "payload": {
-            "name": "firstName",
-            "value": "Tony 302",
-            "valueType": "PLAIN"
-          }
-        }
-      ],
       "createdBy": {
         "id": 12,
         "name": "Steve"
@@ -83,9 +37,9 @@
         "id": 12,
         "name": "Steve"
       },
-      "createdAt": "2020-10-20T17:47:59.442+0000",
-      "updatedAt": "2020-10-20T17:47:59.442+0000",
-      "lastTriggeredAt": "2020-10-20T17:47:59.442+0000",
+      "createdAt": "2020-10-20T23:17:59.442+0000",
+      "updatedAt": "2020-10-20T23:17:59.442+0000",
+      "lastTriggeredAt": "2020-10-20T23:17:59.442+0000",
       "triggerCount": 1,
       "active": true,
       "recordActions": {
@@ -103,23 +57,23 @@
       "unsorted": false,
       "empty": false
     },
+    "offset": 0,
     "pageNumber": 0,
     "pageSize": 10,
-    "offset": 0,
     "paged": true,
     "unpaged": false
   },
-  "totalElements": 2,
   "totalPages": 1,
   "last": true,
-  "first": true,
+  "totalElements": 2,
+  "size": 10,
+  "number": 0,
   "sort": {
     "sorted": true,
     "unsorted": false,
     "empty": false
   },
-  "number": 0,
+  "first": true,
   "numberOfElements": 2,
-  "size": 10,
   "empty": false
 }

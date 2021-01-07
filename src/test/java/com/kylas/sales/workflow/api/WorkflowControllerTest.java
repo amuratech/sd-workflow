@@ -13,6 +13,7 @@ import com.kylas.sales.workflow.api.request.FilterRequest;
 import com.kylas.sales.workflow.api.request.FilterRequest.Filter;
 import com.kylas.sales.workflow.api.request.WorkflowRequest;
 import com.kylas.sales.workflow.api.response.WorkflowDetail;
+import com.kylas.sales.workflow.api.response.WorkflowEntry;
 import com.kylas.sales.workflow.api.response.WorkflowSummary;
 import com.kylas.sales.workflow.common.dto.ActionDetail.EditPropertyAction;
 import com.kylas.sales.workflow.common.dto.ActionDetail.EditPropertyAction.ValueType;
@@ -39,7 +40,9 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Optional;
 import org.apache.commons.io.FileUtils;
 import org.json.JSONException;
 import org.junit.jupiter.api.Test;
@@ -622,40 +625,24 @@ class WorkflowControllerTest {
     User createdBy = new User(101L, "Tony Start");
     var updatedBy = new User(102L, "Steve Roger");
 
-    WorkflowDetail workflowDetail1 =
-        WorkflowStub.workflowDetail(
+    WorkflowEntry workflowDetail1 =
+        WorkflowStub.workflowEntry(
             101,
-            "Workflow 1",
             "Workflow 1",
             EntityType.LEAD,
             true,
-            TriggerType.EVENT,
-            TriggerFrequency.CREATED,
-            ConditionType.FOR_ALL,
-            ActionType.EDIT_PROPERTY,
-            "lastName",
-            "Stark",
-            PLAIN,
             true,
             true,
             createdBy,
             updatedBy,
             new Date());
 
-    WorkflowDetail workflowDetail2 =
-        WorkflowStub.workflowDetail(
+    WorkflowEntry workflowDetail2 =
+        WorkflowStub.workflowEntry(
             102,
-            "Workflow 2",
             "Workflow 2",
             EntityType.LEAD,
             true,
-            TriggerType.EVENT,
-            TriggerFrequency.CREATED,
-            ConditionType.FOR_ALL,
-            ActionType.EDIT_PROPERTY,
-            "firstName",
-            "Tony",
-            PLAIN,
             true,
             true,
             createdBy,
@@ -666,15 +653,14 @@ class WorkflowControllerTest {
     Sort expectedSortable = Sort.by(Order.desc("workflowExecutedEvent.lastTriggeredAt"));
 
     given(
-            workflowService.search(
-                argThat(new PageableMatcher(0, 10, expectedSortable)),
-                argThat(filterRequest -> filterRequest.isEmpty())))
+        workflowService.search(
+            argThat(new PageableMatcher(0, 10, expectedSortable)),
+            argThat(Optional::isEmpty)))
         .willReturn(
-            Mono.just(
-                new PageImpl<>(
-                    asList(workflowDetail1, workflowDetail2),
-                    PageRequest.of(0, 10, sortByLastTriggeredAt),
-                    12)));
+            new PageImpl<>(
+                asList(workflowDetail1, workflowDetail2),
+                PageRequest.of(0, 10, sortByLastTriggeredAt),
+                12));
     // when
     var workflowResponse =
         buildWebClient()
@@ -717,40 +703,24 @@ class WorkflowControllerTest {
     User createdBy = new User(101L, "Tony Start");
     var updatedBy = new User(102L, "Steve Roger");
 
-    WorkflowDetail workflowDetail1 =
-        WorkflowStub.workflowDetail(
+    WorkflowEntry workflowDetail1 =
+        WorkflowStub.workflowEntry(
             101,
-            "Workflow 1",
             "Workflow 1",
             EntityType.LEAD,
             true,
-            TriggerType.EVENT,
-            TriggerFrequency.CREATED,
-            ConditionType.FOR_ALL,
-            ActionType.EDIT_PROPERTY,
-            "lastName",
-            "Stark",
-            PLAIN,
             true,
             true,
             createdBy,
             updatedBy,
             new Date());
 
-    WorkflowDetail workflowDetail2 =
-        WorkflowStub.workflowDetail(
+    WorkflowEntry workflowDetail2 =
+        WorkflowStub.workflowEntry(
             102,
-            "Workflow 2",
             "Workflow 2",
             EntityType.LEAD,
             true,
-            TriggerType.EVENT,
-            TriggerFrequency.CREATED,
-            ConditionType.FOR_ALL,
-            ActionType.EDIT_PROPERTY,
-            "firstName",
-            "Tony",
-            PLAIN,
             true,
             true,
             createdBy,
@@ -760,15 +730,14 @@ class WorkflowControllerTest {
     Sort sortByLastTriggeredAt = Sort.by(Order.desc("lastUpdatedAt"));
 
     given(
-            workflowService.search(
-                argThat(new PageableMatcher(0, 10, sortByLastTriggeredAt)),
-                argThat(filterRequest -> filterRequest.get().getFilters().isEmpty())))
+        workflowService.search(
+            argThat(new PageableMatcher(0, 10, sortByLastTriggeredAt)),
+            argThat(filterRequest -> filterRequest.get().getFilters().isEmpty())))
         .willReturn(
-            Mono.just(
-                new PageImpl<>(
-                    asList(workflowDetail1, workflowDetail2),
-                    PageRequest.of(0, 10, sortByLastTriggeredAt),
-                    12)));
+            new PageImpl<>(
+                asList(workflowDetail1, workflowDetail2),
+                PageRequest.of(0, 10, sortByLastTriggeredAt),
+                12));
     // when
     var workflowResponse =
         buildWebClient()
@@ -812,40 +781,24 @@ class WorkflowControllerTest {
     User createdBy = new User(101L, "Tony Start");
     var updatedBy = new User(102L, "Steve Roger");
 
-    WorkflowDetail workflowDetail1 =
-        WorkflowStub.workflowDetail(
+    WorkflowEntry workflowDetail1 =
+        WorkflowStub.workflowEntry(
             101,
-            "Workflow 1",
             "Workflow 1",
             EntityType.LEAD,
             true,
-            TriggerType.EVENT,
-            TriggerFrequency.CREATED,
-            ConditionType.FOR_ALL,
-            ActionType.EDIT_PROPERTY,
-            "lastName",
-            "Stark",
-            PLAIN,
             true,
             true,
             createdBy,
             updatedBy,
             new Date());
 
-    WorkflowDetail workflowDetail2 =
-        WorkflowStub.workflowDetail(
+    WorkflowEntry workflowDetail2 =
+        WorkflowStub.workflowEntry(
             102,
-            "Workflow 2",
             "Workflow 2",
             EntityType.LEAD,
             true,
-            TriggerType.EVENT,
-            TriggerFrequency.CREATED,
-            ConditionType.FOR_ALL,
-            ActionType.EDIT_PROPERTY,
-            "firstName",
-            "Tony",
-            PLAIN,
             true,
             true,
             createdBy,
@@ -857,15 +810,14 @@ class WorkflowControllerTest {
     filters.add(new Filter("equals", "entityType", "string", "LEAD"));
     FilterRequest expectedFilter = new FilterRequest(filters);
     given(
-            workflowService.search(
-                argThat(new PageableMatcher(0, 10, sortByLastTriggeredAt)),
-                argThat(new FilterRequestMatcher(expectedFilter))))
+        workflowService.search(
+            argThat(new PageableMatcher(0, 10, sortByLastTriggeredAt)),
+            argThat(new FilterRequestMatcher(expectedFilter))))
         .willReturn(
-            Mono.just(
-                new PageImpl<>(
-                    asList(workflowDetail1, workflowDetail2),
-                    PageRequest.of(0, 10, sortByLastTriggeredAt),
-                    12)));
+            new PageImpl<>(
+                asList(workflowDetail1, workflowDetail2),
+                PageRequest.of(0, 10, sortByLastTriggeredAt),
+                12));
     // when
     var workflowResponse =
         buildWebClient()
@@ -1021,7 +973,7 @@ class WorkflowControllerTest {
             && workflowRequest.getCondition().getConditionType().equals(ConditionType.CONDITION_BASED)
             && workflowRequest.getCondition().getExpression().getName().equals("pipeline")
             && workflowRequest.getCondition().getExpression().getOperator().equals(Operator.EQUAL)
-            && workflowRequest.getCondition().getExpression().getValue().equals("{\"id\":242,\"name\":\"Lead Routing Pipeline\"}"))
+            && ((LinkedHashMap) workflowRequest.getCondition().getExpression().getValue()).get("id").equals(242))
     )).willReturn(Mono.just(new WorkflowSummary(1L)));
     //when
     var workflowResponse = buildWebClient()

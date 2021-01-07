@@ -242,7 +242,7 @@ public class WorkflowIntegrationTests {
                         getResourceAsString("/contracts/user/responses/user-details-by-id.json"))));
 
     stubFor(
-        get("/sales/v1/pipelines/1")
+            get("/search/v1/summaries/pipeline?id=1")
             .withHeader(AUTHORIZATION, matching("Bearer " + authenticationToken))
             .willReturn(
                 aResponse()
@@ -276,6 +276,56 @@ public class WorkflowIntegrationTests {
             })
         .verifyComplete();
   }
+
+    @Test
+    @Sql("/test-scripts/integration/lead-workflow-with-product-edit-property.sql")
+    public void givenWorkflowId_havingProductEditProperty_shouldGetIt() throws IOException {
+        // given
+        stubFor(
+                get("/iam/v1/users/12")
+                        .withHeader(AUTHORIZATION, matching("Bearer " + authenticationToken))
+                        .willReturn(
+                                aResponse()
+                                        .withHeader("Content-Type", "application/json")
+                                        .withStatus(200)
+                                        .withBody(
+                                                getResourceAsString("/contracts/user/responses/user-details-by-id.json"))));
+
+        stubFor(
+                get("/product/v1/products/100")
+                        .withHeader(AUTHORIZATION, matching("Bearer " + authenticationToken))
+                        .willReturn(
+                                aResponse()
+                                        .withHeader("Content-Type", "application/json")
+                                        .withStatus(200)
+                                        .withBody(
+                                                getResourceAsString("/contracts/pipeline/responses/product-details.json"))));
+        // when
+        var workflowResponse =
+                buildWebClient().get().uri("/v1/workflows/302").retrieve().bodyToMono(String.class);
+        // then
+        var expectedResponse =
+                getResourceAsString("/contracts/workflow/api/integration/workflowId-301-with-product-response.json");
+        StepVerifier.create(workflowResponse)
+                .assertNext(
+                        json -> {
+                            try {
+                                JSONAssert.assertEquals(
+                                        expectedResponse,
+                                        json,
+                                        new CustomComparator(
+                                                JSONCompareMode.STRICT,
+                                                new Customization("lastTriggeredAt", (o1, o2) -> true),
+                                                new Customization("createdAt", (o1, o2) -> true),
+                                                new Customization("updatedAt", (o1, o2) -> true),
+                                                new Customization("actions[0].id", (o1, o2) -> true),
+                                                new Customization("actions[0].payload", (o1, o2) -> true)));
+                            } catch (JSONException e) {
+                                fail(e.getMessage());
+                            }
+                        })
+                .verifyComplete();
+    }
 
   @Test
   @Sql("/test-scripts/integration/custom-param-webhook-workflow.sql")
