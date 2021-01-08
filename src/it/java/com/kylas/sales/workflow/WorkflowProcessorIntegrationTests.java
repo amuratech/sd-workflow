@@ -215,6 +215,30 @@ public class WorkflowProcessorIntegrationTests {
       Workflow workflow302 = workflowFacade.get(302);
       Assertions.assertThat(workflow302.getWorkflowExecutedEvent().getTriggerCount()).isEqualTo(1);
     }
+
+    @Test
+    @Sql("/test-scripts/integration/insert-workflow-with-multiple-condition.sql")
+    public void givenLeadUpdatedEvent_withMultipleConditions_shouldTriggerWorkflowsConditionally() throws IOException, InterruptedException {
+      //given
+      User aUser = UserStub.aUser(12L, 99L, true, true, true, true, true)
+              .withName("user 1");
+      given(authService.getLoggedInUser()).willReturn(aUser);
+
+      String resourceAsString = getResourceAsString("/contracts/mq/events/lead-created-triggering-conditional-workflows.json");
+      LeadEvent leadEvent = objectMapper.readValue(resourceAsString, LeadEvent.class);
+      initializeRabbitMqListener(LEAD_UPDATE_COMMAND_QUEUE, SALES_LEAD_UPDATE_QUEUE);
+      //when
+      rabbitTemplate.convertAndSend(SALES_EXCHANGE, LeadEvent.getLeadUpdatedEventName(),
+              leadEvent);
+      //then
+      mockMqListener.latch.await(3, TimeUnit.SECONDS);
+
+      Workflow workflow301 = workflowFacade.get(301);
+      Assertions.assertThat(workflow301.getWorkflowExecutedEvent().getTriggerCount()).isEqualTo(0);
+
+      Workflow workflow302 = workflowFacade.get(302);
+      Assertions.assertThat(workflow302.getWorkflowExecutedEvent().getTriggerCount()).isEqualTo(1);
+    }
   }
 
   @Nested

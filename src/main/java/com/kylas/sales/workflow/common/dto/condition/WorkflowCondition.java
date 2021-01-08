@@ -80,7 +80,7 @@ public class WorkflowCondition {
       this.operator = Operator.getByName(operator);
       this.name = name;
       this.value = value;
-      this.triggerOn = TriggerType.valueOf(triggerOn);
+      this.triggerOn = (this.operator.equals(AND) || this.operator.equals(OR))? null: TriggerType.valueOf(triggerOn);
     }
 
     public ConditionExpression(ConditionExpression operand1, ConditionExpression operand2, Operator operator, TriggerType triggerType) {
@@ -153,19 +153,19 @@ public class WorkflowCondition {
         case EQUAL:
           return value instanceof Number
               ? Double.parseDouble(actualValue) == Double.parseDouble(valueOf(value))
-              : actualValue.equalsIgnoreCase(valueOf(value));
+              : valueOf(value).equalsIgnoreCase(actualValue);
         case NOT_EQUAL:
           return value instanceof Number
               ? Double.parseDouble(actualValue) != Double.parseDouble(valueOf(value))
-              : !actualValue.equalsIgnoreCase(valueOf(value));
+              : !valueOf(value).equalsIgnoreCase(actualValue);
         case IS_NOT_NULL:
           return !isNull(actualValue);
         case IS_NULL:
           return isNull(actualValue);
         case CONTAINS:
-          return actualValue.contains(valueOf(value));
+          return !isNull(actualValue) && actualValue.contains(valueOf(value));
         case NOT_CONTAINS:
-          return !actualValue.contains(valueOf(value));
+          return isNull(actualValue) && !actualValue.contains(valueOf(value));
         case BETWEEN:
           var betweenValues = ValueResolver.getListFrom(valueOf(value));
           return Range
