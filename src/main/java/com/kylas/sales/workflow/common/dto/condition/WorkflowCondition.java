@@ -193,12 +193,15 @@ public class WorkflowCondition {
     }
 
     private boolean idNameSatisfiedBy(Object actualValue) {
+      if (isNull(value)) {
+        return false;
+      }
       IdName conditionValue = ValueResolver.getIdNameFrom(value);
       switch (operator) {
         case EQUAL:
-          return Long.parseLong(valueOf(actualValue)) == conditionValue.getId();
+          return !isNull(actualValue) && Long.parseLong(valueOf(actualValue)) == conditionValue.getId();
         case NOT_EQUAL:
-          return Long.parseLong(valueOf(actualValue)) != conditionValue.getId();
+          return !isNull(actualValue) && Long.parseLong(valueOf(actualValue)) != conditionValue.getId();
         case IS_NOT_NULL:
           return !isNull(actualValue);
         case IS_NULL:
