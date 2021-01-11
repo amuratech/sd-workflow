@@ -352,7 +352,7 @@ class WorkflowConditionTest {
 
       assertThat(condition.isSatisfiedBy(entity)).isTrue();
     }
-
+    
     @Test
     public void givenIsNullOperator_withNullValue_evaluatesTrue() {
       var condition = new WorkflowCondition();
