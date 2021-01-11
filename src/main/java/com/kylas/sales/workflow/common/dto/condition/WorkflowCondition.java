@@ -27,6 +27,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.kylas.sales.workflow.domain.exception.InvalidConditionException;
+import com.kylas.sales.workflow.domain.processor.lead.IdName;
 import com.kylas.sales.workflow.domain.workflow.ConditionType;
 import java.io.Serializable;
 import java.lang.reflect.InvocationTargetException;
@@ -136,8 +137,9 @@ public class WorkflowCondition {
           throw new InvalidConditionException();
         }
       }
-      if (ID_NAME_PROPERTIES.contains(name)) {
-        getIdNameFrom(value);
+      if (ID_NAME_PROPERTIES.contains(name) && !isIdNamePresent()) {
+        log.info("IdName for {} can not be resolved", name);
+        throw new InvalidConditionException();
       }
     }
 
@@ -198,9 +200,9 @@ public class WorkflowCondition {
     private boolean idNameSatisfiedBy(Object actualValue) {
       switch (operator) {
         case EQUAL:
-          return !isNull(actualValue) && !isNull(value) && Long.parseLong(valueOf(actualValue)) == getIdNameFrom(value).getId();
+          return !isNull(actualValue) && (Long.parseLong(valueOf(actualValue)) == getIdNameFrom(value).getId());
         case NOT_EQUAL:
-          return !isNull(actualValue) && !isNull(value) && Long.parseLong(valueOf(actualValue)) != getIdNameFrom(value).getId();
+          return isNull(actualValue) || (Long.parseLong(valueOf(actualValue)) != getIdNameFrom(value).getId());
         case IS_NOT_NULL:
           return !isNull(actualValue);
         case IS_NULL:
@@ -237,6 +239,11 @@ public class WorkflowCondition {
             .map(idName -> new ConditionExpression(operand1, operand2, operator.getName(), name, idName, triggerOn.name()));
       }
       return Mono.just(this);
+    }
+
+    private boolean isIdNamePresent() {
+      IdName idName = getIdNameFrom(value);
+      return !isNull(idName) && (!isNull(idName.getId()) && !isNull(idName.getName()));
     }
   }
 

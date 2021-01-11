@@ -330,17 +330,6 @@ class WorkflowConditionTest {
     }
 
     @Test
-    public void givenEquals_onNullValue_evaluatesFalse() {
-      var condition = new WorkflowCondition();
-      condition.setType(ConditionType.CONDITION_BASED);
-      condition.setExpression(new ConditionExpression(EQUAL, "pipeline", null, NEW_VALUE));
-      var entity = stubLeadDetail();
-      entity.setPipeline(new IdName(243L, "Routing pipeline"));
-
-      assertThat(condition.isSatisfiedBy(entity)).isFalse();
-    }
-
-    @Test
     public void givenNotEquals_onSameIds_evaluatesFalse() {
       var condition = new WorkflowCondition();
       condition.setType(ConditionType.CONDITION_BASED);
@@ -363,18 +352,7 @@ class WorkflowConditionTest {
 
       assertThat(condition.isSatisfiedBy(entity)).isTrue();
     }
-
-    @Test
-    public void givenNotEquals_onNullValue_evaluatesFalse() {
-      var condition = new WorkflowCondition();
-      condition.setType(ConditionType.CONDITION_BASED);
-      condition.setExpression(new ConditionExpression(NOT_EQUAL, "pipeline", null, NEW_VALUE));
-      var entity = stubLeadDetail();
-      entity.setPipeline(new IdName(243L, "Routing pipeline"));
-
-      assertThat(condition.isSatisfiedBy(entity)).isFalse();
-    }
-
+    
     @Test
     public void givenIsNullOperator_withNullValue_evaluatesTrue() {
       var condition = new WorkflowCondition();

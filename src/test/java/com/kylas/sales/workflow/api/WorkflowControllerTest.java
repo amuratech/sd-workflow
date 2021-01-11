@@ -3,6 +3,7 @@ package com.kylas.sales.workflow.api;
 import static com.kylas.sales.workflow.common.dto.ActionDetail.EditPropertyAction.ValueType.ARRAY;
 import static com.kylas.sales.workflow.common.dto.ActionDetail.EditPropertyAction.ValueType.PLAIN;
 import static java.util.Arrays.asList;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
@@ -26,6 +27,7 @@ import com.kylas.sales.workflow.common.dto.condition.WorkflowCondition;
 import com.kylas.sales.workflow.config.TestDatabaseInitializer;
 import com.kylas.sales.workflow.domain.exception.InsufficientPrivilegeException;
 import com.kylas.sales.workflow.domain.exception.InvalidActionException;
+import com.kylas.sales.workflow.domain.exception.InvalidConditionException;
 import com.kylas.sales.workflow.domain.exception.InvalidFilterException;
 import com.kylas.sales.workflow.domain.exception.WorkflowNotFoundException;
 import com.kylas.sales.workflow.domain.workflow.ConditionType;
@@ -987,6 +989,31 @@ class WorkflowControllerTest {
     var expectedResponse =
         getResourceAsString("classpath:contracts/workflow/api/create-workflow-response.json");
     JSONAssert.assertEquals(expectedResponse, workflowResponse, false);
+  }
+
+  @Test
+  public void givenWorkflowRequest_withIdNameConditionWithNullValued_shouldThrow() throws JSONException, IOException {
+    //given
+    var requestPayload =
+        getResourceAsString("classpath:contracts/workflow/api/workflow-request-with-idName-condition-nullValued.json");
+    given(workflowService.create(argThat(workflowRequest ->
+        workflowRequest.getName().equalsIgnoreCase("Workflow 1")
+            && workflowRequest.getDescription().equalsIgnoreCase("Workflow Description")
+            && workflowRequest.getCondition().getConditionType().equals(ConditionType.CONDITION_BASED)
+            && workflowRequest.getCondition().getExpression().getName().equals("pipeline")
+            && workflowRequest.getCondition().getExpression().getOperator().equals(Operator.EQUAL)
+            && ((LinkedHashMap) workflowRequest.getCondition().getExpression().getValue()).get("id") == null
+            || ((LinkedHashMap) workflowRequest.getCondition().getExpression().getValue()).get("name") == null)
+    )).willThrow(InvalidConditionException.class);
+
+    //when
+    assertThatThrownBy(() -> buildWebClient()
+        .post()
+        .uri("/v1/workflows")
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(requestPayload)
+        .retrieve()
+        .bodyToMono(String.class).block());
   }
 
   private String getResourceAsString(String resourcePath) throws IOException {
