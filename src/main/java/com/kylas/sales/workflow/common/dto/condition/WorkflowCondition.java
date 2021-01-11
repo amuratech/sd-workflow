@@ -7,6 +7,11 @@ import static com.kylas.sales.workflow.common.dto.condition.Operator.IS_NOT_NULL
 import static com.kylas.sales.workflow.common.dto.condition.Operator.IS_NULL;
 import static com.kylas.sales.workflow.common.dto.condition.Operator.NOT_BETWEEN;
 import static com.kylas.sales.workflow.common.dto.condition.Operator.OR;
+import static com.kylas.sales.workflow.domain.service.ValueResolver.getIdNameFrom;
+import static com.kylas.sales.workflow.domain.service.ValueResolver.getListFrom;
+import static com.kylas.sales.workflow.domain.service.ValueResolver.getPipeline;
+import static com.kylas.sales.workflow.domain.service.ValueResolver.getPipelineStage;
+import static com.kylas.sales.workflow.domain.service.ValueResolver.getProduct;
 import static java.lang.Double.parseDouble;
 import static java.lang.String.valueOf;
 import static java.util.Objects.isNull;
@@ -22,8 +27,6 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.kylas.sales.workflow.domain.exception.InvalidConditionException;
-import com.kylas.sales.workflow.domain.processor.lead.IdName;
-import com.kylas.sales.workflow.domain.service.ValueResolver;
 import com.kylas.sales.workflow.domain.workflow.ConditionType;
 import java.io.Serializable;
 import java.lang.reflect.InvocationTargetException;
@@ -127,14 +130,14 @@ public class WorkflowCondition {
         throw new InvalidConditionException();
       }
       if (operator.equals(BETWEEN) || operator.equals(NOT_BETWEEN)) {
-        List range = ValueResolver.getListFrom(valueOf(value));
+        List range = getListFrom(valueOf(value));
         if (range.size() != 2) {
           log.info("Condition operator {} expects two values.", operator);
           throw new InvalidConditionException();
         }
       }
       if (ID_NAME_PROPERTIES.contains(name)) {
-        ValueResolver.getIdNameFrom(value);
+        getIdNameFrom(value);
       }
     }
 
@@ -167,12 +170,12 @@ public class WorkflowCondition {
         case NOT_CONTAINS:
           return isNull(actualValue) && !actualValue.contains(valueOf(value));
         case BETWEEN:
-          var betweenValues = ValueResolver.getListFrom(valueOf(value));
+          var betweenValues = getListFrom(valueOf(value));
           return Range
               .between(parseDouble(valueOf(betweenValues.get(0))), parseDouble(valueOf(betweenValues.get(1))))
               .contains(parseDouble(actualValue));
         case NOT_BETWEEN:
-          var notBetweenValues = ValueResolver.getListFrom(valueOf(value));
+          var notBetweenValues = getListFrom(valueOf(value));
           return !Range
               .between(parseDouble(valueOf(notBetweenValues.get(0))), parseDouble(valueOf(notBetweenValues.get(1))))
               .contains(parseDouble(actualValue));
@@ -193,15 +196,11 @@ public class WorkflowCondition {
     }
 
     private boolean idNameSatisfiedBy(Object actualValue) {
-      if (isNull(value)) {
-        return false;
-      }
-      IdName conditionValue = ValueResolver.getIdNameFrom(value);
       switch (operator) {
         case EQUAL:
-          return !isNull(actualValue) && Long.parseLong(valueOf(actualValue)) == conditionValue.getId();
+          return !isNull(actualValue) && !isNull(value) && Long.parseLong(valueOf(actualValue)) == getIdNameFrom(value).getId();
         case NOT_EQUAL:
-          return !isNull(actualValue) && Long.parseLong(valueOf(actualValue)) != conditionValue.getId();
+          return !isNull(actualValue) && !isNull(value) && Long.parseLong(valueOf(actualValue)) != getIdNameFrom(value).getId();
         case IS_NOT_NULL:
           return !isNull(actualValue);
         case IS_NULL:
@@ -231,9 +230,9 @@ public class WorkflowCondition {
       }
 
       if (ID_NAME_PROPERTIES.contains(name)) {
-        var idNameMono = name.equals("pipeline") ? ValueResolver.getPipeline(value, authenticationToken)
-            : name.equals("pipelineStage") ? ValueResolver.getPipelineStage(value, authenticationToken)
-                : ValueResolver.getProduct(value, authenticationToken);
+        var idNameMono = name.equals("pipeline") ? getPipeline(value, authenticationToken)
+            : name.equals("pipelineStage") ? getPipelineStage(value, authenticationToken)
+                : getProduct(value, authenticationToken);
         return idNameMono
             .map(idName -> new ConditionExpression(operand1, operand2, operator.getName(), name, idName, triggerOn.name()));
       }
