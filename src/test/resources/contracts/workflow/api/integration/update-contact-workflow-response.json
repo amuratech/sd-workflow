@@ -1,0 +1,70 @@
+{
+  "id": 301,
+  "name": "Workflow 3",
+  "description": "Workflow Description",
+  "entityType": "CONTACT",
+  "trigger": {
+    "name": "EVENT",
+    "triggerFrequency": "CREATED"
+  },
+  "condition": {
+    "conditionType": "FOR_ALL"
+  },
+  "actions": [
+    {
+      "id": "08518b20-23f9-11eb-adc1-0242ac120002",
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "salutation",
+        "value": 1319,
+        "valueType": "PLAIN"
+      }
+    },
+    {
+      "id": "08518b20-23f9-11eb-adc1-0242ac120003",
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "dnd",
+        "value": true,
+        "valueType": "PLAIN"
+      }
+    },
+    {
+      "id": "08518b20-23f9-11eb-adc1-0242ac120006",
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "city",
+        "value": "PUNE",
+        "valueType": "PLAIN"
+      }
+    },
+    {
+      "id": "08518b20-23f9-11eb-adc1-0242ac120007",
+      "type": "REASSIGN",
+      "payload": {
+        "id": 20003,
+        "name": "Tony Stark"
+      }
+    }
+  ],
+  "createdBy": {
+    "id": 12,
+    "name": "Steve"
+  },
+  "updatedBy": {
+    "id": 12,
+    "name": "Steve"
+  },
+  "createdAt": "2020-10-20T23:17:59.442+0000",
+  "updatedAt": "2020-11-17T11:01:31.603+0000",
+  "lastTriggeredAt": "2020-10-21T23:17:59.442+0000",
+  "triggerCount": 151,
+  "active": true,
+  "recordActions": {
+    "read": true,
+    "update": true,
+    "write": true,
+    "readAll": false,
+    "updateAll": false
+  }
+}

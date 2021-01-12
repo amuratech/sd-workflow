@@ -9,9 +9,12 @@ import static org.springframework.http.HttpHeaders.AUTHORIZATION;
 import static org.springframework.http.HttpHeaders.CONTENT_TYPE;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.kylas.sales.workflow.api.response.WorkflowSummary;
 import com.kylas.sales.workflow.config.TestDatabaseInitializer;
 import java.io.IOException;
 import org.apache.commons.io.FileUtils;
+import org.assertj.core.api.Assertions;
 import org.jetbrains.annotations.NotNull;
 import org.json.JSONException;
 import org.junit.jupiter.api.Test;
@@ -40,9 +43,13 @@ import reactor.test.StepVerifier;
 @ContextConfiguration(initializers = {TestDatabaseInitializer.class})
 public class WorkflowIntegrationTests {
 
-  @Autowired Environment environment;
+  @Autowired
+  Environment environment;
   private final String authenticationToken =
       "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzZWxsIiwiZGF0YSI6eyJleHBpcmVzSW4iOjQzMTk5LCJleHBpcnkiOjE1NzY0OTM3MTAsInRva2VuVHlwZSI6ImJlYXJlciIsInBlcm1pc3Npb25zIjpbeyJpZCI6NCwibmFtZSI6ImxlYWQiLCJkZXNjcmlwdGlvbiI6ImhhcyBhY2Nlc3MgdG8gbGVhZCByZXNvdXJjZSIsImxpbWl0cyI6LTEsInVuaXRzIjoiY291bnQiLCJhY3Rpb24iOnsicmVhZCI6dHJ1ZSwid3JpdGUiOnRydWUsInVwZGF0ZSI6dHJ1ZSwiZGVsZXRlIjp0cnVlLCJlbWFpbCI6ZmFsc2UsImNhbGwiOmZhbHNlLCJzbXMiOmZhbHNlLCJ0YXNrIjp0cnVlLCJub3RlIjp0cnVlLCJyZWFkQWxsIjp0cnVlLCJ1cGRhdGVBbGwiOnRydWV9fSx7ImlkIjo3LCJuYW1lIjoid29ya2Zsb3ciLCJkZXNjcmlwdGlvbiI6ImhhcyBhY2Nlc3MgdG8gd29ya2Zsb3cgcmVzb3VyY2UiLCJsaW1pdHMiOi0xLCJ1bml0cyI6ImNvdW50IiwiYWN0aW9uIjp7InJlYWQiOnRydWUsIndyaXRlIjp0cnVlLCJ1cGRhdGUiOnRydWUsImRlbGV0ZSI6dHJ1ZSwiZW1haWwiOmZhbHNlLCJjYWxsIjpmYWxzZSwic21zIjpmYWxzZSwidGFzayI6ZmFsc2UsIm5vdGUiOmZhbHNlLCJyZWFkQWxsIjp0cnVlLCJ1cGRhdGVBbGwiOnRydWV9fV0sInVzZXJJZCI6IjEyIiwidXNlcm5hbWUiOiJ0b255QHN0YXJrLmNvbSIsInRlbmFudElkIjoiNTUifX0.xzQ-Ih5N1nllqkqgsBdS1NJgqhgNVJi1hiSZcuOrxp8";
+
+  @Autowired
+  private ObjectMapper objectMapper;
 
   @Test
   public void givenWorkflowRequest_shouldCreate() throws IOException {
@@ -74,8 +81,9 @@ public class WorkflowIntegrationTests {
         .assertNext(
             json -> {
               try {
-                JSONAssert.assertEquals(expectedResponse, json, false);
-              } catch (JSONException e) {
+                WorkflowSummary workflowSummary = objectMapper.readValue(json, WorkflowSummary.class);
+                Assertions.assertThat(workflowSummary.getId()).isGreaterThan(0);
+              } catch (IOException e) {
                 fail(e.getMessage());
               }
             })
@@ -522,4 +530,5 @@ public class WorkflowIntegrationTests {
     var file = resource.getFile();
     return FileUtils.readFileToString(file, "UTF-8");
   }
+
 }

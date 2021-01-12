@@ -1,0 +1,161 @@
+{
+  "name": "Workflow 1",
+  "description": "Workflow Description",
+  "entityType": "CONTACT",
+  "trigger": {
+    "name": "EVENT",
+    "triggerFrequency": "CREATED",
+    "payload": {
+    }
+  },
+  "condition": {
+    "conditionType": "FOR_ALL",
+    "values": []
+  },
+  "actions": [
+    {
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "salutation",
+        "value": 1319,
+        "valueType": "PLAIN"
+      }
+    },
+    {
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "dnd",
+        "value": true,
+        "valueType": "PLAIN"
+      }
+    },
+    {
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "timezone",
+        "value": "Asia/Calcutta",
+        "valueType": "PLAIN"
+      }
+    },
+    {
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "address",
+        "value": "pune rural",
+        "valueType": "PLAIN"
+      }
+    },
+    {
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "city",
+        "value": "PUNE",
+        "valueType": "PLAIN"
+      }
+    },
+    {
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "city",
+        "value": "PUNE",
+        "valueType": "PLAIN"
+      }
+    },
+    {
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "state",
+        "value": "Maharashtra",
+        "valueType": "PLAIN"
+      }
+    },
+    {
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "zipcode",
+        "value": "412410",
+        "valueType": "PLAIN"
+      }
+    },
+    {
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "companyName",
+        "value": "Kylas",
+        "valueType": "PLAIN"
+      }
+    },
+    {
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "country",
+        "value": "IN",
+        "valueType": "PLAIN"
+      }
+    },
+    {
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "facebook",
+        "value": "https://facebook.com/james",
+        "valueType": "PLAIN"
+      }
+    },
+    {
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "firstName",
+        "value": "James",
+        "valueType": "PLAIN"
+      }
+    },
+    {
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "lastName",
+        "value": "Bond",
+        "valueType": "PLAIN"
+      }
+    },
+    {
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "twitter",
+        "value": "https://twitter.com/james",
+        "valueType": "PLAIN"
+      }
+    },
+    {
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "linkedIn",
+        "value": "https://linkedin.com/james",
+        "valueType": "PLAIN"
+      }
+    },
+    {
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "department",
+        "value": "CBI",
+        "valueType": "PLAIN"
+      }
+    },
+    {
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "designation",
+        "value": "Inspector",
+        "valueType": "PLAIN"
+      }
+    },
+    {
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "stakeholder",
+        "value": true,
+        "valueType": "PLAIN"
+      }
+    }
+  ]
+}

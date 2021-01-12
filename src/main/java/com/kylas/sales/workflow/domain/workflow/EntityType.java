@@ -1,5 +1,5 @@
 package com.kylas.sales.workflow.domain.workflow;
 
 public enum EntityType {
-  LEAD, USER, TENANT, CUSTOM
+  LEAD, USER, TENANT, CUSTOM, CONTACT
 }

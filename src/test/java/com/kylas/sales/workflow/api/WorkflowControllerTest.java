@@ -3,7 +3,6 @@ package com.kylas.sales.workflow.api;
 import static com.kylas.sales.workflow.common.dto.ActionDetail.EditPropertyAction.ValueType.ARRAY;
 import static com.kylas.sales.workflow.common.dto.ActionDetail.EditPropertyAction.ValueType.PLAIN;
 import static java.util.Arrays.asList;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
@@ -27,7 +26,6 @@ import com.kylas.sales.workflow.common.dto.condition.WorkflowCondition;
 import com.kylas.sales.workflow.config.TestDatabaseInitializer;
 import com.kylas.sales.workflow.domain.exception.InsufficientPrivilegeException;
 import com.kylas.sales.workflow.domain.exception.InvalidActionException;
-import com.kylas.sales.workflow.domain.exception.InvalidConditionException;
 import com.kylas.sales.workflow.domain.exception.InvalidFilterException;
 import com.kylas.sales.workflow.domain.exception.WorkflowNotFoundException;
 import com.kylas.sales.workflow.domain.workflow.ConditionType;
@@ -992,33 +990,118 @@ class WorkflowControllerTest {
   }
 
   @Test
-  public void givenWorkflowRequest_withIdNameConditionWithNullValued_shouldThrow() throws JSONException, IOException {
+  public void givenWorkflowRequest_withEntityContact_shouldCreateIt() throws IOException {
     //given
-    var requestPayload =
-        getResourceAsString("classpath:contracts/workflow/api/workflow-request-with-idName-condition-nullValued.json");
+    var requestPayload = getResourceAsString("classpath:contracts/workflow/api/create-workflow-request-with-entity-contact.json");
     given(workflowService.create(argThat(workflowRequest ->
-        workflowRequest.getName().equalsIgnoreCase("Workflow 1")
-            && workflowRequest.getDescription().equalsIgnoreCase("Workflow Description")
-            && workflowRequest.getCondition().getConditionType().equals(ConditionType.CONDITION_BASED)
-            && workflowRequest.getCondition().getExpression().getName().equals("pipeline")
-            && workflowRequest.getCondition().getExpression().getOperator().equals(Operator.EQUAL)
-            && ((LinkedHashMap) workflowRequest.getCondition().getExpression().getValue()).get("id") == null
-            || ((LinkedHashMap) workflowRequest.getCondition().getExpression().getValue()).get("name") == null)
-    )).willThrow(InvalidConditionException.class);
-
+        {
+          List<ValueType> mockList = List.of(ARRAY, PLAIN);
+          List<ValueType> valueTypeList = new ArrayList<>();
+          workflowRequest.getActions().stream().filter(action -> action.getType().equals(ActionType.EDIT_PROPERTY)).forEach(action -> {
+            EditPropertyAction payload = (EditPropertyAction) action.getPayload();
+            valueTypeList.add(payload.getValueType());
+          });
+          return workflowRequest.getName().equalsIgnoreCase("Workflow 1")
+              && workflowRequest.getDescription().equalsIgnoreCase("Workflow Description")
+              && workflowRequest.getEntityType().equals(EntityType.CONTACT)
+              && workflowRequest.getTrigger().getName().equals(TriggerType.EVENT)
+              && workflowRequest.getTrigger().getTriggerFrequency().equals(TriggerFrequency.CREATED)
+              && workflowRequest.getCondition().getConditionType().equals(ConditionType.FOR_ALL)
+              && workflowRequest.isActive();
+        }
+    ))).willReturn(Mono.just(new WorkflowSummary(1L)));
     //when
-    assertThatThrownBy(() -> buildWebClient()
+    var workflowResponse = buildWebClient()
         .post()
         .uri("/v1/workflows")
         .contentType(MediaType.APPLICATION_JSON)
         .bodyValue(requestPayload)
         .retrieve()
-        .bodyToMono(String.class).block());
+        .bodyToMono(String.class);
+    //then
+    var expectedResponse =
+        getResourceAsString("classpath:contracts/workflow/api/create-workflow-response-with-entity-contact.json");
+    StepVerifier.create(workflowResponse)
+        .assertNext(json -> {
+          try {
+            JSONAssert.assertEquals(expectedResponse, json, false);
+          } catch (JSONException e) {
+            fail(e.getMessage());
+          }
+        }).verifyComplete();
   }
+
+  @Test
+  public void givenWorkflowRequest_withEntityContact_shouldUpdateIt() throws IOException, JSONException {
+    //given
+    var requestPayload = getResourceAsString("classpath:contracts/workflow/api/update-workflow-request-with-entity-contact.json");
+    ObjectMapper objectMapper = new ObjectMapper();
+    WorkflowTrigger trigger = new WorkflowTrigger(TriggerType.EVENT, TriggerFrequency.CREATED);
+    WorkflowCondition condition = new WorkflowCondition(ConditionType.FOR_ALL, null);
+    List<ActionResponse> actions =
+        List.of(
+            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("salutation", 1319, PLAIN)),
+            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("dnd", true, PLAIN)),
+            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("timezone", "Asia/Calcutta", PLAIN)),
+            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("address", "pune rural", PLAIN)),
+            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("city", "PUNE", PLAIN)),
+            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("state", "Maharashtra", PLAIN)),
+            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("zipcode", "412410", PLAIN)),
+            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("companyName", "Kylas", PLAIN)),
+            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("country", "IN", PLAIN)),
+            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("facebook", "https://facebook.com/james", PLAIN)),
+            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("firstName", "James", PLAIN)),
+            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("lastName", "Bond", PLAIN)),
+            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("twitter", "https://twitter.com/james", PLAIN)),
+            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("linkedIn", "https://linkedin.com/james", PLAIN)),
+            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("department", "CBI", PLAIN)),
+            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("designation", "Inspector", PLAIN)),
+            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("stakeholder", true, PLAIN)));
+
+    User user = new User(5000L, "Tony Stark");
+    WorkflowDetail workflowDetail = new WorkflowDetail(1L, "Workflow 1", "Workflow Description", EntityType.CONTACT, trigger, condition, actions,
+        user,
+        user, null, null, null, 0L, null, true);
+    given(workflowService.update(eq(1L), argThat(workflowRequest ->
+        {
+          List<ValueType> mockList = List.of(PLAIN);
+          List<ValueType> valueTypeList = new ArrayList<>();
+          workflowRequest.getActions().stream().filter(action -> action.getType().equals(ActionType.EDIT_PROPERTY)).forEach(action -> {
+            EditPropertyAction payload = (EditPropertyAction) action.getPayload();
+            valueTypeList.add(payload.getValueType());
+          });
+          return workflowRequest.getName().equalsIgnoreCase("Workflow 1")
+              && workflowRequest.getDescription().equalsIgnoreCase("Workflow Description")
+              && workflowRequest.getEntityType().equals(EntityType.CONTACT)
+              && workflowRequest.getTrigger().getName().equals(TriggerType.EVENT)
+              && workflowRequest.getTrigger().getTriggerFrequency().equals(TriggerFrequency.CREATED)
+              && workflowRequest.getCondition().getConditionType().equals(ConditionType.FOR_ALL)
+              && valueTypeList.size() == 17
+              && valueTypeList.containsAll(mockList)
+              && workflowRequest.isActive();
+        }
+    ))).willReturn(Mono.just(workflowDetail));
+    //when
+    var workflowResponse = buildWebClient()
+        .put()
+        .uri("/v1/workflows/1")
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(requestPayload)
+        .retrieve()
+        .bodyToFlux(String.class).blockLast();
+    //then
+    var expectedResponse =
+        getResourceAsString("classpath:contracts/workflow/api/update-workflow-response-with-entity-contact.json");
+    JSONAssert.assertEquals(expectedResponse, workflowResponse, false);
+
+  }
+
 
   private String getResourceAsString(String resourcePath) throws IOException {
     var resource = resourceLoader.getResource(resourcePath);
     File file = resource.getFile();
     return FileUtils.readFileToString(file, "UTF-8");
   }
+
+
 }
