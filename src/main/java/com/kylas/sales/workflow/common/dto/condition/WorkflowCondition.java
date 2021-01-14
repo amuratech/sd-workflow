@@ -12,6 +12,7 @@ import static com.kylas.sales.workflow.domain.service.ValueResolver.getListFrom;
 import static com.kylas.sales.workflow.domain.service.ValueResolver.getPipeline;
 import static com.kylas.sales.workflow.domain.service.ValueResolver.getPipelineStage;
 import static com.kylas.sales.workflow.domain.service.ValueResolver.getProduct;
+import static com.kylas.sales.workflow.domain.service.ValueResolver.getUser;
 import static java.lang.Double.parseDouble;
 import static java.lang.String.valueOf;
 import static java.util.Objects.isNull;
@@ -63,7 +64,9 @@ public class WorkflowCondition {
   public static class ConditionExpression implements Serializable {
 
     @Getter(AccessLevel.NONE)
-    private final List<String> ID_NAME_PROPERTIES = List.of("pipeline", "pipelineStage", "products");
+    private final List<String> ID_NAME_PROPERTIES = List.of("pipeline", "pipelineStage", "products", "createdBy", "updatedBy", "convertedBy","ownerId");
+    @Getter(AccessLevel.NONE)
+    private final List<String> USER_FIELDS = List.of("createdBy", "updatedBy", "convertedBy","ownerId");
     private final ConditionExpression operand1;
     private final ConditionExpression operand2;
     private final Operator operator;
@@ -232,7 +235,8 @@ public class WorkflowCondition {
       }
 
       if (ID_NAME_PROPERTIES.contains(name)) {
-        var idNameMono = name.equals("pipeline") ? getPipeline(value, authenticationToken)
+        var idNameMono =USER_FIELDS.contains(name)?getUser(value,authenticationToken)
+            :name.equals("pipeline") ? getPipeline(value, authenticationToken)
             : name.equals("pipelineStage") ? getPipelineStage(value, authenticationToken)
                 : getProduct(value, authenticationToken);
         return idNameMono

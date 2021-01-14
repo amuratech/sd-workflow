@@ -12,7 +12,12 @@ public enum ExpressionField {
   PRODUCT("product", "product.id"),
   SOURCE("source","source.id"),
   CAMPAIGN("campaign","campaign.id"),
-  SALUTATION("salutation","salutation.id");
+  SALUTATION("salutation","salutation.id"),
+  CREATED_BY("createdBy","createdBy.id"),
+  UPDATED_BY("updatedBy","updatedBy.id"),
+  CONVERTED_BY("convertedBy","convertedBy.id"),
+  OWNER_ID("ownerId","ownerId.id");
+
 
 
   private final String name;

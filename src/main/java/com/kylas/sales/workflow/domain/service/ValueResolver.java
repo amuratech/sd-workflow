@@ -19,6 +19,7 @@ public class ValueResolver {
   private static PipelineService pipelineService;
   private static ProductService productService;
   private static ObjectMapper objectMapper;
+  private static UserService userService;
 
   public static Mono<IdName> getPipeline(Object pipeline, String authenticationToken) {
     if (isNull(pipeline)) {
@@ -54,6 +55,19 @@ public class ValueResolver {
       return productService.getProduct(productIdName.getId(), authenticationToken);
     } catch (JsonProcessingException e) {
       log.error("Exception while extracting pipelineId from {}", product);
+      throw new InvalidActionException();
+    }
+  }
+  public static Mono<IdName> getUser(Object user, String authenticationToken) {
+    if (isNull(user)) {
+      return Mono.empty();
+    }
+    try {
+      var userIdName = objectMapper.readValue(serialize(user), IdName.class);
+      return userService.getUserDetails(userIdName.getId(), authenticationToken)
+          .map(userResponse -> new IdName(userResponse.getId(),userResponse.getName()));
+    } catch (JsonProcessingException e) {
+      log.error("Exception while extracting userId from {}", user);
       throw new InvalidActionException();
     }
   }
@@ -96,7 +110,12 @@ public class ValueResolver {
   public void setProductService(ProductService productService) {
     ValueResolver.productService = productService;
   }
-  
+
+  @Autowired
+  public void setUserService(UserService userService){
+    ValueResolver.userService=userService;
+  }
+
   @Autowired
   public void setObjectMapper(ObjectMapper objectMapper) {
     ValueResolver.objectMapper = objectMapper;

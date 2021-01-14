@@ -430,6 +430,42 @@ class WorkflowConditionTest {
 
       assertThat(condition.isSatisfiedBy(entity)).isTrue();
     }
+    @Test
+    public void  givenEquals_onSameUserId_evaluatesTrue() {
+      var condition = new WorkflowCondition();
+      condition.setType(ConditionType.CONDITION_BASED);
+      Object createdBy = new IdName(200L, "Steve Roger");
+      condition.setExpression(new ConditionExpression(EQUAL, "createdBy", createdBy, NEW_VALUE));
+      var entity = stubLeadDetail();
+      entity.setCreatedBy(new IdName(200L, "Steve Roger"));
+
+      assertThat(condition.isSatisfiedBy(entity)).isTrue();
+    }
+
+    @Test
+    public void givenEquals_onDifferentUserId_evaluatesFalse() {
+      var condition = new WorkflowCondition();
+      condition.setType(ConditionType.CONDITION_BASED);
+      Object updatedBy = new IdName(200L, "Steve Roger");
+      condition.setExpression(new ConditionExpression(EQUAL, "updatedBy", updatedBy, NEW_VALUE));
+      var entity = stubLeadDetail();
+      entity.setUpdatedBy(new IdName(201L, "Tony Stark"));
+
+      assertThat(condition.isSatisfiedBy(entity)).isFalse();
+    }
+
+    @Test
+    public void givenNotEquals_onDifferentUserId_evaluatesTrue() {
+      var condition = new WorkflowCondition();
+      condition.setType(ConditionType.CONDITION_BASED);
+      Object convertedBy = new IdName(200L, "Steve Roger");
+      condition.setExpression(new ConditionExpression(NOT_EQUAL, "convertedBy", convertedBy, NEW_VALUE));
+      var entity = stubLeadDetail();
+      entity.setConvertedBy(new IdName(201L, "Tony Stark"));
+
+      assertThat(condition.isSatisfiedBy(entity)).isTrue();
+    }
+
 
   }
 
