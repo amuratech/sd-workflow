@@ -1,6 +1,6 @@
 podTemplate(
     containers: [
-        containerTemplate(name: 'helm', alwaysPullImage: true, image: 'nexus.sling-dev.com:8023/lachlanevenson/k8s-helm:v2.14.3', command: 'cat', ttyEnabled: true),
+        containerTemplate(name: 'helm', alwaysPullImage: true, image: 'nexus.sling-dev.com:8023/lachlanevenson/k8s-helm:v3.4.2', command: 'cat', ttyEnabled: true),
         containerTemplate(name: 'curl', alwaysPullImage: true, image: 'nexus.sling-dev.com:8023/sling/jenkins/curl', command: 'cat', ttyEnabled: true)
     ],
     imagePullSecrets: ['registry-credentials']) {
@@ -22,13 +22,11 @@ podTemplate(
                          [$class       : 'StringBinding',
                           credentialsId: 'sd-charts-github-api-token',
                           variable     : 'API_TOKEN']]) {
-          stage('Initialise Helm') {
-            sh script: "helm init --client-only --stable-repo-url https://charts.helm.sh/stable --kubeconfig=${KUBECONFIG}", label: 'Initialize helm'
-          }
-          stage('Update Helm repository') {
+          stage('Add Helm repository') {
+            sh script: "helm repo add stable 'https://charts.helm.sh/stable'",
+                label: 'Add stable helm repo'
             sh script: "helm repo add sd-charts 'https://${API_TOKEN}@raw.githubusercontent.com/amuratech/sd-charts/master/'",
                 label: 'Add helm repo'
-            sh script: "helm repo update sd-charts", label: 'Cache Helm charts info'
             sh script: 'helm repo list', label: 'List available helm repos'
           }
           withCredentials([[$class       : 'StringBinding',
