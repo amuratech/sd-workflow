@@ -6,6 +6,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kylas.sales.workflow.domain.exception.InvalidActionException;
 import com.kylas.sales.workflow.domain.processor.lead.IdName;
+import com.kylas.sales.workflow.domain.user.User;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,12 +17,21 @@ import reactor.core.publisher.Mono;
 @Slf4j
 public class ValueResolver {
 
-  private static PipelineService pipelineService;
-  private static ProductService productService;
-  private static ObjectMapper objectMapper;
-  private static UserService userService;
+  private final PipelineService pipelineService;
+  private final ProductService productService;
+  private final ObjectMapper objectMapper;
+  private final UserService userService;
 
-  public static Mono<IdName> getPipeline(Object pipeline, String authenticationToken) {
+  @Autowired
+  public ValueResolver(PipelineService pipelineService, ProductService productService, ObjectMapper objectMapper,
+      UserService userService) {
+    this.pipelineService = pipelineService;
+    this.productService = productService;
+    this.objectMapper = objectMapper;
+    this.userService = userService;
+  }
+
+  public Mono<IdName> getPipeline(Object pipeline, String authenticationToken) {
     if (isNull(pipeline)) {
       return Mono.empty();
     }
@@ -34,7 +44,7 @@ public class ValueResolver {
     }
   }
 
-  public static Mono<IdName> getPipelineStage(Object pipelineStage, String authenticationToken) {
+  public Mono<IdName> getPipelineStage(Object pipelineStage, String authenticationToken) {
     if (isNull(pipelineStage)) {
       return Mono.empty();
     }
@@ -46,7 +56,8 @@ public class ValueResolver {
       throw new InvalidActionException();
     }
   }
-  public static Mono<IdName> getProduct(Object product, String authenticationToken) {
+
+  public Mono<IdName> getProduct(Object product, String authenticationToken) {
     if (isNull(product)) {
       return Mono.empty();
     }
@@ -58,21 +69,22 @@ public class ValueResolver {
       throw new InvalidActionException();
     }
   }
-  public static Mono<IdName> getUser(Object user, String authenticationToken) {
+
+  public Mono<IdName> getUser(Object user, String authenticationToken) {
     if (isNull(user)) {
       return Mono.empty();
     }
     try {
       var userIdName = objectMapper.readValue(serialize(user), IdName.class);
       return userService.getUserDetails(userIdName.getId(), authenticationToken)
-          .map(userResponse -> new IdName(userResponse.getId(),userResponse.getName()));
+          .map(userResponse -> new IdName(userResponse.getId(), userResponse.getName()));
     } catch (JsonProcessingException e) {
       log.error("Exception while extracting userId from {}", user);
       throw new InvalidActionException();
     }
   }
 
-  public static IdName getIdNameFrom(Object value) {
+  public IdName getIdNameFrom(Object value) {
     try {
       return objectMapper.readValue(serialize(value), IdName.class);
     } catch (JsonProcessingException e) {
@@ -81,7 +93,7 @@ public class ValueResolver {
     }
   }
 
-  public static String serialize(Object value) {
+  public String serialize(Object value) {
     try {
       return objectMapper.writeValueAsString(value);
     } catch (JsonProcessingException e) {
@@ -90,7 +102,7 @@ public class ValueResolver {
     }
   }
 
-  public static List getListFrom(String value) {
+  public List getListFrom(String value) {
     try {
       return objectMapper.readValue(value, List.class);
     } catch (JsonProcessingException e) {
@@ -99,25 +111,7 @@ public class ValueResolver {
     }
   }
 
-
-
-  @Autowired
-  public void setPipelineService(PipelineService pipelineService) {
-    ValueResolver.pipelineService = pipelineService;
-  }
-
-  @Autowired
-  public void setProductService(ProductService productService) {
-    ValueResolver.productService = productService;
-  }
-
-  @Autowired
-  public void setUserService(UserService userService){
-    ValueResolver.userService=userService;
-  }
-
-  @Autowired
-  public void setObjectMapper(ObjectMapper objectMapper) {
-    ValueResolver.objectMapper = objectMapper;
+  public Mono<String> getUserName(Long userId, String authenticationToken) {
+    return userService.getUserDetails(userId, authenticationToken).map(User::getName);
   }
 }

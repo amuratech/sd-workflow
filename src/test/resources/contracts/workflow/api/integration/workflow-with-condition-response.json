@@ -9,14 +9,14 @@
   },
   "condition": {
     "conditionType": "CONDITION_BASED",
-    "expression": {
-      "operand1": null,
-      "operand2": null,
-      "operator": "equal",
-      "name": "firstName",
-      "value": "Tony",
-      "triggerOn": "NEW_VALUE"
-    }
+    "conditions": [
+      {
+        "operator": "equal",
+        "name": "firstName",
+        "value": "Tony",
+        "triggerOn": "NEW_VALUE"
+      }
+    ]
   },
   "actions": [
     {

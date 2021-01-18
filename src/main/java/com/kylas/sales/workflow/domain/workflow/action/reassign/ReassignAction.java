@@ -7,8 +7,6 @@ import static org.apache.commons.lang3.StringUtils.isBlank;
 import com.kylas.sales.workflow.common.dto.ActionDetail;
 import com.kylas.sales.workflow.common.dto.ActionResponse;
 import com.kylas.sales.workflow.domain.exception.InvalidActionException;
-import com.kylas.sales.workflow.domain.service.UserService;
-import com.kylas.sales.workflow.domain.user.User;
 import com.kylas.sales.workflow.domain.workflow.Workflow;
 import com.kylas.sales.workflow.domain.workflow.action.AbstractWorkflowAction;
 import com.kylas.sales.workflow.domain.workflow.action.WorkflowAction;
@@ -17,9 +15,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
-import reactor.core.publisher.Mono;
 
 @Entity
 @Getter
@@ -44,9 +39,8 @@ public class ReassignAction extends AbstractWorkflowAction implements WorkflowAc
     return new ReassignAction(payload.getId(), payload.getName());
   }
 
-  public static Mono<ActionResponse> toActionResponse(ReassignAction action, String authentication) {
-    return UserNameResolver.getUserName(action.ownerId, authentication)
-        .map(userName -> new ActionResponse(action.getId(), REASSIGN, new ActionDetail.ReassignAction(action.ownerId, userName)));
+  public static ActionResponse toActionResponse(ReassignAction action) {
+    return new ActionResponse(action.getId(), REASSIGN, new ActionDetail.ReassignAction(action.ownerId, action.name));
   }
 
   @Override
@@ -70,19 +64,4 @@ public class ReassignAction extends AbstractWorkflowAction implements WorkflowAc
     return REASSIGN;
   }
 
-  @Component
-  private static class UserNameResolver {
-
-    private static UserService userService;
-
-    public static Mono<String> getUserName(Long userId, String authenticationToken) {
-      return userService.getUserDetails(userId, authenticationToken).map(User::getName);
-    }
-
-    @Autowired
-    public void setUserService(UserService userService) {
-      UserNameResolver.userService = userService;
-    }
-
-  }
 }

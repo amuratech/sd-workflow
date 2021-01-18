@@ -1,5 +1,7 @@
 package com.kylas.sales.workflow.stubs;
 
+import com.kylas.sales.workflow.api.request.Condition;
+import com.kylas.sales.workflow.api.request.Condition.ExpressionElement;
 import com.kylas.sales.workflow.api.request.WorkflowRequest;
 import com.kylas.sales.workflow.api.response.WorkflowDetail;
 import com.kylas.sales.workflow.api.response.WorkflowEntry;
@@ -9,8 +11,6 @@ import com.kylas.sales.workflow.common.dto.ActionDetail.ReassignAction;
 import com.kylas.sales.workflow.common.dto.ActionResponse;
 import com.kylas.sales.workflow.common.dto.User;
 import com.kylas.sales.workflow.common.dto.WorkflowTrigger;
-import com.kylas.sales.workflow.common.dto.condition.WorkflowCondition;
-import com.kylas.sales.workflow.common.dto.condition.WorkflowCondition.ConditionExpression;
 import com.kylas.sales.workflow.domain.user.Action;
 import com.kylas.sales.workflow.domain.workflow.ConditionType;
 import com.kylas.sales.workflow.domain.workflow.EntityType;
@@ -20,8 +20,10 @@ import com.kylas.sales.workflow.domain.workflow.action.WorkflowAction.ActionType
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import javax.validation.constraints.NotNull;
 
 public class WorkflowStub {
 
@@ -39,10 +41,10 @@ public class WorkflowStub {
       boolean active
   ) {
     var triggerRequest = new WorkflowTrigger(triggerType, triggerFrequency);
-    var conditionRequest = new WorkflowCondition(conditionType, null);
     var actionRequest = new ActionResponse(actionType, new EditPropertyAction(propertyName, propertyValue, propertyValueType));
     var actionRequests = new HashSet<ActionResponse>();
     actionRequests.add(actionRequest);
+    @NotNull Condition conditionRequest = new Condition(conditionType.name(), null);
     return new WorkflowRequest(name, description, entityType, triggerRequest, conditionRequest, actionRequests, active);
   }
 
@@ -50,10 +52,10 @@ public class WorkflowStub {
       String name,
       String description,
       EntityType entityType,
-      ConditionExpression expression,
+      List<ExpressionElement> conditions,
       Set<ActionResponse> actions) {
     var triggerRequest = new WorkflowTrigger(TriggerType.EVENT, TriggerFrequency.CREATED);
-    var conditionRequest = new WorkflowCondition(ConditionType.CONDITION_BASED, expression);
+    @NotNull Condition conditionRequest = new Condition("CONDITION_BASED", conditions);
     return new WorkflowRequest(name, description, entityType, triggerRequest, conditionRequest, actions, true);
   }
 
@@ -66,7 +68,7 @@ public class WorkflowStub {
       ConditionType conditionType,
       Set<ActionResponse> actionRequests) {
     var triggerRequest = new WorkflowTrigger(triggerType, triggerFrequency);
-    var conditionRequest = new WorkflowCondition(conditionType, null);
+    @NotNull Condition conditionRequest = new Condition(conditionType.name(), null);
     return new WorkflowRequest(name, description, entityType, triggerRequest, conditionRequest, actionRequests, true);
   }
 
@@ -80,8 +82,8 @@ public class WorkflowStub {
       boolean active,
       Set<ActionResponse> actions) {
     var triggerRequest = new WorkflowTrigger(triggerType, triggerFrequency);
-    var conditionRequest = new WorkflowCondition(conditionType, null);
-    return new WorkflowRequest(name, description, entityType, triggerRequest, conditionRequest, actions, active);
+    @NotNull Condition condition = new Condition(conditionType.name(), null);
+    return new WorkflowRequest(name, description, entityType, triggerRequest, condition, actions, active);
   }
 
   public static WorkflowRequest anExistingEditPropertyWorkflowRequest(
@@ -99,11 +101,11 @@ public class WorkflowStub {
       boolean active
   ) {
     var triggerRequest = new WorkflowTrigger(triggerType, triggerFrequency);
-    var conditionRequest = new WorkflowCondition(conditionType, null);
+    var condition = new Condition(conditionType.name(), null);
     var actionRequest = new ActionResponse(actionId, actionType, new EditPropertyAction(propertyName, propertyValue, propertyValueType));
     var actionRequests = new HashSet<ActionResponse>();
     actionRequests.add(actionRequest);
-    return new WorkflowRequest(name, description, entityType, triggerRequest, conditionRequest, actionRequests, active);
+    return new WorkflowRequest(name, description, entityType, triggerRequest, condition, actionRequests, active);
   }
 
   public static WorkflowRequest anExistingReassignWorkflowRequest(
@@ -120,11 +122,11 @@ public class WorkflowStub {
       boolean active
   ) {
     var triggerRequest = new WorkflowTrigger(triggerType, triggerFrequency);
-    var conditionRequest = new WorkflowCondition(conditionType, null);
     var actionRequest = new ActionResponse(actionId, actionType, new ReassignAction(ownerId, userName));
     var actionRequests = new HashSet<ActionResponse>();
     actionRequests.add(actionRequest);
-    return new WorkflowRequest(name, description, entityType, triggerRequest, conditionRequest, actionRequests, active);
+    @NotNull Condition condition = new Condition(conditionType.name(), null);
+    return new WorkflowRequest(name, description, entityType, triggerRequest, condition, actionRequests, active);
   }
 
   public static WorkflowDetail workflowDetail(
@@ -143,7 +145,7 @@ public class WorkflowStub {
       boolean canCreate, boolean canRead, User createdBy, User updatedBy, Date createdAndUpdatedAt
   ) {
     var workflowTrigger = new WorkflowTrigger(triggerType, triggerFrequency);
-    var condition = new WorkflowCondition(conditionType, null);
+    var condition = new Condition(conditionType.name(), null);
     var action = new ActionResponse(actionType, new EditPropertyAction(propertyName, propertyValue, propertyValueType));
     var actions = new ArrayList<ActionResponse>();
     actions.add(action);

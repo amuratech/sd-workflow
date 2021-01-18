@@ -9,6 +9,8 @@ import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 
+import com.kylas.sales.workflow.api.request.Condition;
+import com.kylas.sales.workflow.api.request.Condition.ExpressionElement;
 import com.kylas.sales.workflow.api.request.FilterRequest;
 import com.kylas.sales.workflow.api.request.FilterRequest.Filter;
 import com.kylas.sales.workflow.api.request.WorkflowRequest;
@@ -22,7 +24,6 @@ import com.kylas.sales.workflow.common.dto.ActionResponse;
 import com.kylas.sales.workflow.common.dto.User;
 import com.kylas.sales.workflow.common.dto.WorkflowTrigger;
 import com.kylas.sales.workflow.common.dto.condition.Operator;
-import com.kylas.sales.workflow.common.dto.condition.WorkflowCondition;
 import com.kylas.sales.workflow.config.TestDatabaseInitializer;
 import com.kylas.sales.workflow.domain.exception.InsufficientPrivilegeException;
 import com.kylas.sales.workflow.domain.exception.InvalidActionException;
@@ -198,13 +199,14 @@ class WorkflowControllerTest {
     var requestPayload = getResourceAsString("classpath:contracts/workflow/api/update-workflow-request.json");
     ObjectMapper objectMapper = new ObjectMapper();
     WorkflowTrigger trigger = new WorkflowTrigger(TriggerType.EVENT, TriggerFrequency.CREATED);
-    WorkflowCondition condition = new WorkflowCondition(ConditionType.FOR_ALL, null);
+
     List<ActionResponse> actions =
         List.of(
             new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("salutation", 1319, PLAIN)),
             new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("dnd", true, PLAIN)),
             new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("city", "PUNE", PLAIN)),
             new ActionResponse(ActionType.REASSIGN, new ReassignAction(20003L, "Tony Stark")));
+    Condition condition = new Condition(ConditionType.FOR_ALL.name(), null);
     User user = new User(5000L, "Tony Stark");
     WorkflowDetail workflowDetail = new WorkflowDetail(1L, "Workflow 1", "Workflow Description", EntityType.LEAD, trigger, condition, actions, user,
         user, null, null, null, 0L, null, true);
@@ -930,7 +932,7 @@ class WorkflowControllerTest {
     //given
     var requestPayload = getResourceAsString("classpath:contracts/reassign/update-workflow-with-reassign-action-request.json");
     WorkflowTrigger trigger = new WorkflowTrigger(TriggerType.EVENT, TriggerFrequency.CREATED);
-    WorkflowCondition condition = new WorkflowCondition(ConditionType.FOR_ALL, null);
+    Condition condition = new Condition(ConditionType.FOR_ALL.name(), null);
     List<ActionResponse> actions =
         List.of(new ActionResponse(ActionType.REASSIGN, new ReassignAction(20003L, "Tony Stark")));
     User user = new User(5000L, "Tony Stark");
@@ -968,12 +970,15 @@ class WorkflowControllerTest {
     var requestPayload =
         getResourceAsString("classpath:contracts/workflow/api/workflow-request-with-idName-condition.json");
     given(workflowService.create(argThat(workflowRequest ->
-        workflowRequest.getName().equalsIgnoreCase("Workflow 1")
-            && workflowRequest.getDescription().equalsIgnoreCase("Workflow Description")
-            && workflowRequest.getCondition().getConditionType().equals(ConditionType.CONDITION_BASED)
-            && workflowRequest.getCondition().getExpression().getName().equals("pipeline")
-            && workflowRequest.getCondition().getExpression().getOperator().equals(Operator.EQUAL)
-            && ((LinkedHashMap) workflowRequest.getCondition().getExpression().getValue()).get("id").equals(242))
+        {
+          ExpressionElement expressionElement = workflowRequest.getCondition().getConditions().get(0);
+          return workflowRequest.getName().equalsIgnoreCase("Workflow 1")
+              && workflowRequest.getDescription().equalsIgnoreCase("Workflow Description")
+              && workflowRequest.getCondition().getConditionType().equals(ConditionType.CONDITION_BASED)
+              && expressionElement.getName().equals("pipeline")
+              && expressionElement.getOperator().equals(Operator.EQUAL)
+              && ((LinkedHashMap) expressionElement.getValue()).get("id").equals(242);
+        })
     )).willReturn(Mono.just(new WorkflowSummary(1L)));
     //when
     var workflowResponse = buildWebClient()
@@ -1035,9 +1040,8 @@ class WorkflowControllerTest {
   public void givenWorkflowRequest_withEntityContact_shouldUpdateIt() throws IOException, JSONException {
     //given
     var requestPayload = getResourceAsString("classpath:contracts/workflow/api/update-workflow-request-with-entity-contact.json");
-    ObjectMapper objectMapper = new ObjectMapper();
     WorkflowTrigger trigger = new WorkflowTrigger(TriggerType.EVENT, TriggerFrequency.CREATED);
-    WorkflowCondition condition = new WorkflowCondition(ConditionType.FOR_ALL, null);
+    Condition condition = new Condition(ConditionType.FOR_ALL.name(), null);
     List<ActionResponse> actions =
         List.of(
             new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("salutation", 1319, PLAIN)),

@@ -6,10 +6,13 @@ import static com.kylas.sales.workflow.domain.WorkflowSpecification.belongToUser
 import static com.kylas.sales.workflow.domain.WorkflowSpecification.withEntityType;
 import static com.kylas.sales.workflow.domain.WorkflowSpecification.withId;
 import static com.kylas.sales.workflow.domain.WorkflowSpecification.withTriggerFrequency;
+import static org.apache.commons.collections.CollectionUtils.isEmpty;
+import static org.apache.commons.lang3.ObjectUtils.allNotNull;
 
 import com.kylas.sales.workflow.api.request.WorkflowRequest;
 import com.kylas.sales.workflow.common.dto.ActionResponse;
 import com.kylas.sales.workflow.domain.exception.InsufficientPrivilegeException;
+import com.kylas.sales.workflow.domain.exception.InvalidWorkflowRequestException;
 import com.kylas.sales.workflow.domain.exception.WorkflowNotFoundException;
 import com.kylas.sales.workflow.domain.service.UserService;
 import com.kylas.sales.workflow.domain.user.User;
@@ -17,7 +20,6 @@ import com.kylas.sales.workflow.domain.user.UserFacade;
 import com.kylas.sales.workflow.domain.workflow.EntityType;
 import com.kylas.sales.workflow.domain.workflow.TriggerFrequency;
 import com.kylas.sales.workflow.domain.workflow.Workflow;
-import com.kylas.sales.workflow.domain.workflow.WorkflowCondition;
 import com.kylas.sales.workflow.domain.workflow.WorkflowTrigger;
 import com.kylas.sales.workflow.domain.workflow.action.AbstractWorkflowAction;
 import com.kylas.sales.workflow.security.AuthService;
@@ -44,6 +46,7 @@ public class WorkflowFacade {
   private final AuthService authService;
   private final UserService userService;
   private final UserFacade userFacade;
+  private final ConditionFacade conditionFacade;
 
   @Autowired
   public WorkflowFacade(
@@ -51,12 +54,14 @@ public class WorkflowFacade {
       WorkflowExecutedEventRepository workflowExecutedEventRepository,
       AuthService authService,
       UserService userService,
-      UserFacade userFacade) {
+      UserFacade userFacade,
+      ConditionFacade conditionFacade) {
     this.workflowRepository = workflowRepository;
     this.workflowExecutedEventRepository = workflowExecutedEventRepository;
     this.authService = authService;
     this.userService = userService;
     this.userFacade = userFacade;
+    this.conditionFacade = conditionFacade;
   }
 
   public Mono<Workflow> create(WorkflowRequest workflowRequest) {
@@ -71,7 +76,7 @@ public class WorkflowFacade {
                   workflowRequest.getActions().stream()
                       .map(workflowAction -> workflowAction.getType().create(workflowAction))
                       .collect(Collectors.toSet());
-              var condition = WorkflowCondition.createNew(workflowRequest.getCondition());
+              var condition = conditionFacade.createFrom(workflowRequest.getCondition());
               var trigger = WorkflowTrigger.createNew(workflowRequest.getTrigger());
               Workflow aNew =
                   Workflow.createNew(
@@ -118,8 +123,8 @@ public class WorkflowFacade {
                         getSpecificationByUpdatePrivileges(loggedInUser).and(withId(workflowId)))
                     .map(
                         workflow -> {
-                          var condition =
-                              workflow.getWorkflowCondition().update(request.getCondition());
+                          var condition = conditionFacade.update(request.getCondition(), workflow);
+
                           var trigger = workflow.getWorkflowTrigger().update(request.getTrigger());
                           var actions =
                               updateOrCreateFrom(
@@ -222,7 +227,7 @@ public class WorkflowFacade {
 
     if(filters.isPresent()){
       Set<WorkflowFilter> workflowFilters = filters.get();
-      for(WorkflowFilter workflowFilter : workflowFilters){
+      for (WorkflowFilter workflowFilter : workflowFilters) {
         readSpecification = readSpecification.and(workflowFilter.toSpecification());
       }
     }
@@ -230,5 +235,15 @@ public class WorkflowFacade {
     workflowList.getContent().stream()
         .forEach(workflow -> workflow.setAllowedActionsForUser(loggedInUser));
     return workflowList;
+  }
+
+  public void validate(WorkflowRequest request) {
+    if (!allNotNull(request.getName(), request.getEntityType(), request.getTrigger(), request.getCondition())) {
+      throw new InvalidWorkflowRequestException();
+    }
+    if (isEmpty(request.getActions())) {
+      throw new InvalidWorkflowRequestException();
+    }
+    conditionFacade.validate(request.getCondition());
   }
 }

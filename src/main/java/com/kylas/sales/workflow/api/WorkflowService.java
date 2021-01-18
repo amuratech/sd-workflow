@@ -4,21 +4,28 @@ import static com.kylas.sales.workflow.domain.workflow.ConditionType.FOR_ALL;
 import static java.util.Objects.nonNull;
 import static java.util.stream.Collectors.toList;
 
+import com.kylas.sales.workflow.api.request.Condition;
 import com.kylas.sales.workflow.api.request.FilterRequest;
 import com.kylas.sales.workflow.api.request.WorkflowRequest;
 import com.kylas.sales.workflow.api.response.WorkflowDetail;
 import com.kylas.sales.workflow.api.response.WorkflowEntry;
 import com.kylas.sales.workflow.api.response.WorkflowSummary;
+import com.kylas.sales.workflow.common.dto.ActionDetail.EditPropertyAction;
+import com.kylas.sales.workflow.common.dto.ActionDetail.ReassignAction;
+import com.kylas.sales.workflow.common.dto.ActionResponse;
 import com.kylas.sales.workflow.common.dto.User;
 import com.kylas.sales.workflow.common.dto.WorkflowTrigger;
-import com.kylas.sales.workflow.common.dto.condition.WorkflowCondition;
+import com.kylas.sales.workflow.domain.ConditionFacade;
 import com.kylas.sales.workflow.domain.WorkflowFacade;
 import com.kylas.sales.workflow.domain.WorkflowFilter;
+import com.kylas.sales.workflow.domain.service.ValueResolver;
 import com.kylas.sales.workflow.domain.workflow.ConditionType;
 import com.kylas.sales.workflow.domain.workflow.EntityType;
 import com.kylas.sales.workflow.domain.workflow.TriggerFrequency;
 import com.kylas.sales.workflow.domain.workflow.Workflow;
 import com.kylas.sales.workflow.domain.workflow.WorkflowExecutedEvent;
+import com.kylas.sales.workflow.domain.workflow.action.WorkflowAction.ActionType;
+import com.kylas.sales.workflow.domain.workflow.action.webhook.attribute.AttributeFactory.LeadAttribute;
 import com.kylas.sales.workflow.security.AuthService;
 import java.util.List;
 import java.util.Optional;
@@ -37,14 +44,21 @@ public class WorkflowService {
 
   private final WorkflowFacade workflowFacade;
   private final AuthService authService;
+  private final ConditionFacade conditionFacade;
+  private final ValueResolver valueResolver;
 
   @Autowired
-  public WorkflowService(WorkflowFacade workflowFacade, AuthService authService) {
+  public WorkflowService(
+      WorkflowFacade workflowFacade, AuthService authService, ConditionFacade conditionFacade,
+      ValueResolver valueResolver) {
     this.workflowFacade = workflowFacade;
     this.authService = authService;
+    this.conditionFacade = conditionFacade;
+    this.valueResolver = valueResolver;
   }
 
   public Mono<WorkflowSummary> create(WorkflowRequest workflowRequest) {
+    workflowFacade.validate(workflowRequest);
     return workflowFacade
         .create(workflowRequest)
         .map(workflow -> new WorkflowSummary(workflow.getId()));
@@ -74,19 +88,25 @@ public class WorkflowService {
     ConditionType conditionType = workflow.getWorkflowCondition().getType();
     var conditionMono =
         conditionType.equals(FOR_ALL)
-            ? Mono.just(new WorkflowCondition(conditionType, null))
-            : workflow.getWorkflowCondition().getExpression().nameResolved(authenticationToken)
-                .map(expression -> new WorkflowCondition(conditionType, expression));
+            ? Mono.just(new Condition(conditionType.name(), null))
+            : conditionFacade.nameResolved(workflow.getWorkflowCondition().getExpression(), authenticationToken)
+                .map(expression -> new Condition(conditionType.name(), conditionFacade.flattenExpression(expression)));
 
     var createdBy = new User(workflow.getCreatedBy().getId(), workflow.getCreatedBy().getName());
     var updatedBy = new User(workflow.getUpdatedBy().getId(), workflow.getUpdatedBy().getName());
+
     var executedEvent =
         nonNull(workflow.getWorkflowExecutedEvent())
             ? workflow.getWorkflowExecutedEvent()
             : WorkflowExecutedEvent.createNew(workflow);
-    return Flux
-        .fromIterable(workflow.getWorkflowActions())
-        .flatMap(workflowAction -> workflowAction.getType().toActionResponse(workflowAction, authenticationToken))
+
+    List<ActionResponse> actionResponses = workflow.getWorkflowActions()
+        .stream()
+        .map(action -> action.getType().toActionResponse(action))
+        .collect(toList());
+
+    return Flux.fromIterable(actionResponses)
+        .flatMap(actionResponse -> getResolvedAction(actionResponse, authenticationToken))
         .collectList()
         .zipWith(conditionMono)
         .map(objects -> new WorkflowDetail(
@@ -94,6 +114,31 @@ public class WorkflowService {
             workflowTrigger, objects.getT2(), objects.getT1(), createdBy, updatedBy,
             workflow.getCreatedAt(), workflow.getUpdatedAt(), executedEvent.getLastTriggeredAt(),
             executedEvent.getTriggerCount(), workflow.getAllowedActions(), workflow.isActive()));
+  }
+
+  private Mono<ActionResponse> getResolvedAction(ActionResponse action, String authenticationToken) {
+    if (action.getType().equals(ActionType.REASSIGN)) {
+      var actionDetail = (ReassignAction) action.getPayload();
+      return valueResolver
+          .getUserName(actionDetail.getId(), authenticationToken)
+          .map(name ->
+              new ActionResponse(
+                  action.getId(),
+                  action.getType(),
+                  new ReassignAction(actionDetail.getId(), name)));
+    }
+    if (action.getType().equals(ActionType.EDIT_PROPERTY)) {
+      var actionDetail = (EditPropertyAction) action.getPayload();
+      if (actionDetail.getName().equals(LeadAttribute.PIPELINE.getName())) {
+        valueResolver.getPipeline(actionDetail.getValue(), authenticationToken)
+            .map(idName ->
+                new ActionResponse(
+                    action.getId(),
+                    action.getType(),
+                    new EditPropertyAction(actionDetail.getName(), idName, actionDetail.getValueType())));
+      }
+    }
+    return Mono.just(action);
   }
 
   private WorkflowEntry toWorkflowEntry(Workflow workflow) {

@@ -1,10 +1,10 @@
 package com.kylas.sales.workflow.api.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.kylas.sales.workflow.api.request.Condition;
 import com.kylas.sales.workflow.common.dto.ActionResponse;
 import com.kylas.sales.workflow.common.dto.User;
 import com.kylas.sales.workflow.common.dto.WorkflowTrigger;
-import com.kylas.sales.workflow.common.dto.condition.WorkflowCondition;
 import com.kylas.sales.workflow.domain.user.Action;
 import com.kylas.sales.workflow.domain.workflow.EntityType;
 import java.util.Date;
@@ -21,7 +21,7 @@ public class WorkflowDetail {
   private final String description;
   private final EntityType entityType;
   private final WorkflowTrigger trigger;
-  private final WorkflowCondition condition;
+  private final Condition condition;
   private final List<ActionResponse> actions;
   private final User createdBy;
   private final User updatedBy;

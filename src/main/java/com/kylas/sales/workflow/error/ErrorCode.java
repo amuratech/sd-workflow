@@ -14,6 +14,7 @@ public class ErrorCode {
   public static final String CRYPTO_FAILURE = serviceCode + Module.Domain.getCode() + "008";
   public static final String INVALID_CONDITION = serviceCode + Module.Domain.getCode() + "009";
   public static final String INVALID_VALUE_TYPE = serviceCode + Module.Domain.getCode() + "010";
+  public static final String INVALID_REQUEST = serviceCode + Module.Domain.getCode() + "011";
 
   public static final String INSUFFICIENT_PRIVILEGES =
       serviceCode + Module.Security.getCode() + "001";

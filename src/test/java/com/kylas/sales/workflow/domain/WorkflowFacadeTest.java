@@ -1,7 +1,6 @@
 package com.kylas.sales.workflow.domain;
 
 import static com.kylas.sales.workflow.common.dto.ActionDetail.EditPropertyAction.ValueType.PLAIN;
-import static com.kylas.sales.workflow.common.dto.condition.WorkflowCondition.TriggerType.NEW_VALUE;
 import static com.kylas.sales.workflow.domain.workflow.TriggerFrequency.CREATED;
 import static com.kylas.sales.workflow.domain.workflow.action.WorkflowAction.ActionType.EDIT_PROPERTY;
 import static com.kylas.sales.workflow.domain.workflow.action.WorkflowAction.ActionType.REASSIGN;
@@ -11,12 +10,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.mockito.BDDMockito.given;
 
+import com.kylas.sales.workflow.api.request.Condition.ExpressionElement;
 import com.kylas.sales.workflow.common.dto.ActionDetail;
 import com.kylas.sales.workflow.common.dto.ActionDetail.WebhookAction;
 import com.kylas.sales.workflow.common.dto.ActionDetail.WebhookAction.AuthorizationType;
 import com.kylas.sales.workflow.common.dto.ActionResponse;
 import com.kylas.sales.workflow.common.dto.condition.Operator;
-import com.kylas.sales.workflow.common.dto.condition.WorkflowCondition.ConditionExpression;
 import com.kylas.sales.workflow.config.TestDatabaseInitializer;
 import com.kylas.sales.workflow.domain.exception.InsufficientPrivilegeException;
 import com.kylas.sales.workflow.domain.exception.InvalidActionException;
@@ -130,10 +129,9 @@ class WorkflowFacadeTest {
         .willReturn(Mono.just(aUser));
     var action = new ActionResponse(EDIT_PROPERTY, new ActionDetail.EditPropertyAction("firstName", "Tony", PLAIN));
 
-    ConditionExpression expression = new ConditionExpression(Operator.EQUAL, "firstName", "Tony", NEW_VALUE);
-
+    List<ExpressionElement> conditions = List.of(new ExpressionElement("EQUAL", "firstName", "Tony", "NEW_VALUE"));
     var workflowRequest = WorkflowStub.anConditionBasedEditPropertyWorkflowRequest(
-        "SomeRandomName", "desc", EntityType.LEAD, expression, Set.of(action));
+        "SomeRandomName", "desc", EntityType.LEAD, conditions, Set.of(action));
     //when
     var workflowMono = workflowFacade.create(workflowRequest);
     //then

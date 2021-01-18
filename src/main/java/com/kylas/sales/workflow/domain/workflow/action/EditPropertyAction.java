@@ -10,9 +10,7 @@ import com.kylas.sales.workflow.common.dto.ActionResponse;
 import com.kylas.sales.workflow.domain.exception.InvalidActionException;
 import com.kylas.sales.workflow.domain.exception.InvalidValueTypeException;
 import com.kylas.sales.workflow.domain.processor.lead.LeadFieldValueType;
-import com.kylas.sales.workflow.domain.service.ValueResolver;
 import com.kylas.sales.workflow.domain.workflow.Workflow;
-import com.kylas.sales.workflow.domain.workflow.action.webhook.attribute.AttributeFactory.LeadAttribute;
 import java.util.Arrays;
 import javax.persistence.Convert;
 import javax.persistence.Entity;
@@ -22,7 +20,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import reactor.core.publisher.Mono;
 
 @Entity
 @Getter
@@ -55,14 +52,9 @@ public class EditPropertyAction extends AbstractWorkflowAction implements com.ky
     return new EditPropertyAction(payload.getName(), payload.getValue(), payload.getValueType());
   }
 
-  public static Mono<ActionResponse> toActionResponse(EditPropertyAction action, String authenticationToken) {
-    if (action.name.equals(LeadAttribute.PIPELINE.getName())) {
-      return ValueResolver.getPipeline(action.value, authenticationToken)
-          .map(idName -> new ActionResponse(action.getId(), EDIT_PROPERTY,
-              new ActionDetail.EditPropertyAction(action.name, idName, action.valueType)));
-    }
-    return Mono.just(new ActionResponse(action.getId(), EDIT_PROPERTY,
-        new ActionDetail.EditPropertyAction(action.name, action.value, action.valueType)));
+  public static ActionResponse toActionResponse(EditPropertyAction action) {
+    return new ActionResponse(action.getId(), EDIT_PROPERTY,
+        new ActionDetail.EditPropertyAction(action.name, action.value, action.valueType));
   }
 
   @Override

@@ -10,15 +10,17 @@
   },
   "condition": {
     "conditionType": "CONDITION_BASED",
-    "expression": {
-      "triggerOn": "NEW_VALUE",
-      "name": "pipeline",
-      "operator": "EQUAL",
-      "value": {
-        "id": 242,
-        "name": "Lead Routing Pipeline"
+    "conditions": [
+      {
+        "triggerOn": "NEW_VALUE",
+        "name": "pipeline",
+        "operator": "EQUAL",
+        "value": {
+          "id": 242,
+          "name": "Lead Routing Pipeline"
+        }
       }
-    }
+    ]
   },
   "actions": [
     {

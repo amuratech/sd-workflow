@@ -9,8 +9,7 @@
     }
   },
   "condition": {
-    "conditionType": "FOR_ALL",
-    "values": []
+    "conditionType": "FOR_ALL"
   },
   "actions": [
     {

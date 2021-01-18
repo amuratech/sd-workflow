@@ -3,9 +3,11 @@ package com.kylas.sales.workflow.domain.processor;
 import static java.util.Objects.isNull;
 
 import com.kylas.sales.workflow.api.WorkflowService;
+import com.kylas.sales.workflow.domain.ConditionFacade;
 import com.kylas.sales.workflow.domain.processor.exception.WorkflowExecutionException;
 import com.kylas.sales.workflow.domain.processor.lead.Lead;
 import com.kylas.sales.workflow.domain.processor.lead.LeadDetail;
+import com.kylas.sales.workflow.domain.workflow.ConditionType;
 import com.kylas.sales.workflow.domain.workflow.TriggerFrequency;
 import com.kylas.sales.workflow.domain.workflow.Workflow;
 import com.kylas.sales.workflow.domain.workflow.action.AbstractWorkflowAction;
@@ -40,14 +42,20 @@ public class WorkflowProcessor {
   private final LeadUpdatedCommandPublisher leadUpdatedCommandPublisher;
   private final WebhookService webhookService;
   private final ValueConverter valueConverter;
+  private final ConditionFacade conditionFacade;
 
   @Autowired
-  public WorkflowProcessor(WorkflowService workflowService,
-      LeadUpdatedCommandPublisher leadUpdatedCommandPublisher, WebhookService webhookService, ValueConverter valueConverter) {
+  public WorkflowProcessor(
+      WorkflowService workflowService,
+      LeadUpdatedCommandPublisher leadUpdatedCommandPublisher,
+      WebhookService webhookService,
+      ValueConverter valueConverter,
+      ConditionFacade conditionFacade) {
     this.workflowService = workflowService;
     this.leadUpdatedCommandPublisher = leadUpdatedCommandPublisher;
     this.webhookService = webhookService;
     this.valueConverter = valueConverter;
+    this.conditionFacade = conditionFacade;
   }
 
   public void process(LeadEvent event) {
@@ -58,12 +66,12 @@ public class WorkflowProcessor {
         .stream()
         .filter(workflow -> !event.getMetadata().isProcessed(workflow.getId())).collect(Collectors.toList());
 
-    Set<Long> workflowIds = workflows.stream().map(Workflow::getId).collect(Collectors.toSet());
+    var workflowIds = workflows.stream().map(Workflow::getId).collect(Collectors.toSet());
 
     workflows.stream()
-        .filter(workflow ->
-            isNull(workflow.getWorkflowCondition()) ||
-                workflow.getWorkflowCondition().isSatisfiedBy(event.getEntity()))
+        .filter(workflow -> isNull(workflow.getWorkflowCondition()) ||
+            workflow.getWorkflowCondition().getType().equals(ConditionType.FOR_ALL) ||
+            conditionFacade.satisfies(workflow.getWorkflowCondition().getExpression(), event.getEntity()))
         .forEach(workflow -> {
           LeadDetail entity = event.getEntity();
           Metadata metadata = event.getMetadata().with(workflow.getId()).withAllWorkflowIds(workflowIds).withEntityId(entity.getId());

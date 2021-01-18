@@ -3,7 +3,6 @@ package com.kylas.sales.workflow.api.request;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.kylas.sales.workflow.common.dto.ActionResponse;
 import com.kylas.sales.workflow.common.dto.WorkflowTrigger;
-import com.kylas.sales.workflow.common.dto.condition.WorkflowCondition;
 import com.kylas.sales.workflow.domain.workflow.EntityType;
 import java.util.Set;
 import javax.validation.constraints.NotEmpty;
@@ -28,7 +27,7 @@ public class WorkflowRequest {
   @NotNull
   private WorkflowTrigger trigger;
   @NotNull
-  private WorkflowCondition condition;
+  private Condition condition;
   @NotEmpty
   private Set<ActionResponse> actions;
   private boolean active = true;
