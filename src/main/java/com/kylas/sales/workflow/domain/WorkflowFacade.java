@@ -6,12 +6,19 @@ import static com.kylas.sales.workflow.domain.WorkflowSpecification.belongToUser
 import static com.kylas.sales.workflow.domain.WorkflowSpecification.withEntityType;
 import static com.kylas.sales.workflow.domain.WorkflowSpecification.withId;
 import static com.kylas.sales.workflow.domain.WorkflowSpecification.withTriggerFrequency;
+import static com.kylas.sales.workflow.domain.processor.FieldValueTypeFactory.createByEntityType;
+import static com.kylas.sales.workflow.domain.workflow.action.WorkflowAction.ActionType.EDIT_PROPERTY;
+import static java.util.Objects.isNull;
 import static org.apache.commons.collections.CollectionUtils.isEmpty;
 import static org.apache.commons.lang3.ObjectUtils.allNotNull;
+import static org.apache.commons.lang3.StringUtils.isBlank;
 
 import com.kylas.sales.workflow.api.request.WorkflowRequest;
+import com.kylas.sales.workflow.common.dto.ActionDetail.EditPropertyAction;
 import com.kylas.sales.workflow.common.dto.ActionResponse;
 import com.kylas.sales.workflow.domain.exception.InsufficientPrivilegeException;
+import com.kylas.sales.workflow.domain.exception.InvalidActionException;
+import com.kylas.sales.workflow.domain.exception.InvalidValueTypeException;
 import com.kylas.sales.workflow.domain.exception.InvalidWorkflowRequestException;
 import com.kylas.sales.workflow.domain.exception.WorkflowNotFoundException;
 import com.kylas.sales.workflow.domain.service.UserService;
@@ -127,8 +134,7 @@ public class WorkflowFacade {
 
                           var trigger = workflow.getWorkflowTrigger().update(request.getTrigger());
                           var actions =
-                              updateOrCreateFrom(
-                                  request.getActions(), workflow.getWorkflowActions());
+                              updateOrCreateActions(request, workflow);
                           var workflowToUpdate =
                               workflow.update(
                                   request.getName(),
@@ -145,12 +151,11 @@ public class WorkflowFacade {
                     .orElseThrow(WorkflowNotFoundException::new));
   }
 
-  private Set<AbstractWorkflowAction> updateOrCreateFrom(
-      Set<ActionResponse> requestedActions, Set<AbstractWorkflowAction> existingActions) {
-    return requestedActions.stream()
+  private Set<AbstractWorkflowAction> updateOrCreateActions(WorkflowRequest request, Workflow workflow) {
+    return request.getActions().stream()
         .map(
             requestedAction ->
-                existingActions.stream()
+                workflow.getWorkflowActions().stream()
                     .filter(
                         existingAction -> existingAction.getId().equals(requestedAction.getId()) && existingAction.getType()
                             .equals(requestedAction.getType()))
@@ -241,9 +246,32 @@ public class WorkflowFacade {
     if (!allNotNull(request.getName(), request.getEntityType(), request.getTrigger(), request.getCondition())) {
       throw new InvalidWorkflowRequestException();
     }
+
+    if (!request.getEntityType().isWorkflowEntity()) {
+      throw new InvalidWorkflowRequestException();
+    }
+
     if (isEmpty(request.getActions())) {
       throw new InvalidWorkflowRequestException();
     }
+
+    request.getActions()
+        .stream()
+        .filter(action -> action.getType().equals(EDIT_PROPERTY))
+        .forEach(action -> validateFieldValueType(action, request.getEntityType()));
+
     conditionFacade.validate(request.getCondition());
+  }
+
+  public void validateFieldValueType(ActionResponse workflowAction, EntityType entityType) {
+    EditPropertyAction editPropertyAction = (EditPropertyAction) workflowAction.getPayload();
+    if (isBlank(editPropertyAction.getName()) || isNull(editPropertyAction.getValue())) {
+      throw new InvalidActionException();
+    }
+    boolean isInvalidValueType = createByEntityType(entityType)
+        .isInValidValueType(editPropertyAction.getName(), editPropertyAction.getValueType());
+    if (isInvalidValueType) {
+      throw new InvalidValueTypeException();
+    }
   }
 }

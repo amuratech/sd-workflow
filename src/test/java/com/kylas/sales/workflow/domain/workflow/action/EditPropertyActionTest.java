@@ -4,11 +4,9 @@ import static com.kylas.sales.workflow.common.dto.ActionDetail.EditPropertyActio
 import static com.kylas.sales.workflow.common.dto.ActionDetail.EditPropertyAction.ValueType.OBJECT;
 import static com.kylas.sales.workflow.common.dto.ActionDetail.EditPropertyAction.ValueType.PLAIN;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.kylas.sales.workflow.common.dto.ActionDetail.EditPropertyAction;
 import com.kylas.sales.workflow.common.dto.ActionResponse;
-import com.kylas.sales.workflow.domain.exception.InvalidActionException;
 import com.kylas.sales.workflow.domain.processor.lead.ConversionAssociation;
 import com.kylas.sales.workflow.domain.processor.lead.Product;
 import com.kylas.sales.workflow.domain.workflow.action.WorkflowAction.ActionType;
@@ -110,25 +108,4 @@ class EditPropertyActionTest {
     assertThat(actualConversionAssociation.getTenantId()).isEqualTo(4);
     assertThat(actualConversionAssociation.getCompanyId()).isEqualTo(5);
   }
-
-  @Test
-  public void givenActionWithoutName_shouldThrow() {
-    //given
-    var editPropertyAction = new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("", "Tony", PLAIN));
-    //when
-    //then
-    assertThatThrownBy(() -> com.kylas.sales.workflow.domain.workflow.action.EditPropertyAction.createNew(editPropertyAction))
-        .isInstanceOf(InvalidActionException.class);
-  }
-
-  @Test
-  public void givenActionWithoutValue_shouldThrow() {
-    //given
-    var editPropertyAction = new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("firstName", null, PLAIN));
-    //when
-    //then
-    assertThatThrownBy(() -> com.kylas.sales.workflow.domain.workflow.action.EditPropertyAction.createNew(editPropertyAction))
-        .isInstanceOf(InvalidActionException.class);
-  }
-
 }

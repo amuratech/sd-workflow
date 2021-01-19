@@ -1,5 +1,12 @@
 package com.kylas.sales.workflow.domain.workflow;
 
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+
+@Getter
+@AllArgsConstructor
 public enum EntityType {
-  LEAD, USER, TENANT, CUSTOM, CONTACT
+  LEAD(true), CONTACT(true), DEAL(true), USER(false), TENANT(false), CUSTOM(false);
+
+  private final boolean workflowEntity;
 }

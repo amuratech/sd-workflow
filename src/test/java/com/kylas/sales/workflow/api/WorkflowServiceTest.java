@@ -6,8 +6,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 import com.kylas.sales.workflow.api.request.FilterRequest;
 import com.kylas.sales.workflow.api.request.FilterRequest.Filter;
@@ -75,9 +77,11 @@ class WorkflowServiceTest {
     var workflowMock = mock(Workflow.class);
     given(workflowMock.getId()).willReturn(1L);
     given(workflowFacade.create(workflowRequestMock)).willReturn(Mono.just(workflowMock));
+    doNothing().when(workflowFacade).validate(workflowRequestMock);
     // when
     Mono<WorkflowSummary> workflowSummaryMono = workflowService.create(workflowRequestMock);
     // then
+    verify(workflowFacade, times(1)).validate(workflowRequestMock);
     StepVerifier.create(workflowSummaryMono)
         .assertNext(workflowSummary -> assertThat(workflowMock.getId()).isEqualTo(1L))
         .verifyComplete();
@@ -87,14 +91,42 @@ class WorkflowServiceTest {
   public void givenWorkflowUpdateRequest_shouldUpdateIt() {
     // given
     var workflowRequestMock = mock(WorkflowRequest.class);
-    var workflowMock = mock(Workflow.class);
-    given(workflowMock.getId()).willReturn(1L);
-    given(workflowFacade.create(workflowRequestMock)).willReturn(Mono.just(workflowMock));
+    User aUser = UserStub.aUser(11L, 99L, true, true, true, false, false).withName("user 1");
+    WorkflowTrigger trigger =
+        WorkflowTrigger.createNew(
+            new com.kylas.sales.workflow.common.dto.WorkflowTrigger(
+                TriggerType.EVENT, CREATED));
+
+    var condition = new WorkflowCondition(ConditionType.FOR_ALL, null);
+    Set<AbstractWorkflowAction> actions = new HashSet<>();
+    EditPropertyAction editPropertyAction = new EditPropertyAction();
+    UUID id = UUID.randomUUID();
+    editPropertyAction.setId(id);
+    editPropertyAction.setName("firstName");
+    editPropertyAction.setValue("tony");
+    actions.add(editPropertyAction);
+
+    Workflow workflow =
+        Workflow.createNew(
+            "Workflow 1", "Workflow 1", LEAD, trigger, aUser, actions, condition, true);
+    workflow.setId(1L);
+    given(workflowFacade.update(1l, workflowRequestMock)).willReturn(Mono.just(workflow));
+    doNothing().when(workflowFacade).validate(workflowRequestMock);
     // when
-    Mono<WorkflowSummary> workflowSummaryMono = workflowService.create(workflowRequestMock);
+    Mono<WorkflowDetail> workflowDetailMono = workflowService.update(1L, workflowRequestMock);
     // then
-    StepVerifier.create(workflowSummaryMono)
-        .assertNext(workflowSummary -> assertThat(workflowMock.getId()).isEqualTo(1L))
+    verify(workflowFacade, times(1)).validate(workflowRequestMock);
+    StepVerifier.create(workflowDetailMono)
+        .assertNext(workflowDetail -> {
+          assertThat(workflowDetail.getId()).isEqualTo(workflow.getId());
+          assertThat(workflowDetail.getActions()).hasSize(workflow.getWorkflowActions().size());
+          assertThat(workflowDetail.getName()).isEqualTo("Workflow 1");
+          assertThat(workflowDetail.getDescription()).isEqualTo("Workflow 1");
+          assertThat(workflowDetail.getEntityType()).isEqualTo(workflow.getEntityType());
+          assertThat(workflowDetail.getTrigger().getTriggerFrequency()).isEqualTo(workflow.getWorkflowTrigger().getTriggerFrequency());
+          assertThat(workflowDetail.getCondition().getConditionType()).isEqualTo(workflow.getWorkflowCondition().getType());
+          assertThat(workflowDetail.isActive()).isTrue();
+        })
         .verifyComplete();
   }
 

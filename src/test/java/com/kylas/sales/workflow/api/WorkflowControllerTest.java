@@ -1,6 +1,7 @@
 package com.kylas.sales.workflow.api;
 
 import static com.kylas.sales.workflow.common.dto.ActionDetail.EditPropertyAction.ValueType.ARRAY;
+import static com.kylas.sales.workflow.common.dto.ActionDetail.EditPropertyAction.ValueType.OBJECT;
 import static com.kylas.sales.workflow.common.dto.ActionDetail.EditPropertyAction.ValueType.PLAIN;
 import static java.util.Arrays.asList;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -84,6 +85,7 @@ class WorkflowControllerTest {
 
   @Autowired
   Environment environment;
+
   @Autowired
   MockMvc mockMvc;
   @Autowired
@@ -1100,6 +1102,117 @@ class WorkflowControllerTest {
 
   }
 
+  @Test
+  public void givenWorkflowRequest_withEntityDeal_shouldCreateIt() throws IOException {
+    //given
+    var requestPayload = getResourceAsString("classpath:contracts/workflow/api/create-workflow-request-with-entity-deal.json");
+    given(workflowService.create(argThat(workflowRequest ->
+        {
+          List<ValueType> mockList = List.of(ARRAY, PLAIN, OBJECT);
+          List<ValueType> valueTypeList = new ArrayList<>();
+          workflowRequest.getActions().stream().filter(action -> action.getType().equals(ActionType.EDIT_PROPERTY)).forEach(action -> {
+            EditPropertyAction payload = (EditPropertyAction) action.getPayload();
+            valueTypeList.add(payload.getValueType());
+          });
+          return workflowRequest.getName().equalsIgnoreCase("Workflow 1")
+              && workflowRequest.getDescription().equalsIgnoreCase("Workflow Description")
+              && workflowRequest.getEntityType().equals(EntityType.DEAL)
+              && workflowRequest.getTrigger().getName().equals(TriggerType.EVENT)
+              && workflowRequest.getTrigger().getTriggerFrequency().equals(TriggerFrequency.CREATED)
+              && workflowRequest.getCondition().getConditionType().equals(ConditionType.FOR_ALL)
+              && workflowRequest.getActions().stream().allMatch(action -> action.getType().equals(ActionType.EDIT_PROPERTY))
+              && valueTypeList.containsAll(mockList)
+              && workflowRequest.getActions().size() == 9
+              && workflowRequest.isActive();
+        }
+    ))).willReturn(Mono.just(new WorkflowSummary(1L)));
+    //when
+    var workflowResponse = buildWebClient()
+        .post()
+        .uri("/v1/workflows")
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(requestPayload)
+        .retrieve()
+        .bodyToMono(String.class);
+    //then
+    var expectedResponse =
+        getResourceAsString("classpath:contracts/workflow/api/create-workflow-response.json");
+    StepVerifier.create(workflowResponse)
+        .assertNext(json -> {
+          try {
+            JSONAssert.assertEquals(expectedResponse, json, false);
+          } catch (JSONException e) {
+            fail(e.getMessage());
+          }
+        }).verifyComplete();
+  }
+
+  @Test
+  public void givenWorkflowRequest_withEntityDeal_shouldUpdateIt() throws IOException, JSONException {
+    //given
+    var requestPayload = getResourceAsString("classpath:contracts/workflow/api/update-workflow-request-with-entity-deal.json");
+    ObjectMapper objectMapper = new ObjectMapper();
+    WorkflowTrigger trigger = new WorkflowTrigger(TriggerType.EVENT, TriggerFrequency.CREATED);
+    Condition condition = new Condition(ConditionType.FOR_ALL.name(), null);
+    List<ActionResponse> actions =
+        List.of(
+            new ActionResponse(ActionType.EDIT_PROPERTY,
+                new EditPropertyAction("ownedBy", objectMapper.readValue("{\"id\":13,\"name\":\"James BondUpdated\"}", Object.class), OBJECT)),
+            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("name", "deal by workflow updated", PLAIN)),
+            new ActionResponse(ActionType.EDIT_PROPERTY,
+                new EditPropertyAction("estimatedValue", objectMapper.readValue("{\"currencyId\":1,\"value\":10000}", Object.class), OBJECT)),
+            new ActionResponse(ActionType.EDIT_PROPERTY,
+                new EditPropertyAction("actualValue", objectMapper.readValue("{\"currencyId\":2,\"value\":20000}", Object.class), OBJECT)),
+            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("estimatedClosureOn", "2021-01-15T06:30:00.000Z", PLAIN)),
+            new ActionResponse(ActionType.EDIT_PROPERTY,
+                new EditPropertyAction("product", objectMapper.readValue("{\"id\":2,\"name\":\"Marketing Service Updated\"}", Object.class), OBJECT)),
+            new ActionResponse(ActionType.EDIT_PROPERTY,
+                new EditPropertyAction("pipeline", objectMapper
+                    .readValue("{\"id\":11,\"name\":\"Test Deal Pipeline Updated\",\"stage\":{\"id\":1,\"name\":\"Open\"}}", Object.class),
+                    OBJECT)),
+            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("associatedContacts",
+                objectMapper.readValue("[{\"id\":14,\"name\":\"Tony StarkUpdated\"}]", Object[].class), ARRAY)),
+            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("company",
+                objectMapper.readValue("{\"id\":15,\"name\":\"Dell enterprises Updated\"}", Object.class), OBJECT)));
+
+    User user = new User(5000L, "Tony Stark");
+    WorkflowDetail workflowDetail = new WorkflowDetail(1L, "Workflow 1", "Workflow Description", EntityType.DEAL, trigger, condition, actions,
+        user,
+        user, null, null, null, 0L, null, true);
+    given(workflowService.update(eq(1L), argThat(workflowRequest ->
+        {
+          List<ValueType> mockList = List.of(OBJECT, PLAIN, ARRAY);
+          List<ValueType> valueTypeList = new ArrayList<>();
+          workflowRequest.getActions().stream().filter(action -> action.getType().equals(ActionType.EDIT_PROPERTY)).forEach(action -> {
+            EditPropertyAction payload = (EditPropertyAction) action.getPayload();
+            valueTypeList.add(payload.getValueType());
+          });
+          return workflowRequest.getName().equalsIgnoreCase("Workflow 1")
+              && workflowRequest.getDescription().equalsIgnoreCase("Workflow Description")
+              && workflowRequest.getEntityType().equals(EntityType.DEAL)
+              && workflowRequest.getTrigger().getName().equals(TriggerType.EVENT)
+              && workflowRequest.getTrigger().getTriggerFrequency().equals(TriggerFrequency.CREATED)
+              && workflowRequest.getCondition().getConditionType().equals(ConditionType.FOR_ALL)
+              && workflowRequest.getActions().stream().allMatch(action -> action.getType().equals(ActionType.EDIT_PROPERTY))
+              && valueTypeList.containsAll(mockList)
+              && workflowRequest.getActions().size() == 9
+              && workflowRequest.isActive();
+        }
+    ))).willReturn(Mono.just(workflowDetail));
+    //when
+    var workflowResponse = buildWebClient()
+        .put()
+        .uri("/v1/workflows/1")
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(requestPayload)
+        .retrieve()
+        .bodyToMono(String.class).block();
+    //then
+    var expectedResponse =
+        getResourceAsString("classpath:contracts/workflow/api/update-workflow-response-with-entity-deal.json");
+    JSONAssert.assertEquals(expectedResponse, workflowResponse, false);
+
+  }
 
   private String getResourceAsString(String resourcePath) throws IOException {
     var resource = resourceLoader.getResource(resourcePath);

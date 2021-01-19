@@ -74,6 +74,7 @@ public class WorkflowService {
   }
 
   public Mono<WorkflowDetail> update(long workflowId, WorkflowRequest workflowRequest) {
+    workflowFacade.validate(workflowRequest);
     String authToken = authService.getAuthenticationToken();
     return workflowFacade.update(workflowId, workflowRequest)
         .flatMap(workflow -> toWorkflowDetail(workflow, authToken));

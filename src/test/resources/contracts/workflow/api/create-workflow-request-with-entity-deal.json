@@ -1,0 +1,116 @@
+{
+  "name": "Workflow 1",
+  "description": "Workflow Description",
+  "entityType": "DEAL",
+  "trigger": {
+    "name": "EVENT",
+    "triggerFrequency": "CREATED",
+    "payload": {
+    }
+  },
+  "condition": {
+    "conditionType": "FOR_ALL",
+    "values": []
+  },
+  "actions": [
+    {
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "ownedBy",
+        "value": {
+          "id": 12,
+          "name": "James Bond"
+        },
+        "valueType": "OBJECT"
+      }
+    },
+    {
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "name",
+        "value": "deal by workflow",
+        "valueType": "PLAIN"
+      }
+    },
+    {
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "estimatedValue",
+        "value": {
+          "currencyId": 1,
+          "value": 1000000
+        },
+        "valueType": "OBJECT"
+      }
+    },
+    {
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "actualValue",
+        "value": {
+          "currencyId": 2,
+          "value": 2000000
+        },
+        "valueType": "OBJECT"
+      }
+    },
+    {
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "estimatedClosureOn",
+        "value": "2021-01-14T06:30:00.000Z",
+        "valueType": "PLAIN"
+      }
+    },
+    {
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "product",
+        "value": {
+          "id": 2,
+          "name": "Marketing Service"
+        },
+        "valueType": "OBJECT"
+      }
+    },
+    {
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "pipeline",
+        "value": {
+          "id": 11,
+          "name": "Test Deal Pipeline",
+          "stage": {
+            "id": 1,
+            "name": "Open"
+          }
+        },
+        "valueType": "OBJECT"
+      }
+    },
+    {
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "associatedContacts",
+        "value": [
+          {
+            "id": 12,
+            "name": "Tony Stark"
+          }
+        ],
+        "valueType": "ARRAY"
+      }
+    },
+    {
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "company",
+        "value": {
+          "id": 13,
+          "name": "Dell enterprises"
+        },
+        "valueType": "OBJECT"
+      }
+    }
+  ]
+}

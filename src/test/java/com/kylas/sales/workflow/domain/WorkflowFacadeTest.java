@@ -217,28 +217,7 @@ class WorkflowFacadeTest {
     assertThatExceptionOfType(InvalidActionException.class)
         .isThrownBy(() -> workflowFacade.create(workflowRequest).block());
   }
-
-  @Transactional
-  @Test
-  @Sql("/test-scripts/insert-users.sql")
-  public void givenWorkflowRequest_withInvalidPropertyValue_shouldThrow() {
-    //given
-    User aUser = UserStub.aUser(11L, 99L, true, true, true, true, true)
-        .withName("user 1");
-    given(authService.getLoggedInUser()).willReturn(aUser);
-    given(userService.getUserDetails(11L, authService.getAuthenticationToken()))
-        .willReturn(Mono.just(aUser));
-    Set<ActionResponse> actions = Set.of(
-        new ActionResponse(EDIT_PROPERTY, new ActionDetail.EditPropertyAction("city", null, PLAIN)));
-
-    var workflowRequest = WorkflowStub
-        .aWorkflowRequestWithActions("Edit Lead Property", "Edit Lead Property", EntityType.LEAD, TriggerType.EVENT, CREATED,
-            ConditionType.FOR_ALL, true, actions);
-    //then
-    assertThatExceptionOfType(InvalidActionException.class)
-        .isThrownBy(() -> workflowFacade.create(workflowRequest).block());
-  }
-
+  
   @Transactional
   @Test
   @Sql("/test-scripts/insert-users.sql")

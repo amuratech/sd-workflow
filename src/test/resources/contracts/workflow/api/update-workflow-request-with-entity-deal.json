@@ -1,0 +1,124 @@
+{
+  "name": "Workflow 1",
+  "description": "Workflow Description",
+  "entityType": "DEAL",
+  "trigger": {
+    "name": "EVENT",
+    "triggerFrequency": "CREATED",
+    "payload": {
+    }
+  },
+  "condition": {
+    "conditionType": "FOR_ALL",
+    "values": []
+  },
+  "actions": [
+    {
+      "id": "08518b20-23f9-11eb-adc1-0242ac120002",
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "ownedBy",
+        "value": {
+          "id": 13,
+          "name": "James BondUpdated"
+        },
+        "valueType": "OBJECT"
+      }
+    },
+    {
+      "id": "08518b20-23f9-11eb-adc1-0242ac120003",
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "name",
+        "value": "deal by workflow updated",
+        "valueType": "PLAIN"
+      }
+    },
+    {
+      "id": "08518b20-23f9-11eb-adc1-0242ac120004",
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "estimatedValue",
+        "value": {
+          "currencyId": 1,
+          "value": 10000
+        },
+        "valueType": "OBJECT"
+      }
+    },
+    {
+      "id": "08518b20-23f9-11eb-adc1-0242ac120005",
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "actualValue",
+        "value": {
+          "currencyId": 2,
+          "value": 20000
+        },
+        "valueType": "OBJECT"
+      }
+    },
+    {
+      "id": "08518b20-23f9-11eb-adc1-0242ac120006",
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "estimatedClosureOn",
+        "value": "2021-01-15T06:30:00.000Z",
+        "valueType": "PLAIN"
+      }
+    },
+    {
+      "id": "08518b20-23f9-11eb-adc1-0242ac120007",
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "product",
+        "value": {
+          "id": 2,
+          "name": "Marketing Service Updated"
+        },
+        "valueType": "OBJECT"
+      }
+    },
+    {
+      "id": "08518b20-23f9-11eb-adc1-0242ac120008",
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "pipeline",
+        "value": {
+          "id": 11,
+          "name": "Test Deal Pipeline Updated",
+          "stage": {
+            "id": 1,
+            "name": "Open"
+          }
+        },
+        "valueType": "OBJECT"
+      }
+    },
+    {
+      "id": "08518b20-23f9-11eb-adc1-0242ac120009",
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "associatedContacts",
+        "value": [
+          {
+            "id": 14,
+            "name": "Tony StarkUpdated"
+          }
+        ],
+        "valueType": "ARRAY"
+      }
+    },
+    {
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "company",
+        "value": {
+          "id": 15,
+          "name": "Dell enterprises Updated"
+        },
+        "valueType": "OBJECT"
+      }
+    }
+  ]
+}
