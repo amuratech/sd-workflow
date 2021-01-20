@@ -3,6 +3,8 @@ package com.kylas.sales.workflow.domain;
 import static com.kylas.sales.workflow.common.dto.condition.ExpressionField.getFieldByName;
 import static com.kylas.sales.workflow.common.dto.condition.Operator.AND;
 import static com.kylas.sales.workflow.common.dto.condition.Operator.BETWEEN;
+import static com.kylas.sales.workflow.common.dto.condition.Operator.IS_EMPTY;
+import static com.kylas.sales.workflow.common.dto.condition.Operator.IS_NOT_EMPTY;
 import static com.kylas.sales.workflow.common.dto.condition.Operator.IS_NOT_NULL;
 import static com.kylas.sales.workflow.common.dto.condition.Operator.IS_NULL;
 import static com.kylas.sales.workflow.common.dto.condition.Operator.NOT_BETWEEN;
@@ -20,7 +22,9 @@ import static org.apache.commons.collections.CollectionUtils.isEmpty;
 import static org.apache.commons.lang3.ObjectUtils.allNotNull;
 import static org.apache.commons.lang3.ObjectUtils.anyNotNull;
 import static org.apache.commons.lang3.StringUtils.isBlank;
+import static org.apache.commons.lang3.StringUtils.isEmpty;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
+import static org.apache.commons.lang3.StringUtils.startsWith;
 
 import com.kylas.sales.workflow.api.request.Condition;
 import com.kylas.sales.workflow.api.request.Condition.ExpressionElement;
@@ -100,7 +104,8 @@ public class ConditionFacade {
       log.info("Expecting non-null operator and name");
       throw new InvalidConditionException();
     }
-    if (operator.equals(IS_NULL) || operator.equals(IS_NOT_NULL)) {
+    if (operator.equals(IS_NULL) || operator.equals(IS_NOT_NULL)
+        || operator.equals(IS_EMPTY) || operator.equals(IS_NOT_EMPTY)) {
       return;
     }
     if (isNull(element.getValue())) {
@@ -185,6 +190,12 @@ public class ConditionFacade {
         return Arrays.asList(valueOf(expression.getValue()).split("\\s*,\\s*")).contains(actualValue);
       case NOT_IN:
         return !Arrays.asList(valueOf(expression.getValue()).split("\\s*,\\s*")).contains(actualValue);
+      case IS_EMPTY:
+        return isEmpty(actualValue);
+      case IS_NOT_EMPTY:
+        return !isEmpty(actualValue);
+      case BEGINS_WITH:
+        return startsWith(actualValue, valueOf(expression.getValue()));
     }
     throw new InvalidConditionException();
   }

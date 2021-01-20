@@ -2,11 +2,14 @@ package com.kylas.sales.workflow.domain.workflow;
 
 import static com.kylas.sales.workflow.api.request.Condition.TriggerType.NEW_VALUE;
 import static com.kylas.sales.workflow.common.dto.condition.Operator.AND;
+import static com.kylas.sales.workflow.common.dto.condition.Operator.BEGINS_WITH;
 import static com.kylas.sales.workflow.common.dto.condition.Operator.BETWEEN;
 import static com.kylas.sales.workflow.common.dto.condition.Operator.CONTAINS;
 import static com.kylas.sales.workflow.common.dto.condition.Operator.EQUAL;
 import static com.kylas.sales.workflow.common.dto.condition.Operator.GREATER;
 import static com.kylas.sales.workflow.common.dto.condition.Operator.IN;
+import static com.kylas.sales.workflow.common.dto.condition.Operator.IS_EMPTY;
+import static com.kylas.sales.workflow.common.dto.condition.Operator.IS_NOT_EMPTY;
 import static com.kylas.sales.workflow.common.dto.condition.Operator.IS_NOT_NULL;
 import static com.kylas.sales.workflow.common.dto.condition.Operator.IS_NULL;
 import static com.kylas.sales.workflow.common.dto.condition.Operator.LESS;
@@ -215,6 +218,66 @@ class WorkflowConditionTest {
     var expression = new ConditionExpression(NOT_IN, "firstName", "val1,val2, val3", NEW_VALUE);
     var entity = stubLeadDetail();
     entity.setFirstName("val3");
+
+    assertThat(conditionFacade.satisfies(expression, entity))
+        .isFalse();
+  }
+
+  @Test
+  public void givenIsEmptyOperator_havingNoValue_evaluatesTrue() {
+    var expression = new ConditionExpression(IS_EMPTY, "firstName", null, NEW_VALUE);
+    var entity = stubLeadDetail();
+    entity.setFirstName("");
+
+    assertThat(conditionFacade.satisfies(expression, entity))
+        .isTrue();
+  }
+
+  @Test
+  public void givenIsEmptyOperator_havingValue_evaluatesFalse() {
+    var expression = new ConditionExpression(IS_EMPTY, "firstName", null, NEW_VALUE);
+    var entity = stubLeadDetail();
+    entity.setFirstName("val3");
+
+    assertThat(conditionFacade.satisfies(expression, entity))
+        .isFalse();
+  }
+
+  @Test
+  public void givenNotEmptyOperator_havingValue_evaluatesTrue() {
+    var expression = new ConditionExpression(IS_NOT_EMPTY, "firstName", null, NEW_VALUE);
+    var entity = stubLeadDetail();
+    entity.setFirstName("Tony");
+
+    assertThat(conditionFacade.satisfies(expression, entity))
+        .isTrue();
+  }
+
+  @Test
+  public void givenNotEmptyOperator_havingNoValue_evaluatesFalse() {
+    var expression = new ConditionExpression(IS_NOT_EMPTY, "firstName", null, NEW_VALUE);
+    var entity = stubLeadDetail();
+    entity.setFirstName("");
+
+    assertThat(conditionFacade.satisfies(expression, entity))
+        .isFalse();
+  }
+
+  @Test
+  public void givenBeginsWithOperator_beginningWithValue_evaluatesTrue() {
+    var expression = new ConditionExpression(BEGINS_WITH, "firstName", "prefix", NEW_VALUE);
+    var entity = stubLeadDetail();
+    entity.setFirstName("prefix-value");
+
+    assertThat(conditionFacade.satisfies(expression, entity))
+        .isTrue();
+  }
+
+  @Test
+  public void givenBeginsWithOperator_notBeginningWithValue_evaluatesFalse() {
+    var expression = new ConditionExpression(BEGINS_WITH, "firstName", "prefix", NEW_VALUE);
+    var entity = stubLeadDetail();
+    entity.setFirstName("some-value");
 
     assertThat(conditionFacade.satisfies(expression, entity))
         .isFalse();

@@ -24,7 +24,10 @@ public enum Operator {
   BETWEEN,
   NOT_BETWEEN,
   IN,
-  NOT_IN;
+  NOT_IN,
+  IS_EMPTY,
+  IS_NOT_EMPTY,
+  BEGINS_WITH;
 
   public static Operator getByName(String operatorName) {
     return Arrays.stream(values())
