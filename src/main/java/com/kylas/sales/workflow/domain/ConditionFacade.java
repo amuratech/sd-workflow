@@ -27,7 +27,6 @@ import com.kylas.sales.workflow.api.request.Condition.ExpressionElement;
 import com.kylas.sales.workflow.common.dto.condition.Operator;
 import com.kylas.sales.workflow.common.dto.condition.WorkflowCondition.ConditionExpression;
 import com.kylas.sales.workflow.domain.exception.InvalidConditionException;
-import com.kylas.sales.workflow.domain.processor.exception.WorkflowExecutionException;
 import com.kylas.sales.workflow.domain.processor.lead.IdName;
 import com.kylas.sales.workflow.domain.service.ValueResolver;
 import com.kylas.sales.workflow.domain.workflow.Workflow;
@@ -212,7 +211,6 @@ public class ConditionFacade {
       } catch (NestedNullException ignored) {
       } catch (IllegalAccessException | NoSuchMethodException | InvocationTargetException e) {
         log.error("Exception occurred while getting actual value for {}", expression.getName());
-        throw new WorkflowExecutionException("Exception occurred while getting actual value for " + expression.getName());
       }
     }
     return actualValue;
@@ -240,15 +238,20 @@ public class ConditionFacade {
                   : expression.getName().equals("pipelineStage") ? valueResolver.getPipelineStage(expression.getValue(), authenticationToken)
                       : valueResolver.getProduct(expression.getValue(), authenticationToken);
       return idNameMono
-          .map(idName -> new ConditionExpression(
-              expression.getOperand1(),
-              expression.getOperand2(),
-              expression.getOperator().getName(),
-              expression.getName(),
-              idName,
-              expression.getTriggerOn().name()));
+          .map(idName -> getExpressionWithValue(expression, idName))
+          .defaultIfEmpty(getExpressionWithValue(expression, null));
     }
     return Mono.just(expression);
+  }
+
+  private ConditionExpression getExpressionWithValue(ConditionExpression expression, IdName value) {
+    return new ConditionExpression(
+        expression.getOperand1(),
+        expression.getOperand2(),
+        expression.getOperator().getName(),
+        expression.getName(),
+        value,
+        expression.getTriggerOn().name());
   }
 
   public ConditionExpression buildExpression(List<ExpressionElement> expressionElements) {

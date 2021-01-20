@@ -1,12 +1,13 @@
 package com.kylas.sales.workflow.domain;
 
+import static com.kylas.sales.workflow.api.request.Condition.TriggerType.NEW_VALUE;
 import static com.kylas.sales.workflow.common.dto.condition.Operator.AND;
 import static com.kylas.sales.workflow.common.dto.condition.Operator.EQUAL;
+import static com.kylas.sales.workflow.common.dto.condition.Operator.IS_NOT_NULL;
 import static com.kylas.sales.workflow.common.dto.condition.Operator.OR;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.kylas.sales.workflow.api.request.Condition.ExpressionElement;
-import com.kylas.sales.workflow.api.request.Condition.TriggerType;
 import com.kylas.sales.workflow.common.dto.condition.Operator;
 import com.kylas.sales.workflow.common.dto.condition.WorkflowCondition.ConditionExpression;
 import com.kylas.sales.workflow.config.TestDatabaseInitializer;
@@ -20,6 +21,8 @@ import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabas
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase.Replace;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ContextConfiguration;
+import reactor.core.publisher.Mono;
+import reactor.test.StepVerifier;
 
 @SpringBootTest
 @AutoConfigureTestDatabase(replace = Replace.NONE)
@@ -251,8 +254,31 @@ class ConditionFacadeTest {
     }
   }
 
+  @Nested
+  @DisplayName("Condition evaluation tests")
+  public class ConditionEvaluationTests {
+
+    @Test
+    public void givenIsSetOperator_havingNoExpressionValue_shouldResolveExpression() {
+      //when
+      var expression = new ConditionExpression(IS_NOT_NULL, "ownerId", null, NEW_VALUE);
+      Mono<ConditionExpression> expressionMono = conditionFacade.nameResolved(expression, "someToken");
+
+      //then
+      StepVerifier
+          .create(expressionMono)
+          .assertNext(received -> {
+            assertThat(received).isNotNull();
+            assertThat(received.getOperator()).isEqualTo(IS_NOT_NULL);
+            assertThat(received.getName()).isEqualTo("ownerId");
+            assertThat(received.getValue()).isEqualTo(null);
+          })
+          .verifyComplete();
+    }
+  }
+
   private ConditionExpression stubEqualExpression(String name, String value) {
-    return new ConditionExpression(EQUAL, name, value, TriggerType.NEW_VALUE);
+    return new ConditionExpression(EQUAL, name, value, NEW_VALUE);
   }
 
   private boolean areEquivalent(ExpressionElement element, ConditionExpression expression) {

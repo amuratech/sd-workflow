@@ -90,7 +90,8 @@ public class WorkflowService {
     var conditionMono =
         conditionType.equals(FOR_ALL)
             ? Mono.just(new Condition(conditionType.name(), null))
-            : conditionFacade.nameResolved(workflow.getWorkflowCondition().getExpression(), authenticationToken)
+            : conditionFacade
+                .nameResolved(workflow.getWorkflowCondition().getExpression(), authenticationToken)
                 .map(expression -> new Condition(conditionType.name(), conditionFacade.flattenExpression(expression)));
 
     var createdBy = new User(workflow.getCreatedBy().getId(), workflow.getCreatedBy().getName());
@@ -131,7 +132,8 @@ public class WorkflowService {
     if (action.getType().equals(ActionType.EDIT_PROPERTY)) {
       var actionDetail = (EditPropertyAction) action.getPayload();
       if (actionDetail.getName().equals(LeadAttribute.PIPELINE.getName())) {
-        valueResolver.getPipeline(actionDetail.getValue(), authenticationToken)
+        return valueResolver
+            .getPipeline(actionDetail.getValue(), authenticationToken)
             .map(idName ->
                 new ActionResponse(
                     action.getId(),
