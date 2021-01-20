@@ -32,7 +32,7 @@ public class ValueConverter implements AttributeConverter<Object, String> {
       return valueOf(attribute);
     }
     if (attribute instanceof String) {
-      return "'" + attribute + "'";
+      return String.valueOf(attribute);
     }
     try {
       return objectMapper.writeValueAsString(attribute);
@@ -121,7 +121,7 @@ public class ValueConverter implements AttributeConverter<Object, String> {
       return objectMapper.readTree(dbData);
     } catch (JsonProcessingException e) {
       log.error("{} is not a valid json", dbData);
-      return !dbData.startsWith("'") && !dbData.endsWith("'") && isParsable(dbData) ? createNumber(dbData)
+      return isParsable(dbData) ? createNumber(dbData)
           : convertEntityAttributeToBoolean(dbData);
     }
   }

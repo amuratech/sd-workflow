@@ -36,7 +36,7 @@ public class ValueConverterTest {
     //when
     String actual = valueConverter.convertToDatabaseColumn(value);
     //then
-    assertThat(actual).isEqualTo("'Bhaskar'");
+    assertThat(actual).isEqualTo("Bhaskar");
   }
 
   @Test
@@ -117,7 +117,7 @@ public class ValueConverterTest {
     //then
     assertThat(actual).isEqualTo(IntNode.valueOf(1234));
   }
-
+  
   @Test
   public void givenDoubleAsString_shouldConvertToEntityAttribute_andReturnDouble() {
     //given
