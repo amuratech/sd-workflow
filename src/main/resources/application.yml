@@ -19,6 +19,9 @@ spring:
     username: test
     password: test
     virtual-host: sling-sales
+    listener:
+      simple:
+        prefetch: 1
   flyway:
     enabled: false
   jackson:
