@@ -335,6 +335,46 @@ class WorkflowConditionTest {
         .isTrue();
   }
 
+  @Test
+  public void givenEquals_onNullNumber_evaluatesFalse() {
+    var expression = new ConditionExpression(EQUAL, "salutation", 500L, NEW_VALUE);
+    var entity = stubLeadDetail();
+    entity.setSalutation(null);
+
+    assertThat(conditionFacade.satisfies(expression, entity))
+        .isFalse();
+  }
+
+  @Test
+  public void givenNotEquals_onNullNumber_evaluatesTrue() {
+    var expression = new ConditionExpression(NOT_EQUAL, "salutation", 500L, NEW_VALUE);
+    var entity = stubLeadDetail();
+    entity.setSalutation(null);
+
+    assertThat(conditionFacade.satisfies(expression, entity))
+        .isTrue();
+  }
+
+  @Test
+  public void givenGreaterThanOperator_onNullNumber_evaluatesFalse() {
+    var expression = new ConditionExpression(GREATER, "salutation", 500L, NEW_VALUE);
+    var entity = stubLeadDetail();
+    entity.setSalutation(null);
+
+    assertThat(conditionFacade.satisfies(expression, entity))
+        .isFalse();
+  }
+
+  @Test
+  public void givenLessThanOperator_onNullNumber_evaluatesFalse() {
+    var expression = new ConditionExpression(LESS, "salutation", 500L, NEW_VALUE);
+    var entity = stubLeadDetail();
+    entity.setSalutation(null);
+
+    assertThat(conditionFacade.satisfies(expression, entity))
+        .isFalse();
+  }
+
   @Nested
   @DisplayName("Condition tests for IdName values")
   @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)

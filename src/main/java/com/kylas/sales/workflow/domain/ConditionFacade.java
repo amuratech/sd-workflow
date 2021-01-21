@@ -153,10 +153,16 @@ public class ConditionFacade {
       case OR:
         return satisfies(expression.getOperand1(), entity) || satisfies(expression.getOperand2(), entity);
       case EQUAL:
+        if (isNull(actualValue)) {
+          return false;
+        }
         return expression.getValue() instanceof Number
             ? Double.parseDouble(actualValue) == Double.parseDouble(valueOf(expression.getValue()))
             : valueOf(expression.getValue()).equalsIgnoreCase(actualValue);
       case NOT_EQUAL:
+        if (isNull(actualValue)) {
+          return true;
+        }
         return expression.getValue() instanceof Number
             ? Double.parseDouble(actualValue) != Double.parseDouble(valueOf(expression.getValue()))
             : !valueOf(expression.getValue()).equalsIgnoreCase(actualValue);
@@ -169,23 +175,29 @@ public class ConditionFacade {
       case NOT_CONTAINS:
         return isNull(actualValue) || !actualValue.contains(valueOf(expression.getValue()));
       case BETWEEN:
+        if (isNull(actualValue)) {
+          return false;
+        }
         var betweenValues = valueResolver.getListFrom(valueOf(expression.getValue()));
         return Range
             .between(parseDouble(valueOf(betweenValues.get(0))), parseDouble(valueOf(betweenValues.get(1))))
             .contains(parseDouble(actualValue));
       case NOT_BETWEEN:
+        if (isNull(actualValue)) {
+          return true;
+        }
         var notBetweenValues = valueResolver.getListFrom(valueOf(expression.getValue()));
         return !Range
             .between(parseDouble(valueOf(notBetweenValues.get(0))), parseDouble(valueOf(notBetweenValues.get(1))))
             .contains(parseDouble(actualValue));
       case GREATER:
-        return parseDouble(actualValue) > parseDouble(valueOf(expression.getValue()));
+        return !isNull(actualValue) && parseDouble(actualValue) > parseDouble(valueOf(expression.getValue()));
       case GREATER_OR_EQUAL:
-        return parseDouble(actualValue) >= parseDouble(valueOf(expression.getValue()));
+        return !isNull(actualValue) && parseDouble(actualValue) >= parseDouble(valueOf(expression.getValue()));
       case LESS:
-        return parseDouble(actualValue) < parseDouble(valueOf(expression.getValue()));
+        return !isNull(actualValue) && parseDouble(actualValue) < parseDouble(valueOf(expression.getValue()));
       case LESS_OR_EQUAL:
-        return parseDouble(actualValue) <= parseDouble(valueOf(expression.getValue()));
+        return !isNull(actualValue) && parseDouble(actualValue) <= parseDouble(valueOf(expression.getValue()));
       case IN:
         return Arrays.asList(valueOf(expression.getValue()).split("\\s*,\\s*")).contains(actualValue);
       case NOT_IN:
