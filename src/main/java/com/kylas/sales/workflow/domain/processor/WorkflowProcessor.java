@@ -64,22 +64,26 @@ public class WorkflowProcessor {
     List<Workflow> workflows = workflowService.findActiveBy(event.getMetadata().getTenantId(), event.getMetadata().getEntityType(),
         TriggerFrequency.valueOf(event.getMetadata().getEntityAction().name()))
         .stream()
-        .filter(workflow -> !event.getMetadata().isProcessed(workflow.getId())).collect(Collectors.toList());
+        .filter(workflow ->
+            !event.getMetadata().isProcessed(workflow.getId()) && satisfiesCondition(event, workflow))
+        .collect(Collectors.toList());
 
     var workflowIds = workflows.stream().map(Workflow::getId).collect(Collectors.toSet());
 
-    workflows.stream()
-        .filter(workflow -> isNull(workflow.getWorkflowCondition()) ||
-            workflow.getWorkflowCondition().getType().equals(ConditionType.FOR_ALL) ||
-            conditionFacade.satisfies(workflow.getWorkflowCondition().getExpression(), event.getEntity()))
-        .forEach(workflow -> {
-          LeadDetail entity = event.getEntity();
-          Metadata metadata = event.getMetadata().with(workflow.getId()).withAllWorkflowIds(workflowIds).withEntityId(entity.getId());
-          Set<AbstractWorkflowAction> workflowActions = workflow.getWorkflowActions();
-          log.info("Workflow execution start for workflowId {} and prev metadata {}", workflow.getId(), event.getMetadata());
-          processActions(metadata, workflowActions, entity);
-          workflowService.updateExecutedEventDetails(workflow);
-        });
+    workflows.stream().forEach(workflow -> {
+      LeadDetail entity = event.getEntity();
+      Metadata metadata = event.getMetadata().with(workflow.getId()).withAllWorkflowIds(workflowIds).withEntityId(entity.getId());
+      Set<AbstractWorkflowAction> workflowActions = workflow.getWorkflowActions();
+      log.info("Workflow execution start for workflowId {} and prev metadata {}", workflow.getId(), event.getMetadata());
+      processActions(metadata, workflowActions, entity);
+      workflowService.updateExecutedEventDetails(workflow);
+    });
+  }
+
+  private boolean satisfiesCondition(LeadEvent event, Workflow workflow) {
+    return isNull(workflow.getWorkflowCondition()) ||
+        workflow.getWorkflowCondition().getType().equals(ConditionType.FOR_ALL) ||
+        conditionFacade.satisfies(workflow.getWorkflowCondition().getExpression(), event.getEntity());
   }
 
   private void processActions(Metadata metadata, final Set<AbstractWorkflowAction> workflowActions, LeadDetail entity) {

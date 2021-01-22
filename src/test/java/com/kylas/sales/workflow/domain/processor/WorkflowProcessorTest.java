@@ -11,11 +11,17 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.kylas.sales.workflow.api.WorkflowService;
+import com.kylas.sales.workflow.api.request.Condition;
+import com.kylas.sales.workflow.common.dto.condition.Operator;
+import com.kylas.sales.workflow.common.dto.condition.WorkflowCondition.ConditionExpression;
+import com.kylas.sales.workflow.domain.ConditionFacade;
 import com.kylas.sales.workflow.domain.processor.lead.Lead;
 import com.kylas.sales.workflow.domain.processor.lead.LeadDetail;
+import com.kylas.sales.workflow.domain.workflow.ConditionType;
 import com.kylas.sales.workflow.domain.workflow.TriggerFrequency;
 import com.kylas.sales.workflow.domain.workflow.TriggerType;
 import com.kylas.sales.workflow.domain.workflow.Workflow;
+import com.kylas.sales.workflow.domain.workflow.WorkflowCondition;
 import com.kylas.sales.workflow.domain.workflow.WorkflowTrigger;
 import com.kylas.sales.workflow.domain.workflow.action.AbstractWorkflowAction;
 import com.kylas.sales.workflow.domain.workflow.action.EditPropertyAction;
@@ -53,6 +59,8 @@ class WorkflowProcessorTest {
   private ValueConverter valueConverter;
   @InjectMocks
   private WorkflowProcessor workflowProcessor;
+  @Mock
+  private ConditionFacade conditionFacade;
 
   @Test
   public void givenLeadEvent_shouldPublishPatchCommand() {
@@ -271,6 +279,57 @@ class WorkflowProcessorTest {
     Assertions.assertThat(allValues.size()).isEqualTo(2);
     Assertions.assertThat(allValues.get(0).getExecutedWorkflows()).containsExactlyInAnyOrder("WF_99", "WF_100");
     Assertions.assertThat(allValues.get(1).getExecutedWorkflows()).containsExactlyInAnyOrder("WF_99", "WF_100");
+  }
+
+  @Test
+  public void givenLeadUpdatedEvent_shouldIncludeConditionSatisfyingWorkflowsOnly() {
+    // given
+    long tenantId = 101;
+    long userId = 102;
+    long workflowId99 = 99L;
+    long workflowId100 = 100L;
+
+    var lead = new LeadDetail();
+    lead.setId(55L);
+    lead.setFirstName("Johny");
+    lead.setLastName("Stark");
+
+    var old = new LeadDetail();
+    old.setId(55L);
+    old.setFirstName("Steve");
+    old.setLastName("Roger");
+
+    var metadata = new Metadata(tenantId, userId, LEAD, null, null, EntityAction.UPDATED);
+
+    var leadUpdatedEvent = new LeadEvent(lead, old, metadata);
+
+    List<String> values = List.of("tony", "steve");
+
+    Workflow workflowMockUpdate99 =
+        getMockEditPropertyWorkflow(workflowId99, TriggerFrequency.UPDATED, "firstName", "tony");
+
+    Workflow workflowMockUpdate100 =
+        getMockEditPropertyWorkflow(workflowId100, TriggerFrequency.UPDATED, "lastName", "stark");
+    var condition = new WorkflowCondition(
+        ConditionType.CONDITION_BASED,
+        new ConditionExpression(Operator.EQUAL, "firstName", "rocky", Condition.TriggerType.NEW_VALUE));
+    when(workflowMockUpdate100.getWorkflowCondition()).thenReturn(condition);
+    when(conditionFacade.satisfies(any(), any())).thenReturn(false);
+
+    List<Workflow> workflows = Arrays.asList(workflowMockUpdate99, workflowMockUpdate100);
+
+    given(workflowService.findActiveBy(tenantId, LEAD, TriggerFrequency.UPDATED)).willReturn(workflows);
+    doNothing().when(leadUpdatedCommandPublisher).execute(any(Metadata.class), any(Lead.class));
+    values.forEach(value ->
+        when(valueConverter.getValue(any(EditPropertyAction.class), any(Field.class))).thenReturn(value));
+    // when
+    workflowProcessor.process(leadUpdatedEvent);
+    // then
+    ArgumentCaptor<Metadata> metadataArgumentCaptor = ArgumentCaptor.forClass(Metadata.class);
+    verify(leadUpdatedCommandPublisher, times(1)).execute(metadataArgumentCaptor.capture(), any(Lead.class));
+    List<Metadata> allValues = metadataArgumentCaptor.getAllValues();
+    Assertions.assertThat(allValues.size()).isEqualTo(1);
+    Assertions.assertThat(allValues.get(0).getExecutedWorkflows()).containsExactlyInAnyOrder("WF_99");
   }
 
   @Test
