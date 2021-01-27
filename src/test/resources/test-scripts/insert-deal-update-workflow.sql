@@ -27,8 +27,8 @@ OVERRIDING SYSTEM VALUE VALUES
 
 INSERT INTO workflow_trigger (id, trigger_type, trigger_frequency, workflow_id)
 OVERRIDING SYSTEM VALUE VALUES
-(101, 'EVENT', 'CREATED', 301),
-(102, 'EVENT', 'CREATED', 302);
+(101, 'EVENT', 'UPDATED', 301),
+(102, 'EVENT', 'UPDATED', 302);
 
 INSERT INTO workflow_condition (id, type,workflow_id)
 OVERRIDING SYSTEM VALUE VALUES

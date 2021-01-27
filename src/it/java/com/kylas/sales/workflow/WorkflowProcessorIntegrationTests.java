@@ -4,6 +4,8 @@ import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.matching;
 import static com.github.tomakehurst.wiremock.client.WireMock.okForContentType;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
+import static com.kylas.sales.workflow.mq.event.DealEvent.getDealCreatedEventName;
+import static com.kylas.sales.workflow.mq.event.DealEvent.getDealUpdatedEventName;
 import static org.mockito.BDDMockito.given;
 import static org.springframework.http.HttpHeaders.AUTHORIZATION;
 import static org.springframework.test.context.support.TestPropertySourceUtils.addInlinedPropertiesToEnvironment;
@@ -14,6 +16,7 @@ import com.kylas.sales.workflow.config.TestDatabaseInitializer;
 import com.kylas.sales.workflow.domain.WorkflowFacade;
 import com.kylas.sales.workflow.domain.user.User;
 import com.kylas.sales.workflow.domain.workflow.Workflow;
+import com.kylas.sales.workflow.mq.event.DealEvent;
 import com.kylas.sales.workflow.mq.event.LeadEvent;
 import com.kylas.sales.workflow.security.AuthService;
 import com.kylas.sales.workflow.stubs.UserStub;
@@ -59,6 +62,7 @@ import org.testcontainers.containers.RabbitMQContainer;
 public class WorkflowProcessorIntegrationTests {
 
   static final String SALES_EXCHANGE = "ex.sales";
+  static final String DEAL_EXCHANGE = "ex.deal";
   static final String WORKFLOW_EXCHANGE = "ex.workflow";
   static final String SALES_LEAD_UPDATE_QUEUE = "q.workflow.lead.update.sales";
   static final String SALES_LEAD_UPDATE_QUEUE_NEW = "q.workflow.lead.update.sales_new";
@@ -66,6 +70,9 @@ public class WorkflowProcessorIntegrationTests {
   static final String SALES_LEAD_REASSIGN_QUEUE = "workflow.lead.reassign.sales";
   static final String SALES_LEAD_REASSIGN_QUEUE_NEW = "workflow.lead.reassign.sales_new";
   static final String LEAD_REASSIGN_COMMAND_QUEUE = "workflow.lead.reassign";
+  static final String DEAL_UPDATE_QUEUE = "q.workflow.deal.update";
+  static final String DEAL_UPDATE_QUEUE_NEW = "q.workflow.deal.update_new";
+  static final String DEAL_UPDATE_COMMAND = "workflow.deal.update";
 
   private static RabbitMQContainer rabbitMQContainer =
       new RabbitMQContainer("rabbitmq:3.7-management-alpine");
@@ -419,6 +426,69 @@ public class WorkflowProcessorIntegrationTests {
     }
   }
 
+  @Nested
+  @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
+  @AutoConfigureTestDatabase(replace = Replace.NONE)
+  @ContextConfiguration(initializers = {TestMqSetup.class, TestDatabaseInitializer.class})
+  @DisplayName("Tests that publish event when deal created/updated")
+  class DealWorkflowProcessorIntegrationTests {
+
+    @Test
+    @Sql("/test-scripts/integration/insert-deal-workflow-for-integration-test.sql")
+    public void givenDealCreatedEvent_shouldUpdatePropertiesAndPublishCommand() throws IOException, InterruptedException, JSONException {
+      //given
+      String authenticationToken = "some-token";
+      User aUser = UserStub.aUser(12L, 55L, true, true, true, true, true)
+          .withName("user 1");
+      given(authService.getLoggedInUser()).willReturn(aUser);
+      given(authService.getAuthenticationToken()).willReturn(authenticationToken);
+
+      String resourceAsString = getResourceAsString("/contracts/mq/events/deal-created-event.json");
+      DealEvent dealEvent = objectMapper.readValue(resourceAsString, DealEvent.class);
+      initializeRabbitMqListener(DEAL_UPDATE_COMMAND, DEAL_UPDATE_QUEUE);
+      //when
+      rabbitTemplate.convertAndSend(DEAL_EXCHANGE, getDealCreatedEventName(),
+          dealEvent);
+      //then
+      mockMqListener.latch.await(3, TimeUnit.SECONDS);
+      JSONAssert
+          .assertEquals(getResourceAsString("/contracts/mq/command/deal-create-patch-command.json"), mockMqListener.actualMessage,
+              JSONCompareMode.STRICT);
+
+      Workflow workflow = workflowFacade.get(301);
+      Assertions.assertThat(workflow.getWorkflowExecutedEvent().getLastTriggeredAt()).isNotNull();
+      Assertions.assertThat(workflow.getWorkflowExecutedEvent().getTriggerCount()).isEqualTo(152);
+    }
+
+    @Test
+    @Sql("/test-scripts/insert-deal-update-workflow.sql")
+    public void givenDealUpdatedEvent_shouldUpdatePropertiesAndPublishCommand() throws IOException, InterruptedException, JSONException {
+      //given
+      String authenticationToken = "some-token";
+      User aUser = UserStub.aUser(12L, 55L, true, true, true, true, true)
+          .withName("user 1");
+      given(authService.getLoggedInUser()).willReturn(aUser);
+      given(authService.getAuthenticationToken()).willReturn(authenticationToken);
+
+      String resourceAsString = getResourceAsString("/contracts/mq/events/deal-updated-event.json");
+      DealEvent dealEvent = objectMapper.readValue(resourceAsString, DealEvent.class);
+      initializeRabbitMqListener(DEAL_UPDATE_COMMAND, DEAL_UPDATE_QUEUE_NEW);
+      //when
+      rabbitTemplate.convertAndSend(DEAL_EXCHANGE, getDealUpdatedEventName(),
+          dealEvent);
+      //then
+      mockMqListener.latch.await(3, TimeUnit.SECONDS);
+      JSONAssert
+          .assertEquals(getResourceAsString("/contracts/mq/command/deal-update-patch-command.json"), mockMqListener.actualMessage,
+              JSONCompareMode.STRICT);
+
+      Workflow workflow = workflowFacade.get(301);
+      Assertions.assertThat(workflow.getWorkflowExecutedEvent().getLastTriggeredAt()).isNotNull();
+      Assertions.assertThat(workflow.getWorkflowExecutedEvent().getTriggerCount()).isEqualTo(152);
+    }
+  }
+
+
   static class MockMqListener {
 
     CountDownLatch latch = new CountDownLatch(1);
@@ -458,15 +528,19 @@ public class WorkflowProcessorIntegrationTests {
 
     @Override
     public void initialize(ConfigurableApplicationContext configurableApplicationContext) {
-      var withSales =
+      var withServices =
           rabbitMQContainer.withExchange(SALES_EXCHANGE, "topic").withQueue(SALES_LEAD_UPDATE_QUEUE);
       rabbitMQContainer.withExchange(SALES_EXCHANGE, "topic").withQueue(SALES_LEAD_REASSIGN_QUEUE);
       rabbitMQContainer.withExchange(SALES_EXCHANGE, "topic").withQueue(SALES_LEAD_REASSIGN_QUEUE_NEW);
       rabbitMQContainer.withExchange(WORKFLOW_EXCHANGE, "topic").withQueue(LEAD_UPDATE_COMMAND_QUEUE);
       rabbitMQContainer.withExchange(WORKFLOW_EXCHANGE, "topic").withQueue(LEAD_REASSIGN_COMMAND_QUEUE);
       rabbitMQContainer.withExchange(WORKFLOW_EXCHANGE, "topic").withQueue(SALES_LEAD_UPDATE_QUEUE_NEW);
-
-      withSales.start();
+      rabbitMQContainer.withExchange(DEAL_EXCHANGE, "topic").withQueue(DEAL_UPDATE_QUEUE);
+      rabbitMQContainer.withExchange(DEAL_EXCHANGE, "topic").withQueue(DEAL_UPDATE_QUEUE_NEW);
+      rabbitMQContainer.withExchange(WORKFLOW_EXCHANGE, "topic").withQueue(DEAL_UPDATE_QUEUE);
+      rabbitMQContainer.withExchange(WORKFLOW_EXCHANGE, "topic").withQueue(DEAL_UPDATE_QUEUE_NEW);
+      rabbitMQContainer.withExchange(WORKFLOW_EXCHANGE, "topic").withQueue(DEAL_UPDATE_COMMAND);
+      withServices.start();
 
       addInlinedPropertiesToEnvironment(
           configurableApplicationContext,

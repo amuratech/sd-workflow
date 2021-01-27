@@ -1,0 +1,89 @@
+{
+  "entity": {
+    "id": 999,
+    "ownedBy": {
+      "id": 12,
+      "name": "James Bond"
+    },
+    "name": "new deal",
+    "estimatedValue": {
+      "currencyId": 1,
+      "value": 1000
+    },
+    "actualValue": {
+      "currencyId": 2,
+      "value": 2000
+    },
+    "estimatedClosureOn": "2021-01-14T06:30:00.000Z",
+    "product": {
+      "id": 2,
+      "name": "Marketing Service"
+    },
+    "pipeline": {
+      "id": 11,
+      "name": "Test Deal Pipeline",
+      "stage": {
+        "id": 1,
+        "name": "Open"
+      }
+    },
+    "associatedContacts": [
+      {
+        "id": 12,
+        "name": "Tony Stark"
+      }
+    ],
+    "company": {
+      "id": 13,
+      "name": "Dell enterprises"
+    }
+  },
+  "oldEntity": {
+    "id": 999,
+    "ownedBy": {
+      "id": 11,
+      "name": "James BondOld"
+    },
+    "name": "old deal",
+    "estimatedValue": {
+      "currencyId": 2,
+      "value": 10000
+    },
+    "actualValue": {
+      "currencyId": 1,
+      "value": 20000
+    },
+    "estimatedClosureOn": "2021-01-14T06:30:00.000Z",
+    "product": {
+      "id": 1,
+      "name": "Marketing Service Old"
+    },
+    "pipeline": {
+      "id": 10,
+      "name": "Test Deal Pipeline Old",
+      "stage": {
+        "id": 2,
+        "name": "Open"
+      }
+    },
+    "associatedContacts": [
+      {
+        "id": 11,
+        "name": "Tony StarkOld"
+      }
+    ],
+    "company": {
+      "id": 12,
+      "name": "Dell enterprises Old"
+    }
+  },
+  "metadata": {
+    "entityId": 999,
+    "entityAction": "UPDATED",
+    "tenantId": 55,
+    "userId": 12,
+    "entityType": "DEAL",
+    "workflowId": null,
+    "executedWorkflows": []
+  }
+}

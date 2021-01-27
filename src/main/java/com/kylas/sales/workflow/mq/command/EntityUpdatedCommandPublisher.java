@@ -7,12 +7,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
-public class LeadUpdatedCommandPublisher {
+public class EntityUpdatedCommandPublisher {
 
   private final RabbitTemplate rabbitTemplate;
 
   @Autowired
-  public LeadUpdatedCommandPublisher(RabbitTemplate rabbitTemplate) {
+  public EntityUpdatedCommandPublisher(RabbitTemplate rabbitTemplate) {
     this.rabbitTemplate = rabbitTemplate;
   }
 

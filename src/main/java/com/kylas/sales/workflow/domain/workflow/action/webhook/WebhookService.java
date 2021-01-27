@@ -24,6 +24,7 @@ import static org.springframework.http.HttpMethod.GET;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kylas.sales.workflow.common.dto.Tenant;
+import com.kylas.sales.workflow.domain.processor.EntityDetail;
 import com.kylas.sales.workflow.domain.processor.exception.WorkflowExecutionException;
 import com.kylas.sales.workflow.domain.processor.lead.Email;
 import com.kylas.sales.workflow.domain.processor.lead.IdName;
@@ -107,9 +108,9 @@ public class WebhookService {
             webhookEntity.getType().equals(EntityType.TENANT) ? TenantAttribute.getAttributes() : emptyList();
   }
 
-  public void execute(WebhookAction webhookAction, LeadDetail entity) {
+  public <T> void execute(WebhookAction webhookAction, EntityDetail entity) {
     log.info("Executing webhook action with name {} & Id {}", webhookAction.getName(), webhookAction.getId());
-    var requestParameters = buildLeadParameters(webhookAction, entity);
+    var requestParameters = buildLeadParameters(webhookAction, (LeadDetail) entity);
     var uri = UriComponentsBuilder
         .fromUriString(webhookAction.getRequestUrl())
         .queryParams(buildQueryParams(webhookAction, requestParameters))

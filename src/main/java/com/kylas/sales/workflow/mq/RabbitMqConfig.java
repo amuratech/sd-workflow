@@ -1,6 +1,10 @@
 package com.kylas.sales.workflow.mq;
 
-import com.kylas.sales.workflow.mq.event.LeadEvent;
+import static com.kylas.sales.workflow.mq.event.DealEvent.getDealCreatedEventName;
+import static com.kylas.sales.workflow.mq.event.DealEvent.getDealUpdatedEventName;
+import static com.kylas.sales.workflow.mq.event.LeadEvent.getLeadCreatedEventName;
+import static com.kylas.sales.workflow.mq.event.LeadEvent.getLeadUpdatedEventName;
+
 import org.springframework.amqp.core.BindingBuilder;
 import org.springframework.amqp.core.Declarables;
 import org.springframework.amqp.core.Queue;
@@ -17,6 +21,10 @@ public class RabbitMqConfig {
   static final String SALES_EXCHANGE = "ex.sales";
   static final String SALES_LEAD_CREATED_QUEUE = "q.lead.created.workflow";
   static final String SALES_LEAD_UPDATED_QUEUE = "q.lead.updated.workflow";
+  static final String DEAL_EXCHANGE = "ex.deal";
+  static final String DEAL_CREATED_QUEUE = "q.deal.created.workflow";
+  static final String DEAL_UPDATED_QUEUE = "q.deal.updated.workflow";
+
 
   @Bean
   public RabbitTemplate rabbitTemplate(final ConnectionFactory connectionFactory) {
@@ -33,20 +41,31 @@ public class RabbitMqConfig {
   @Bean
   public Declarables topicBindings() {
     var salesExchange = new TopicExchange(SALES_EXCHANGE, true, false);
-
+    var dealExchange = new TopicExchange(DEAL_EXCHANGE, true, false);
     var salesLeadCreatedQueue = new Queue(SALES_LEAD_CREATED_QUEUE, true);
     var salesLeadUpdatedQueue = new Queue(SALES_LEAD_UPDATED_QUEUE, true);
+    var dealCreatedQueue = new Queue(DEAL_CREATED_QUEUE, true);
+    var dealUpdatedQueue = new Queue(DEAL_UPDATED_QUEUE, true);
 
     return new Declarables(
         salesLeadCreatedQueue,
         salesLeadUpdatedQueue,
         salesExchange,
+        dealExchange,
+        dealCreatedQueue,
+        dealUpdatedQueue,
 
         BindingBuilder.bind(salesLeadCreatedQueue).to(salesExchange)
-            .with(LeadEvent.getLeadCreatedEventName()),
+            .with(getLeadCreatedEventName()),
 
         BindingBuilder.bind(salesLeadUpdatedQueue).to(salesExchange)
-            .with(LeadEvent.getLeadUpdatedEventName())
+            .with(getLeadUpdatedEventName()),
+
+        BindingBuilder.bind(dealCreatedQueue).to(dealExchange)
+            .with(getDealCreatedEventName()),
+
+        BindingBuilder.bind(dealUpdatedQueue).to(dealExchange)
+            .with(getDealUpdatedEventName())
     );
   }
 }

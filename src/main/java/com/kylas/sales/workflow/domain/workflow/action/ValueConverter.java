@@ -1,5 +1,6 @@
 package com.kylas.sales.workflow.domain.workflow.action;
 
+import static com.kylas.sales.workflow.domain.workflow.EntityType.LEAD;
 import static com.kylas.sales.workflow.domain.workflow.action.webhook.attribute.AttributeFactory.LeadAttribute.PIPELINE;
 import static java.lang.String.valueOf;
 import static java.util.Collections.emptyList;
@@ -11,8 +12,12 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kylas.sales.workflow.domain.processor.lead.IdName;
+import com.kylas.sales.workflow.domain.workflow.EntityType;
 import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
 import javax.persistence.AttributeConverter;
 import javax.persistence.Converter;
@@ -47,14 +52,14 @@ public class ValueConverter implements AttributeConverter<Object, String> {
     return getJsonValue(dbData);
   }
 
-  public Object getValue(EditPropertyAction editPropertyAction, Field field) {
+  public Object getValue(EditPropertyAction editPropertyAction, Field field, EntityType entityType) {
     try {
 
       switch (editPropertyAction.getValueType()) {
         case ARRAY:
           return convertToListOrArray(editPropertyAction.getValue(), field);
         case OBJECT:
-          return editPropertyAction.getName().equals(PIPELINE.getName())
+          return editPropertyAction.getName().equals(PIPELINE.getName()) && entityType.equals(LEAD)
               ? convertToObject(objectMapper.readValue(valueOf(editPropertyAction.getValue()), IdName.class).getId(), field)
               : convertToObject(editPropertyAction.getValue(), field);
         case PLAIN:
@@ -112,6 +117,13 @@ public class ValueConverter implements AttributeConverter<Object, String> {
     }
     if (fieldType.isAssignableFrom(Boolean.class)) {
       return toBooleanObject(stringValue);
+    }
+    if (fieldType.isAssignableFrom(Date.class)) {
+      try {
+        return new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'").parse(stringValue);
+      } catch (ParseException e) {
+        log.error("{} can not be parsed to date", stringValue);
+      }
     }
     return value;
   }

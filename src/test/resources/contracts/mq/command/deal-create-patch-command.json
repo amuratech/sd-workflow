@@ -1,0 +1,51 @@
+{
+  "entity": {
+    "ownedBy": {
+      "id": 12,
+      "name": "James Bond"
+    },
+    "name": "updated deal",
+    "estimatedValue": {
+      "currencyId": 1,
+      "value": 1000
+    },
+    "actualValue": {
+      "currencyId": 2,
+      "value": 2000
+    },
+    "estimatedClosureOn": "2021-01-14T06:30:00.000Z",
+    "product": {
+      "id": 2,
+      "name": "Marketing Service"
+    },
+    "pipeline": {
+      "id": 122,
+      "name": "Demo",
+      "stage": {
+        "id": 1,
+        "name": "Open"
+      }
+    },
+    "associatedContacts": [
+      {
+        "id": 14,
+        "name": "Tony Stark"
+      }
+    ],
+    "company": {
+      "id": 15,
+      "name": "Dell"
+    }
+  },
+  "metadata": {
+    "entityId": 999,
+    "entityAction": "CREATED",
+    "tenantId": 55,
+    "userId": 12,
+    "entityType": "DEAL",
+    "workflowId": "WF_301",
+    "executedWorkflows": [
+      "WF_301"
+    ]
+  }
+}
