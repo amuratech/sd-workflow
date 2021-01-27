@@ -1,0 +1,38 @@
+{
+  "id": 101,
+  "name": "Edit Lead Property",
+  "description": "Edit Lead Property",
+  "entityType": "LEAD",
+  "trigger": {
+    "name": "EVENT",
+    "triggerFrequency": "CREATED"
+  },
+  "condition": {
+    "conditionType": "FOR_ALL"
+  },
+  "actions": [
+    {
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "lastName",
+        "value": "Stark"
+      }
+    }
+  ],
+  "createdBy": {
+    "id": 101,
+    "name": "Tony Start"
+  },
+  "updatedBy": {
+    "id": 102,
+    "name": "Steve Roger"
+  },
+  "recordActions": {
+    "read": true,
+    "update": false,
+    "write": true,
+    "readAll": false,
+    "updateAll": false
+  },
+  "active": true
+}

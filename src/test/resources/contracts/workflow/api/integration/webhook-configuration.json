@@ -1,0 +1,385 @@
+[
+  {
+    "entity": "CUSTOM",
+    "entityDisplayName": "Custom Parameter",
+    "fields": []
+  },
+  {
+    "entity": "LEAD",
+    "entityDisplayName": "Lead",
+    "fields": [
+      {
+        "name": "id",
+        "displayName": "Id"
+      },
+      {
+        "name": "salutation",
+        "displayName": "Salutation"
+      },
+      {
+        "name": "firstName",
+        "displayName": "First Name"
+      },
+      {
+        "name": "lastName",
+        "displayName": "Last Name"
+      },
+      {
+        "name": "emails",
+        "displayName": "Emails"
+      },
+      {
+        "name": "phoneNumbers",
+        "displayName": "Phone Numbers"
+      },
+      {
+        "name": "pipeline",
+        "displayName": "Pipeline"
+      },
+      {
+        "name": "pipelineStage",
+        "displayName": "Status"
+      },
+      {
+        "name": "timezone",
+        "displayName": "Timezone"
+      },
+      {
+        "name": "address",
+        "displayName": "Address"
+      },
+      {
+        "name": "city",
+        "displayName": "City"
+      },
+      {
+        "name": "state",
+        "displayName": "State"
+      },
+      {
+        "name": "country",
+        "displayName": "Country"
+      },
+      {
+        "name": "zipcode",
+        "displayName": "Zipcode"
+      },
+      {
+        "name": "facebook",
+        "displayName": "Facebook"
+      },
+      {
+        "name": "twitter",
+        "displayName": "Twitter"
+      },
+      {
+        "name": "linkedIn",
+        "displayName": "Linked In"
+      },
+      {
+        "name": "companyName",
+        "displayName": "Company Name"
+      },
+      {
+        "name": "department",
+        "displayName": "Department"
+      },
+      {
+        "name": "designation",
+        "displayName": "Designation"
+      },
+      {
+        "name": "companyIndustry",
+        "displayName": "Company Industry"
+      },
+      {
+        "name": "companyBusinessType",
+        "displayName": "Company Business Type"
+      },
+      {
+        "name": "companyEmployees",
+        "displayName": "Company Employees"
+      },
+      {
+        "name": "companyAnnualRevenue",
+        "displayName": "Company Annual Revenue"
+      },
+      {
+        "name": "companyWebsite",
+        "displayName": "Company Website"
+      },
+      {
+        "name": "companyPhones",
+        "displayName": "Company Phones"
+      },
+      {
+        "name": "requirementName",
+        "displayName": "Name"
+      },
+      {
+        "name": "products",
+        "displayName": "Products"
+      },
+      {
+        "name": "requirementCurrency",
+        "displayName": "Currency"
+      },
+      {
+        "name": "requirementBudget",
+        "displayName": "Budget"
+      },
+      {
+        "name": "campaign",
+        "displayName": "Campaign"
+      },
+      {
+        "name": "source",
+        "displayName": "Source"
+      },
+      {
+        "name": "createdBy",
+        "displayName": "Created By"
+      },
+      {
+        "name": "createdAt",
+        "displayName": "Created At"
+      },
+      {
+        "name": "updatedBy",
+        "displayName": "Updated By"
+      },
+      {
+        "name": "updatedAt",
+        "displayName": "Updated At"
+      }
+    ]
+  },
+  {
+    "entity": "LEAD_OWNER",
+    "entityDisplayName": "Lead Owner",
+    "fields": [
+      {
+        "name": "salutation",
+        "displayName": "Salutation"
+      },
+      {
+        "name": "firstName",
+        "displayName": "First Name"
+      },
+      {
+        "name": "lastName",
+        "displayName": "Last Name"
+      },
+      {
+        "name": "email",
+        "displayName": "Email"
+      },
+      {
+        "name": "phoneNumbers",
+        "displayName": "Phone Numbers"
+      },
+      {
+        "name": "designation",
+        "displayName": "Designation"
+      },
+      {
+        "name": "department",
+        "displayName": "Department"
+      },
+      {
+        "name": "currency",
+        "displayName": "Currency"
+      },
+      {
+        "name": "timezone",
+        "displayName": "Timezone"
+      },
+      {
+        "name": "signature",
+        "displayName": "Signature"
+      },
+      {
+        "name": "language",
+        "displayName": "Language"
+      },
+      {
+        "name": "createdBy",
+        "displayName": "Created By"
+      },
+      {
+        "name": "updatedBy",
+        "displayName": "Updated By"
+      }
+    ]
+  },
+  {
+    "entity": "CREATED_BY",
+    "entityDisplayName": "Created By",
+    "fields": [
+      {
+        "name": "salutation",
+        "displayName": "Salutation"
+      },
+      {
+        "name": "firstName",
+        "displayName": "First Name"
+      },
+      {
+        "name": "lastName",
+        "displayName": "Last Name"
+      },
+      {
+        "name": "email",
+        "displayName": "Email"
+      },
+      {
+        "name": "phoneNumbers",
+        "displayName": "Phone Numbers"
+      },
+      {
+        "name": "designation",
+        "displayName": "Designation"
+      },
+      {
+        "name": "department",
+        "displayName": "Department"
+      },
+      {
+        "name": "currency",
+        "displayName": "Currency"
+      },
+      {
+        "name": "timezone",
+        "displayName": "Timezone"
+      },
+      {
+        "name": "signature",
+        "displayName": "Signature"
+      },
+      {
+        "name": "language",
+        "displayName": "Language"
+      },
+      {
+        "name": "createdBy",
+        "displayName": "Created By"
+      },
+      {
+        "name": "updatedBy",
+        "displayName": "Updated By"
+      }
+    ]
+  },
+  {
+    "entity": "UPDATED_BY",
+    "entityDisplayName": "Updated By",
+    "fields": [
+      {
+        "name": "salutation",
+        "displayName": "Salutation"
+      },
+      {
+        "name": "firstName",
+        "displayName": "First Name"
+      },
+      {
+        "name": "lastName",
+        "displayName": "Last Name"
+      },
+      {
+        "name": "email",
+        "displayName": "Email"
+      },
+      {
+        "name": "phoneNumbers",
+        "displayName": "Phone Numbers"
+      },
+      {
+        "name": "designation",
+        "displayName": "Designation"
+      },
+      {
+        "name": "department",
+        "displayName": "Department"
+      },
+      {
+        "name": "currency",
+        "displayName": "Currency"
+      },
+      {
+        "name": "timezone",
+        "displayName": "Timezone"
+      },
+      {
+        "name": "signature",
+        "displayName": "Signature"
+      },
+      {
+        "name": "language",
+        "displayName": "Language"
+      },
+      {
+        "name": "createdBy",
+        "displayName": "Created By"
+      },
+      {
+        "name": "updatedBy",
+        "displayName": "Updated By"
+      }
+    ]
+  },
+  {
+    "entity": "TENANT",
+    "entityDisplayName": "Tenant",
+    "fields": [
+      {
+        "name": "accountName",
+        "displayName": "Account Name"
+      },
+      {
+        "name": "industry",
+        "displayName": "Industry"
+      },
+      {
+        "name": "address",
+        "displayName": "Address"
+      },
+      {
+        "name": "city",
+        "displayName": "City"
+      },
+      {
+        "name": "state",
+        "displayName": "State"
+      },
+      {
+        "name": "country",
+        "displayName": "Country"
+      },
+      {
+        "name": "zipcode",
+        "displayName": "Zipcode"
+      },
+      {
+        "name": "language",
+        "displayName": "Language"
+      },
+      {
+        "name": "currency",
+        "displayName": "Currency"
+      },
+      {
+        "name": "timezone",
+        "displayName": "Timezone"
+      },
+      {
+        "name": "companyName",
+        "displayName": "Company Name"
+      },
+      {
+        "name": "website",
+        "displayName": "Website"
+      }
+    ]
+  }
+]

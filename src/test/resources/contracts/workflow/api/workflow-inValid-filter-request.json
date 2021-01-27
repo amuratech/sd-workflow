@@ -1,0 +1,10 @@
+{
+  "jsonRules": [
+    {
+      "operator": "equal",
+      "field": "entityType",
+      "type": "string",
+      "value": "abc123"
+    }
+  ]
+}

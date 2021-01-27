@@ -1,0 +1,124 @@
+{
+  "id": 1,
+  "name": "Workflow 1",
+  "description": "Workflow Description",
+  "entityType": "DEAL",
+  "trigger": {
+    "name": "EVENT",
+    "triggerFrequency": "CREATED"
+  },
+  "condition": {
+    "conditionType": "FOR_ALL"
+  },
+  "actions": [
+    {
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "ownedBy",
+        "value": {
+          "id": 13,
+          "name": "James BondUpdated"
+        },
+        "valueType": "OBJECT"
+      }
+    },
+    {
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "name",
+        "value": "deal by workflow updated",
+        "valueType": "PLAIN"
+      }
+    },
+    {
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "estimatedValue",
+        "value": {
+          "currencyId": 1,
+          "value": 10000
+        },
+        "valueType": "OBJECT"
+      }
+    },
+    {
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "actualValue",
+        "value": {
+          "currencyId": 2,
+          "value": 20000
+        },
+        "valueType": "OBJECT"
+      }
+    },
+    {
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "estimatedClosureOn",
+        "value": "2021-01-15T06:30:00.000Z",
+        "valueType": "PLAIN"
+      }
+    },
+    {
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "product",
+        "value": {
+          "id": 2,
+          "name": "Marketing Service Updated"
+        },
+        "valueType": "OBJECT"
+      }
+    },
+    {
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "pipeline",
+        "value": {
+          "id": 11,
+          "name": "Test Deal Pipeline Updated",
+          "stage": {
+            "id": 1,
+            "name": "Open"
+          }
+        },
+        "valueType": "OBJECT"
+      }
+    },
+    {
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "associatedContacts",
+        "value": [
+          {
+            "id": 14,
+            "name": "Tony StarkUpdated"
+          }
+        ],
+        "valueType": "ARRAY"
+      }
+    },
+    {
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "company",
+        "value": {
+          "id": 15,
+          "name": "Dell enterprises Updated"
+        },
+        "valueType": "OBJECT"
+      }
+    }
+  ],
+  "createdBy": {
+    "id": 5000,
+    "name": "Tony Stark"
+  },
+  "updatedBy": {
+    "id": 5000,
+    "name": "Tony Stark"
+  },
+  "triggerCount": 0,
+  "active": true
+}

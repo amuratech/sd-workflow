@@ -6,6 +6,7 @@ spring:
   jpa:
     hibernate:
       ddl-auto: validate
+    show-sql: true
 
 server:
   port: 8089
@@ -15,4 +16,14 @@ server:
 security:
   jwt:
     key: test
-
+  crypto:
+    key: secret
+client:
+  iam:
+    basePath: http://localhost:9090/iam
+  config:
+    basePath: http://localhost:9090/config
+  search:
+    basePath: http://localhost:9090/search
+  product:
+    basePath: http://localhost:9090/product

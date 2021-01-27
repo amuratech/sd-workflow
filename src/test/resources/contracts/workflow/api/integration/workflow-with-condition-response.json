@@ -1,0 +1,50 @@
+{
+  "id": 301,
+  "name": "Workflow 1",
+  "description": "Workflow 1",
+  "entityType": "LEAD",
+  "trigger": {
+    "name": "EVENT",
+    "triggerFrequency": "CREATED"
+  },
+  "condition": {
+    "conditionType": "CONDITION_BASED",
+    "conditions": [
+      {
+        "operator": "equal",
+        "name": "firstName",
+        "value": "Tony",
+        "triggerOn": "NEW_VALUE"
+      }
+    ]
+  },
+  "actions": [
+    {
+      "id": "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11",
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "firstName",
+        "value": "Tony 301",
+        "valueType": "PLAIN"
+      }
+    }
+  ],
+  "createdBy": {
+    "id": 12,
+    "name": "Steve"
+  },
+  "updatedBy": {
+    "id": 12,
+    "name": "Steve"
+  },
+  "lastTriggeredAt": null,
+  "triggerCount": 0,
+  "active": true,
+  "recordActions": {
+    "read": true,
+    "update": true,
+    "write": true,
+    "readAll": false,
+    "updateAll": false
+  }
+}

@@ -1,0 +1,316 @@
+{
+  "name": "Workflow 1",
+  "description": "Workflow Description",
+  "entityType": "LEAD",
+  "trigger": {
+    "name": "EVENT",
+    "triggerFrequency": "CREATED",
+    "payload": {
+    }
+  },
+  "condition": {
+    "conditionType": "FOR_ALL"
+  },
+  "actions": [
+    {
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "salutation",
+        "value": 1319,
+        "valueType": "PLAIN"
+      }
+    },
+    {
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "dnd",
+        "value": true,
+        "valueType": "PLAIN"
+      }
+    },
+    {
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "pipeline",
+        "value": {
+          "id": 123,
+          "name": "Default Lead Pipeline"
+        },
+        "valueType": "OBJECT"
+      }
+    },
+    {
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "timezone",
+        "value": "Asia/Calcutta",
+        "valueType": "PLAIN"
+      }
+    },
+    {
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "address",
+        "value": "pune rural",
+        "valueType": "PLAIN"
+      }
+    },
+    {
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "city",
+        "value": "PUNE",
+        "valueType": "PLAIN"
+      }
+    },
+    {
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "city",
+        "value": "PUNE",
+        "valueType": "PLAIN"
+      }
+    },
+    {
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "state",
+        "value": "Maharashtra",
+        "valueType": "PLAIN"
+      }
+    },
+    {
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "zipcode",
+        "value": "412410",
+        "valueType": "PLAIN"
+      }
+    },
+    {
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "companyName",
+        "value": "Kylas",
+        "valueType": "PLAIN"
+      }
+    },
+    {
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "country",
+        "value": "IN",
+        "valueType": "PLAIN"
+      }
+    },
+    {
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "facebook",
+        "value": "https://facebook.com/james",
+        "valueType": "PLAIN"
+      }
+    },
+    {
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "firstName",
+        "value": "James",
+        "valueType": "PLAIN"
+      }
+    },
+    {
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "lastName",
+        "value": "Bond",
+        "valueType": "PLAIN"
+      }
+    },
+    {
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "twitter",
+        "value": "https://twitter.com/james",
+        "valueType": "PLAIN"
+      }
+    },
+    {
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "linkedIn",
+        "value": "https://linkedin.com/james",
+        "valueType": "PLAIN"
+      }
+    },
+    {
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "department",
+        "value": "CBI",
+        "valueType": "PLAIN"
+      }
+    },
+    {
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "designation",
+        "value": "Inspector",
+        "valueType": "PLAIN"
+      }
+    },
+    {
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "companyIndustry",
+        "value": "ACCOUNTING",
+        "valueType": "PLAIN"
+      }
+    },
+    {
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "companyEmployees",
+        "value": 50,
+        "valueType": "PLAIN"
+      }
+    },
+    {
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "companyAnnualRevenue",
+        "value": 400000,
+        "valueType": "PLAIN"
+      }
+    },
+    {
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "companyWebsite",
+        "value": "https://cbi.io",
+        "valueType": "PLAIN"
+      }
+    },
+    {
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "companyAddress",
+        "value": "pune rural",
+        "valueType": "PLAIN"
+      }
+    },
+    {
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "companyCity",
+        "value": "PUNE",
+        "valueType": "PLAIN"
+      }
+    },
+    {
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "companyState",
+        "value": "Maharashtra",
+        "valueType": "PLAIN"
+      }
+    },
+    {
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "companyCountry",
+        "value": "IN",
+        "valueType": "PLAIN"
+      }
+    },
+    {
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "companyZipcode",
+        "value": "412307",
+        "valueType": "PLAIN"
+      }
+    },
+    {
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "requirementName",
+        "value": "Phone",
+        "valueType": "PLAIN"
+      }
+    },
+    {
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "products",
+        "value": [
+          {
+            "id": 26,
+            "name": "Marketing Service"
+          },
+          {
+            "id": 25,
+            "name": "CRM"
+          }
+        ],
+        "valueType": "ARRAY"
+      }
+    },
+    {
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "requirementCurrency",
+        "value": "INR",
+        "valueType": "PLAIN"
+      }
+    },
+    {
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "requirementBudget",
+        "value": 700000,
+        "valueType": "PLAIN"
+      }
+    },
+    {
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "campaign",
+        "value": 1322,
+        "valueType": "PLAIN"
+      }
+    },
+    {
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "source",
+        "value": 1323,
+        "valueType": "PLAIN"
+      }
+    },
+    {
+      "type": "WEBHOOK",
+      "payload": {
+        "name": "Webhook 1",
+        "description": "Webhook Description",
+        "method": "GET",
+        "requestUrl": "https://reqres.in/api/users",
+        "authorizationType": "NONE",
+        "parameters": [
+          {
+            "name": "name",
+            "entity": "LEAD",
+            "attribute": "firstName"
+          }
+        ]
+      }
+    },
+    {
+      "type": "REASSIGN",
+      "payload": {
+        "id": 20003,
+        "name": "Tony Stark"
+      }
+    }
+  ]
+}

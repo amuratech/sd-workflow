@@ -1,0 +1,16 @@
+{
+  "entity": {
+    "id": 999,
+    "firstName": "Tony 301",
+    "lastName": "Stark"
+  },
+  "metadata": {
+    "tenantId": 99,
+    "userId": 12,
+    "entityType": "LEAD",
+    "workflowId": "WF_301",
+    "executedWorkflows": [],
+    "entityAction": "CREATED",
+    "entityId": 999
+  }
+}

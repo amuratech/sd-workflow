@@ -42,7 +42,10 @@ podTemplate(
                           variable     : 'RABBITMQ_USERNAME'],
                          [$class       : 'StringBinding',
                           credentialsId: 'stage-postgres-hostname',
-                          variable     : 'POSTGRES_HOST']]) {
+                          variable     : 'POSTGRES_HOST'],
+                         [$class       : 'StringBinding',
+                          credentialsId: 'kylas-stage-crypto-key',
+                          variable     : 'CRYPTO_KEY']]) {
           stage('Deploy') {
             echo "Deploying docker release -> nexus.sling-dev.com/8023/sling/sd-workflow:${params.dockerImageTag}"
             sh script: "helm upgrade --install sd-workflow sd-charts/sd-workflow " +
@@ -52,6 +55,7 @@ podTemplate(
                 "appConfig.postgres.hostname=${POSTGRES_HOST}," +
                 "appConfig.postgres.username=${POSTGRES_USERNAME}," +
                 "appConfig.postgres.password=${POSTGRES_PASSWORD}," +
+                "appConfig.security.crypto.key=${CRYPTO_KEY}," +
                 "image.tag=${params.dockerImageTag}," +
                 "namespace=${APP_NAMESPACE}," +
                 "deployment.annotations.buildNumber=${currentBuild.number} " +

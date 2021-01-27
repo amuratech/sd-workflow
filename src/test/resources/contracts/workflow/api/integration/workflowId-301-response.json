@@ -1,0 +1,52 @@
+{
+  "id": 301,
+  "name": "Workflow 1",
+  "description": "Workflow 1",
+  "entityType": "LEAD",
+  "active": true,
+  "trigger": {
+    "name": "EVENT",
+    "triggerFrequency": "CREATED"
+  },
+  "condition": {
+    "conditionType": "FOR_ALL"
+  },
+  "actions": [
+    {
+      "id": "d277e0ef-f6ec-45ff-99e6-cfa1b5fd2015",
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "firstName",
+        "value": "Tony 301",
+        "valueType": "PLAIN"
+      }
+    },
+    {
+      "id": "08518b20-23f9-11eb-adc1-0242ac120007",
+      "type": "REASSIGN",
+      "payload": {
+        "id": 20003,
+        "name": "Tony Stark"
+      }
+    }
+  ],
+  "createdBy": {
+    "id": 12,
+    "name": "Steve"
+  },
+  "updatedBy": {
+    "id": 12,
+    "name": "Steve"
+  },
+  "createdAt": "2020-10-21T04:47:59.442+0000",
+  "updatedAt": "2020-10-21T04:47:59.442+0000",
+  "lastTriggeredAt": "2020-10-21T04:47:59.442+0000",
+  "triggerCount": 151,
+  "recordActions": {
+    "read": true,
+    "update": true,
+    "write": true,
+    "readAll": false,
+    "updateAll": false
+  }
+}

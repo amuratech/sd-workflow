@@ -52,7 +52,7 @@
     </root>
 
     <logger name="org.springframework" level="INFO"/>
-    <logger name="com.kylas" level="WARN"/>
+    <logger name="com.kylas" level="DEBUG"/>
     <logger name="io.netty.util" level="ERROR"/>
   </springProfile>
 

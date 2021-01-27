@@ -1,0 +1,117 @@
+{
+  "content": [
+    {
+      "id": 101,
+      "name": "Workflow 1",
+      "description": "Workflow 1",
+      "entityType": "LEAD",
+      "trigger": {
+        "name": "EVENT",
+        "triggerFrequency": "CREATED"
+      },
+      "condition": {
+        "conditionType": "FOR_ALL"
+      },
+      "actions": [
+        {
+          "id": "d277e0ef-f6ec-45ff-99e6-cfa1b5fd2015",
+          "type": "EDIT_PROPERTY",
+          "payload": {
+            "name": "lastName",
+            "value": "Stark",
+            "valueType": "PLAIN"
+          }
+        }
+      ],
+      "createdBy": {
+        "id": 101,
+        "name": "Tony Start"
+      },
+      "updatedBy": {
+        "id": 102,
+        "name": "Steve Roger"
+      },
+      "createdAt": "2020-10-21T10:53:58.249+0000",
+      "updatedAt": "2020-10-21T10:53:58.249+0000",
+      "lastTriggeredAt": null,
+      "triggerCount": 0,
+      "recordActions": {
+        "read": true,
+        "update": false,
+        "write": true,
+        "readAll": false,
+        "updateAll": false
+      },
+      "active": true
+    },
+    {
+      "id": 102,
+      "name": "Workflow 2",
+      "description": "Workflow 2",
+      "entityType": "LEAD",
+      "trigger": {
+        "name": "EVENT",
+        "triggerFrequency": "CREATED"
+      },
+      "condition": {
+        "conditionType": "FOR_ALL"
+      },
+      "actions": [
+        {
+          "id": "d277e0ef-f6ec-45ff-99e6-cfa1b5fd2015",
+          "type": "EDIT_PROPERTY",
+          "payload": {
+            "name": "firstName",
+            "value": "Tony",
+            "valueType": "PLAIN"
+          }
+        }
+      ],
+      "createdBy": {
+        "id": 101,
+        "name": "Tony Start"
+      },
+      "updatedBy": {
+        "id": 102,
+        "name": "Steve Roger"
+      },
+      "createdAt": "2020-10-21T10:53:58.250+0000",
+      "updatedAt": "2020-10-21T10:53:58.250+0000",
+      "lastTriggeredAt": null,
+      "triggerCount": 0,
+      "recordActions": {
+        "read": true,
+        "update": false,
+        "write": true,
+        "readAll": false,
+        "updateAll": false
+      },
+      "active": true
+    }
+  ],
+  "pageable": {
+    "sort": {
+      "sorted": false,
+      "unsorted": true,
+      "empty": true
+    },
+    "pageNumber": 0,
+    "pageSize": 10,
+    "offset": 0,
+    "paged": true,
+    "unpaged": false
+  },
+  "totalElements": 12,
+  "totalPages": 2,
+  "last": false,
+  "first": true,
+  "sort": {
+    "sorted": false,
+    "unsorted": true,
+    "empty": true
+  },
+  "number": 0,
+  "numberOfElements": 2,
+  "size": 10,
+  "empty": false
+}

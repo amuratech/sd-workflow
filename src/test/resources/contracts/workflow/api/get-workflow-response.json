@@ -1,0 +1,44 @@
+{
+  "id": 101,
+  "name": "Edit Lead Property",
+  "description": "Edit Lead Property",
+  "entityType": "LEAD",
+  "trigger": {
+    "name": "EVENT",
+    "triggerFrequency": "CREATED"
+  },
+  "condition": {
+    "conditionType": "FOR_ALL"
+  },
+  "actions": [
+    {
+      "id": "d277e0ef-f6ec-45ff-99e6-cfa1b5fd2015",
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "lastName",
+        "value": "Stark",
+        "valueType": "PLAIN"
+      }
+    }
+  ],
+  "createdBy": {
+    "id": 101,
+    "name": "Tony Start"
+  },
+  "updatedBy": {
+    "id": 102,
+    "name": "Steve Roger"
+  },
+  "createdAt": "2020-10-21T10:57:27.004+0000",
+  "updatedAt": "2020-10-21T10:57:27.004+0000",
+  "lastTriggeredAt": null,
+  "triggerCount": 0,
+  "recordActions": {
+    "read": true,
+    "update": false,
+    "write": true,
+    "readAll": false,
+    "updateAll": false
+  },
+  "active": true
+}

@@ -1,0 +1,22 @@
+{
+  "jsonRules": [
+    {
+      "operator": "equal",
+      "field": "entityType",
+      "type": "string",
+      "value": "LEAD"
+    },
+    {
+      "operator": "between",
+      "field": "createdAt",
+      "type": "date",
+      "value": ["2020-10-20T10:53:58.250z","2020-10-25T10:53:58.250z"]
+    },
+    {
+      "operator": "equal",
+      "field": "createdBy",
+      "type": "long",
+      "value": 12
+    }
+  ]
+}

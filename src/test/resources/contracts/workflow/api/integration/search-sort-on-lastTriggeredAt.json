@@ -1,0 +1,79 @@
+{
+  "content": [
+    {
+      "id": 301,
+      "name": "Workflow 1",
+      "entityType": "LEAD",
+      "createdBy": {
+        "id": 12,
+        "name": "Steve"
+      },
+      "updatedBy": {
+        "id": 12,
+        "name": "Steve"
+      },
+      "createdAt": "2020-10-20T23:17:59.442+0000",
+      "updatedAt": "2020-10-20T23:17:59.442+0000",
+      "lastTriggeredAt": "2020-10-21T23:17:59.442+0000",
+      "triggerCount": 151,
+      "active": true,
+      "recordActions": {
+        "read": true,
+        "update": true,
+        "write": true,
+        "readAll": false,
+        "updateAll": false
+      }
+    },
+    {
+      "id": 302,
+      "name": "Workflow 2",
+      "entityType": "LEAD",
+      "createdBy": {
+        "id": 12,
+        "name": "Steve"
+      },
+      "updatedBy": {
+        "id": 12,
+        "name": "Steve"
+      },
+      "createdAt": "2020-10-20T23:17:59.442+0000",
+      "updatedAt": "2020-10-20T23:17:59.442+0000",
+      "lastTriggeredAt": "2020-10-20T23:17:59.442+0000",
+      "triggerCount": 1,
+      "active": true,
+      "recordActions": {
+        "read": true,
+        "update": true,
+        "write": true,
+        "readAll": false,
+        "updateAll": false
+      }
+    }
+  ],
+  "pageable": {
+    "sort": {
+      "sorted": true,
+      "unsorted": false,
+      "empty": false
+    },
+    "offset": 0,
+    "pageNumber": 0,
+    "pageSize": 10,
+    "paged": true,
+    "unpaged": false
+  },
+  "totalPages": 1,
+  "last": true,
+  "totalElements": 2,
+  "size": 10,
+  "number": 0,
+  "sort": {
+    "sorted": true,
+    "unsorted": false,
+    "empty": false
+  },
+  "first": true,
+  "numberOfElements": 2,
+  "empty": false
+}

@@ -1,0 +1,191 @@
+{
+  "leftNav": false,
+  "pageConfig": {
+    "actionConfig": {
+      "search": true,
+      "filter": true,
+      "create": true,
+      "importItems": false,
+      "columnSelector": true
+    },
+    "tableConfig": {
+      "fetchURL": "/search/workflows",
+      "searchService": "search",
+      "recordClickAction": "VIEW",
+      "columns": [
+        {
+          "id": "name",
+          "header": "Workflow name",
+          "isStandard": true,
+          "isFilterable": false,
+          "isSortable": false,
+          "isInternal": false,
+          "multiValue": false,
+          "fieldType": "TEXT_FIELD",
+          "picklist": null,
+          "lookup": null,
+          "values": null,
+          "showDefaultOptions": false
+        },
+        {
+          "id": "entityType",
+          "header": "Entity",
+          "isStandard": true,
+          "isFilterable": true,
+          "isSortable": false,
+          "isInternal": false,
+          "multiValue": false,
+          "fieldType": "ENTITY_PICKLIST",
+          "picklist": {
+            "id": 1,
+            "name": "entityType",
+            "picklistValues": [
+              {
+                "id": "LEAD",
+                "name": "LEAD",
+                "displayName": "Lead",
+                "systemDefault": true
+              }
+            ]
+          },
+          "lookup": null,
+          "values": null,
+          "showDefaultOptions": false
+        },
+        {
+          "id": "createdAt",
+          "header": "Created At",
+          "isStandard": true,
+          "isFilterable": true,
+          "isSortable": true,
+          "isInternal": true,
+          "multiValue": false,
+          "fieldType": "DATETIME_PICKER",
+          "picklist": null,
+          "lookup": null,
+          "values": null,
+          "showDefaultOptions": false
+        },
+        {
+          "id": "createdBy",
+          "header": "Created By",
+          "isStandard": true,
+          "isFilterable": true,
+          "isSortable": false,
+          "isInternal": true,
+          "multiValue": false,
+          "fieldType": "LOOK_UP",
+          "picklist": null,
+          "lookup": {
+            "entity": "USER",
+            "lookupUrl": "/users/lookup?q=name:"
+          },
+          "values": null,
+          "showDefaultOptions": true
+        },
+        {
+          "id": "active",
+          "header": "Status",
+          "isStandard": true,
+          "isFilterable": true,
+          "isSortable": false,
+          "isInternal": true,
+          "multiValue": false,
+          "fieldType": "TOGGLE",
+          "picklist": {
+            "id": 1,
+            "name": "active",
+            "picklistValues": [
+              {
+                "id": true,
+                "displayName": "Active",
+                "name": true,
+                "systemDefault": true
+              },
+              {
+                "id": false,
+                "displayName": "Inactive",
+                "name": false,
+                "systemDefault": false
+              }
+            ]
+          },
+          "lookup": null,
+          "values": null,
+          "showDefaultOptions": false
+        },
+        {
+          "id": "lastTriggeredAt",
+          "header": "Last Triggered At",
+          "isStandard": true,
+          "isFilterable": false,
+          "isSortable": true,
+          "isInternal": true,
+          "multiValue": false,
+          "fieldType": "DATETIME_PICKER",
+          "picklist": null,
+          "lookup": null,
+          "values": null,
+          "showDefaultOptions": false
+        },
+        {
+          "id": "triggerCount",
+          "header": "Trigger Count",
+          "isStandard": true,
+          "isFilterable": false,
+          "isSortable": false,
+          "isInternal": true,
+          "multiValue": false,
+          "fieldType": "NUMBER",
+          "picklist": null,
+          "lookup": null,
+          "values": null,
+          "showDefaultOptions": false
+        },
+        {
+          "id": "updatedBy",
+          "header": "Updated By",
+          "isStandard": true,
+          "isFilterable": true,
+          "isSortable": false,
+          "isInternal": true,
+          "multiValue": false,
+          "fieldType": "LOOK_UP",
+          "picklist": null,
+          "lookup": {
+            "entity": "USER",
+            "lookupUrl": "/users/lookup?q=name:"
+          },
+          "values": null,
+          "showDefaultOptions": true
+        },
+        {
+          "id": "updatedAt",
+          "header": "Updated At",
+          "isStandard": true,
+          "isFilterable": true,
+          "isSortable": true,
+          "isInternal": true,
+          "multiValue": false,
+          "fieldType": "DATETIME_PICKER",
+          "picklist": null,
+          "lookup": null,
+          "values": null,
+          "showDefaultOptions": false
+        }
+      ],
+      "clickActionUrl": null
+    }
+  },
+  "defaultConfig": {
+    "fields": [
+      "name",
+      "entityType",
+      "createdAt",
+      "createdBy",
+      "active",
+      "triggerCount",
+      "lastTriggeredAt"
+    ]
+  }
+}

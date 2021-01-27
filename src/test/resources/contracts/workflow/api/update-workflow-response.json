@@ -1,0 +1,56 @@
+{
+  "id": 1,
+  "name": "Workflow 1",
+  "description": "Workflow Description",
+  "entityType": "LEAD",
+  "trigger": {
+    "name": "EVENT",
+    "triggerFrequency": "CREATED"
+  },
+  "condition": {
+    "conditionType": "FOR_ALL"
+  },
+  "actions": [
+    {
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "salutation",
+        "value": 1319,
+        "valueType": "PLAIN"
+      }
+    },
+    {
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "dnd",
+        "value": true,
+        "valueType": "PLAIN"
+      }
+    },
+    {
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "city",
+        "value": "PUNE",
+        "valueType": "PLAIN"
+      }
+    },
+    {
+      "type": "REASSIGN",
+      "payload": {
+        "id": 20003,
+        "name": "Tony Stark"
+      }
+    }
+  ],
+  "createdBy": {
+    "id": 5000,
+    "name": "Tony Stark"
+  },
+  "updatedBy": {
+    "id": 5000,
+    "name": "Tony Stark"
+  },
+  "triggerCount": 0,
+  "active": true
+}
