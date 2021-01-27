@@ -1,0 +1,35 @@
+{
+  "name": "Workflow 1",
+  "description": "Workflow Description",
+  "entityType": "CONTACT",
+  "trigger": {
+    "name": "EVENT",
+    "triggerFrequency": "CREATED",
+    "payload": {
+    }
+  },
+  "condition": {
+    "conditionType": "CONDITION_BASED",
+    "conditions": [
+      {
+        "triggerOn": "NEW_VALUE",
+        "name": "createdBy",
+        "operator": "EQUAL",
+        "value": {
+          "id": 200,
+          "name": "John Cena"
+        }
+      }
+    ]
+  },
+  "actions": [
+    {
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "salutation",
+        "value": 1319,
+        "valueType": "PLAIN"
+      }
+    }
+  ]
+}

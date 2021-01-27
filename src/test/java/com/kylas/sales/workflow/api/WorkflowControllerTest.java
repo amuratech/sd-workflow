@@ -1214,6 +1214,37 @@ class WorkflowControllerTest {
 
   }
 
+  @Test
+  public void givenContactWorkflowRequest_withIdNameCondition_shouldCreateIt() throws JSONException, IOException {
+    //given
+    var requestPayload =
+        getResourceAsString("classpath:contracts/workflow/api/contact-workflow-request-with-idName-condition.json");
+    given(workflowService.create(argThat(workflowRequest ->
+        {
+          ExpressionElement expressionElement = workflowRequest.getCondition().getConditions().get(0);
+          return workflowRequest.getName().equalsIgnoreCase("Workflow 1")
+              && workflowRequest.getDescription().equalsIgnoreCase("Workflow Description")
+              && workflowRequest.getCondition().getConditionType().equals(ConditionType.CONDITION_BASED)
+              && expressionElement.getName().equals("createdBy")
+              && expressionElement.getOperator().equals(Operator.EQUAL)
+              && ((LinkedHashMap) expressionElement.getValue()).get("id").equals(200);
+        })
+    )).willReturn(Mono.just(new WorkflowSummary(1L)));
+    //when
+    var workflowResponse = buildWebClient()
+        .post()
+        .uri("/v1/workflows")
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(requestPayload)
+        .retrieve()
+        .bodyToMono(String.class).block();
+    //then
+    var expectedResponse =
+        getResourceAsString("classpath:contracts/workflow/api/create-workflow-response-with-entity-contact.json");
+    JSONAssert.assertEquals(expectedResponse, workflowResponse, false);
+  }
+
+
   private String getResourceAsString(String resourcePath) throws IOException {
     var resource = resourceLoader.getResource(resourcePath);
     File file = resource.getFile();
