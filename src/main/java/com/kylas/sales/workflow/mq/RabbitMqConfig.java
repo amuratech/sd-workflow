@@ -1,5 +1,7 @@
 package com.kylas.sales.workflow.mq;
 
+import static com.kylas.sales.workflow.mq.event.ContactEvent.getContactCreatedEventName;
+import static com.kylas.sales.workflow.mq.event.ContactEvent.getContactUpdatedEventName;
 import static com.kylas.sales.workflow.mq.event.DealEvent.getDealCreatedEventName;
 import static com.kylas.sales.workflow.mq.event.DealEvent.getDealUpdatedEventName;
 import static com.kylas.sales.workflow.mq.event.LeadEvent.getLeadCreatedEventName;
@@ -24,6 +26,8 @@ public class RabbitMqConfig {
   static final String DEAL_EXCHANGE = "ex.deal";
   static final String DEAL_CREATED_QUEUE = "q.deal.created.workflow";
   static final String DEAL_UPDATED_QUEUE = "q.deal.updated.workflow";
+  static final String SALES_CONTACT_CREATED_QUEUE = "q.contact.created.workflow";
+  static final String SALES_CONTACT_UPDATED_QUEUE = "q.contact.updated.workflow";
 
 
   @Bean
@@ -46,6 +50,8 @@ public class RabbitMqConfig {
     var salesLeadUpdatedQueue = new Queue(SALES_LEAD_UPDATED_QUEUE, true);
     var dealCreatedQueue = new Queue(DEAL_CREATED_QUEUE, true);
     var dealUpdatedQueue = new Queue(DEAL_UPDATED_QUEUE, true);
+    var salesContactCreatedQueue = new Queue(SALES_CONTACT_CREATED_QUEUE, true);
+    var salesContactUpdatedQueue = new Queue(SALES_CONTACT_UPDATED_QUEUE, true);
 
     return new Declarables(
         salesLeadCreatedQueue,
@@ -54,6 +60,8 @@ public class RabbitMqConfig {
         dealExchange,
         dealCreatedQueue,
         dealUpdatedQueue,
+        salesContactCreatedQueue,
+        salesContactUpdatedQueue,
 
         BindingBuilder.bind(salesLeadCreatedQueue).to(salesExchange)
             .with(getLeadCreatedEventName()),
@@ -65,7 +73,13 @@ public class RabbitMqConfig {
             .with(getDealCreatedEventName()),
 
         BindingBuilder.bind(dealUpdatedQueue).to(dealExchange)
-            .with(getDealUpdatedEventName())
+            .with(getDealUpdatedEventName()),
+
+        BindingBuilder.bind(salesContactCreatedQueue).to(salesExchange)
+            .with(getContactCreatedEventName()),
+
+        BindingBuilder.bind(salesContactUpdatedQueue).to(salesExchange)
+            .with(getContactUpdatedEventName())
     );
   }
 }

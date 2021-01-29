@@ -2,12 +2,15 @@ package com.kylas.sales.workflow.mq;
 
 import static com.kylas.sales.workflow.mq.RabbitMqConfig.DEAL_CREATED_QUEUE;
 import static com.kylas.sales.workflow.mq.RabbitMqConfig.DEAL_UPDATED_QUEUE;
+import static com.kylas.sales.workflow.mq.RabbitMqConfig.SALES_CONTACT_CREATED_QUEUE;
+import static com.kylas.sales.workflow.mq.RabbitMqConfig.SALES_CONTACT_UPDATED_QUEUE;
 import static com.kylas.sales.workflow.mq.RabbitMqConfig.SALES_LEAD_CREATED_QUEUE;
 import static com.kylas.sales.workflow.mq.RabbitMqConfig.SALES_LEAD_UPDATED_QUEUE;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kylas.sales.workflow.domain.processor.WorkflowProcessor;
+import com.kylas.sales.workflow.mq.event.ContactEvent;
 import com.kylas.sales.workflow.mq.event.DealEvent;
 import com.kylas.sales.workflow.mq.event.LeadEvent;
 import com.kylas.sales.workflow.security.InternalAuthProvider;
@@ -65,6 +68,22 @@ public class EventListener {
     processDealEvent(message);
   }
 
+  @RabbitListener(queues = SALES_CONTACT_CREATED_QUEUE)
+  public void listenContactCreatedEvent(Message message) {
+    log.info("Received MessageId for contact created event: {} , consumerTag: {} , Event {} ", message.getMessageProperties().getMessageId(),
+        message.getMessageProperties().getConsumerTag(),
+        message.getMessageProperties().getReceivedRoutingKey());
+    processContactEvent(message);
+  }
+
+  @RabbitListener(queues = SALES_CONTACT_UPDATED_QUEUE)
+  public void listenContactUpdatedEvent(Message message) {
+    log.info("Received MessageId for contact updated event: {} , consumerTag: {} , Event {} ", message.getMessageProperties().getMessageId(),
+        message.getMessageProperties().getConsumerTag(),
+        message.getMessageProperties().getReceivedRoutingKey());
+    processContactEvent(message);
+  }
+
   private void processLeadEvent(Message message) {
     try {
       var leadCreatedEvent = objectMapper.readValue(new String(message.getBody()), LeadEvent.class);
@@ -82,6 +101,17 @@ public class EventListener {
       var metadata = dealCreatedEvent.getMetadata();
       internalAuthProvider.loginWith(metadata.getUserId(), metadata.getTenantId());
       workflowProcessor.process(dealCreatedEvent);
+    } catch (JsonProcessingException e) {
+      log.error(e.getMessage());
+    }
+  }
+
+  private void processContactEvent(Message message) {
+    try {
+      var contactCreatedEvent = objectMapper.readValue(new String(message.getBody()), ContactEvent.class);
+      var metadata = contactCreatedEvent.getMetadata();
+      internalAuthProvider.loginWith(metadata.getUserId(), metadata.getTenantId());
+      workflowProcessor.process(contactCreatedEvent);
     } catch (JsonProcessingException e) {
       log.error(e.getMessage());
     }

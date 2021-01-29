@@ -1,12 +1,16 @@
 package com.kylas.sales.workflow.domain.processor.contact;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.kylas.sales.workflow.domain.processor.Actionable;
+import com.kylas.sales.workflow.domain.processor.EntityDetail;
 import com.kylas.sales.workflow.domain.processor.lead.Email;
 import com.kylas.sales.workflow.domain.processor.lead.IdName;
 import com.kylas.sales.workflow.domain.processor.lead.PhoneNumber;
 import java.util.Date;
+import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -14,7 +18,7 @@ import lombok.Setter;
 @JsonIgnoreProperties(ignoreUnknown = true)
 @Setter
 @JsonInclude(Include.NON_NULL)
-public class ContactDetail {
+public class ContactDetail implements Actionable, EntityDetail {
 
   private Long id;
   private Long tenantId;
@@ -39,7 +43,7 @@ public class ContactDetail {
   private String twitter;
   private String linkedIn;
 
-  private String company;
+  private IdName company;
   private String designation;
   private String department;
   private Boolean stakeholder;
@@ -52,4 +56,12 @@ public class ContactDetail {
   private Date updatedAt;
   private IdName createdBy;
   private IdName updatedBy;
+
+  private List<Long> associatedDeals;
+
+  @Override
+  @JsonIgnore
+  public String getEventName() {
+    return "workflow.contact.update";
+  }
 }

@@ -1,0 +1,28 @@
+{
+  "entity": {
+    "id": 999,
+    "firstName": "Tony",
+    "lastName": "Stark",
+    "ownerId": {
+      "id": 55,
+      "name": "Tony Stark"
+    }
+  },
+  "oldEntity": {
+    "id": 999,
+    "firstName": "Steve",
+    "lastName": "Stark",
+    "salutation": {
+      "id": 473,
+      "name": "Mr"
+    }
+  },
+  "metadata": {
+    "entityAction": "UPDATED",
+    "tenantId": 99,
+    "userId": 12,
+    "entityType": "CONTACT",
+    "workflowId": null,
+    "executedWorkflows": []
+  }
+}

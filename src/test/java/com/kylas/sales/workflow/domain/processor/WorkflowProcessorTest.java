@@ -1,5 +1,6 @@
 package com.kylas.sales.workflow.domain.processor;
 
+import static com.kylas.sales.workflow.domain.workflow.EntityType.CONTACT;
 import static com.kylas.sales.workflow.domain.workflow.EntityType.DEAL;
 import static com.kylas.sales.workflow.domain.workflow.EntityType.LEAD;
 import static com.kylas.sales.workflow.domain.workflow.TriggerFrequency.CREATED;
@@ -20,6 +21,7 @@ import com.kylas.sales.workflow.api.request.Condition;
 import com.kylas.sales.workflow.common.dto.condition.Operator;
 import com.kylas.sales.workflow.common.dto.condition.WorkflowCondition.ConditionExpression;
 import com.kylas.sales.workflow.domain.ConditionFacade;
+import com.kylas.sales.workflow.domain.processor.contact.ContactDetail;
 import com.kylas.sales.workflow.domain.processor.deal.DealDetail;
 import com.kylas.sales.workflow.domain.processor.deal.Money;
 import com.kylas.sales.workflow.domain.processor.deal.Pipeline;
@@ -36,9 +38,11 @@ import com.kylas.sales.workflow.domain.workflow.WorkflowTrigger;
 import com.kylas.sales.workflow.domain.workflow.action.AbstractWorkflowAction;
 import com.kylas.sales.workflow.domain.workflow.action.EditPropertyAction;
 import com.kylas.sales.workflow.domain.workflow.action.ValueConverter;
+import com.kylas.sales.workflow.domain.workflow.action.WorkflowAction.ActionType;
 import com.kylas.sales.workflow.domain.workflow.action.reassign.ReassignAction;
 import com.kylas.sales.workflow.domain.workflow.action.reassign.ReassignDetail;
 import com.kylas.sales.workflow.mq.command.EntityUpdatedCommandPublisher;
+import com.kylas.sales.workflow.mq.event.ContactEvent;
 import com.kylas.sales.workflow.mq.event.DealEvent;
 import com.kylas.sales.workflow.mq.event.EntityAction;
 import com.kylas.sales.workflow.mq.event.LeadEvent;
@@ -599,7 +603,99 @@ class WorkflowProcessorTest {
     verifyNoInteractions(entityUpdatedCommandPublisher);
   }
 
+  @Test
+  public void givenContactEvent_withEditPropertyActions_shouldPublishEvent() {
+    // given
+    long tenantId = 101;
+    long userId = 10L;
+    long workflowId = 99L;
 
+    var contactDetail = new ContactDetail();
+    contactDetail.setFirstName("Tony");
+    contactDetail.setLastName("Stark");
+    contactDetail.setId(55L);
+    Metadata metadata = new Metadata(tenantId, userId, CONTACT, null, null, EntityAction.CREATED);
+
+    var contactCreatedEvent = new ContactEvent(contactDetail, null, metadata);
+
+    Workflow workflowMock = mock(Workflow.class);
+    given(workflowMock.getId()).willReturn(workflowId);
+
+    Set<AbstractWorkflowAction> actions = new HashSet<>();
+
+    String value = "steve";
+
+    EditPropertyAction updateFirstNameAction = mock(EditPropertyAction.class);
+    given(updateFirstNameAction.getName()).willReturn("firstName");
+    given(updateFirstNameAction.getValue()).willReturn(value);
+    given(updateFirstNameAction.getType()).willReturn(ActionType.EDIT_PROPERTY);
+    actions.add(updateFirstNameAction);
+
+    EditPropertyAction failedAction = mock(EditPropertyAction.class);
+    given(failedAction.getName()).willReturn("firstName");
+    given(failedAction.getValue()).willReturn(value);
+    given(failedAction.getType()).willReturn(ActionType.EDIT_PROPERTY);
+    actions.add(failedAction);
+
+    given(workflowMock.getWorkflowActions()).willReturn(actions);
+    WorkflowTrigger workflowTriggerMock = mock(WorkflowTrigger.class);
+    given(workflowTriggerMock.getTriggerType()).willReturn(TriggerType.EVENT);
+    given(workflowTriggerMock.getTriggerFrequency()).willReturn(TriggerFrequency.CREATED);
+    given(workflowMock.getWorkflowTrigger()).willReturn(workflowTriggerMock);
+
+    List<Workflow> workflows = Arrays.asList(workflowMock);
+
+    given(workflowService.findActiveBy(tenantId, CONTACT, TriggerFrequency.CREATED)).willReturn(workflows);
+    doNothing().when(entityUpdatedCommandPublisher).execute(any(Metadata.class), any(ContactDetail.class));
+    when(valueConverter.getValue(any(EditPropertyAction.class), any(Field.class), any(EntityType.class))).thenReturn(value);
+    // when
+    workflowProcessor.process(contactCreatedEvent);
+    // then
+    verify(entityUpdatedCommandPublisher, times(1))
+        .execute(any(Metadata.class), any(Actionable.class));
+  }
+
+  @Test
+  public void givenContactUpdatedEvent_tryToProcess_shouldExecuteWorkflowWithUpdatedFrequency() {
+    // given
+    long tenantId = 101;
+    long userId = 10L;
+    long workflowId99 = 99L;
+    long workflowId100 = 99L;
+
+    var contact = new ContactDetail();
+    contact.setId(55L);
+    contact.setFirstName("Johny");
+    contact.setLastName("Stark");
+
+    var old = new ContactDetail();
+    old.setId(55L);
+    old.setFirstName("Steve");
+    old.setLastName("Roger");
+
+    var metadata = new Metadata(tenantId, userId, CONTACT, null, null, EntityAction.UPDATED);
+    var contactUpdatedEvent = new ContactEvent(contact, old, metadata);
+
+    String value = "tony";
+
+    Workflow workflowMockUpdate =
+        getMockEditPropertyWorkflow(workflowId100, TriggerFrequency.UPDATED, "firstName", "tony");
+
+    List<Workflow> workflows = Arrays.asList(workflowMockUpdate);
+
+    given(workflowService.findActiveBy(tenantId, CONTACT, TriggerFrequency.UPDATED)).willReturn(workflows);
+    doNothing().when(entityUpdatedCommandPublisher).execute(any(Metadata.class), any(ContactDetail.class));
+    when(valueConverter.getValue(any(EditPropertyAction.class), any(Field.class), any(EntityType.class))).thenReturn(value);
+    // when
+    workflowProcessor.process(contactUpdatedEvent);
+    // then
+    verify(entityUpdatedCommandPublisher, times(1))
+        .execute(any(Metadata.class), any(Actionable.class));
+    ArgumentCaptor<Workflow> workflowArgumentCaptor = ArgumentCaptor.forClass(Workflow.class);
+    verify(workflowService, times(1)).updateExecutedEventDetails(workflowArgumentCaptor.capture());
+    Workflow executedWorkflow = workflowArgumentCaptor.getValue();
+    Assertions.assertThat(executedWorkflow.getId()).isEqualTo(workflowId100);
+  }
   private Workflow getMockEditPropertyWorkflow(
       long workflowId, TriggerFrequency updated, String propertyName, String propertyValue) {
 

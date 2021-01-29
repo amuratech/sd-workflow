@@ -3,6 +3,8 @@ package com.kylas.sales.workflow.mq;
 import static com.kylas.sales.workflow.domain.workflow.EntityType.DEAL;
 import static com.kylas.sales.workflow.mq.RabbitMqConfig.DEAL_EXCHANGE;
 import static com.kylas.sales.workflow.mq.RabbitMqConfig.SALES_EXCHANGE;
+import static com.kylas.sales.workflow.mq.event.ContactEvent.getContactCreatedEventName;
+import static com.kylas.sales.workflow.mq.event.ContactEvent.getContactUpdatedEventName;
 import static com.kylas.sales.workflow.mq.event.DealEvent.getDealCreatedEventName;
 import static com.kylas.sales.workflow.mq.event.DealEvent.getDealUpdatedEventName;
 import static com.kylas.sales.workflow.mq.event.EntityAction.CREATED;
@@ -21,6 +23,7 @@ import com.kylas.sales.workflow.config.TestDatabaseInitializer;
 import com.kylas.sales.workflow.domain.processor.WorkflowProcessor;
 import com.kylas.sales.workflow.domain.processor.deal.DealDetail;
 import com.kylas.sales.workflow.mq.EventListenerTest.TestMqSetup;
+import com.kylas.sales.workflow.mq.event.ContactEvent;
 import com.kylas.sales.workflow.mq.event.DealEvent;
 import com.kylas.sales.workflow.mq.event.LeadEvent;
 import com.kylas.sales.workflow.mq.event.Metadata;
@@ -68,6 +71,8 @@ class EventListenerTest {
   ArgumentCaptor<LeadEvent> leadEventArgumentCaptor;
   @Captor
   ArgumentCaptor<DealEvent> dealEventArgumentCaptor;
+  @Captor
+  ArgumentCaptor<ContactEvent> contactEventArgumentCaptor;
 
   CountDownLatch latch = new CountDownLatch(1);
 
@@ -230,6 +235,43 @@ class EventListenerTest {
     assertThat(metadata.getUserId()).isEqualTo(12L);
     assertThat(metadata.getWorkflowId()).isNull();
     assertThat(metadata.getExecutedWorkflows()).isEmpty();
+  }
+
+  @Test
+  public void givenContactCreatedRequest_shouldCaptureIt() throws IOException, InterruptedException {
+    //given
+    String resourceAsString = getResourceAsString("/contracts/mq/events/contact-created-event.json");
+    ContactEvent contactEvent = objectMapper.readValue(resourceAsString, ContactEvent.class);
+    doNothing().when(workflowProcessor).process(any(ContactEvent.class));
+    //when
+    rabbitTemplate.convertAndSend(SALES_EXCHANGE, getContactCreatedEventName(),
+        contactEvent);
+    //then
+    latch.await(3, TimeUnit.SECONDS);
+    verify(workflowProcessor, times(1)).process(contactEventArgumentCaptor.capture());
+    ContactEvent eventReceived = contactEventArgumentCaptor.getValue();
+    assertThat(eventReceived.getMetadata().getTenantId()).isEqualTo(99L);
+    assertThat(eventReceived.getMetadata().getEntityAction()).isEqualTo(CREATED);
+  }
+
+  @Test
+  public void givenContactUpdatedRequest_shouldCaptureIt() throws Exception {
+    //given
+    String resourceAsString = getResourceAsString("/contracts/mq/events/contact-updated-event.json");
+    ContactEvent contactEvent = objectMapper.readValue(resourceAsString, ContactEvent.class);
+    doNothing().when(workflowProcessor).process(any(ContactEvent.class));
+    //when
+    rabbitTemplate.convertAndSend(SALES_EXCHANGE, getContactUpdatedEventName(),
+        contactEvent);
+    //then
+    latch.await(3, TimeUnit.SECONDS);
+    verify(workflowProcessor, times(1)).process(contactEventArgumentCaptor.capture());
+    ContactEvent eventReceived = contactEventArgumentCaptor.getValue();
+    assertThat(eventReceived.getEntity().getOwnerId().getId()).isEqualTo(55);
+    assertThat(eventReceived.getOldEntity().getSalutation().getId()).isEqualTo(473);
+    assertThat(eventReceived.getMetadata().getTenantId()).isEqualTo(99L);
+    assertThat(eventReceived.getMetadata().getEntityAction()).isEqualTo(UPDATED);
+
   }
 
   private String getResourceAsString(String resourcePath) throws IOException {
