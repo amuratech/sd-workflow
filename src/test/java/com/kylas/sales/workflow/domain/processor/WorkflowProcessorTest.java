@@ -3,13 +3,17 @@ package com.kylas.sales.workflow.domain.processor;
 import static com.kylas.sales.workflow.domain.workflow.EntityType.CONTACT;
 import static com.kylas.sales.workflow.domain.workflow.EntityType.DEAL;
 import static com.kylas.sales.workflow.domain.workflow.EntityType.LEAD;
+import static com.kylas.sales.workflow.domain.workflow.EntityType.USER;
 import static com.kylas.sales.workflow.domain.workflow.TriggerFrequency.CREATED;
 import static com.kylas.sales.workflow.domain.workflow.TriggerFrequency.UPDATED;
 import static com.kylas.sales.workflow.domain.workflow.action.WorkflowAction.ActionType.EDIT_PROPERTY;
 import static com.kylas.sales.workflow.domain.workflow.action.WorkflowAction.ActionType.REASSIGN;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -21,6 +25,7 @@ import com.kylas.sales.workflow.api.request.Condition;
 import com.kylas.sales.workflow.common.dto.condition.Operator;
 import com.kylas.sales.workflow.common.dto.condition.WorkflowCondition.ConditionExpression;
 import com.kylas.sales.workflow.domain.ConditionFacade;
+import com.kylas.sales.workflow.domain.exception.InvalidEntityException;
 import com.kylas.sales.workflow.domain.processor.contact.ContactDetail;
 import com.kylas.sales.workflow.domain.processor.deal.DealDetail;
 import com.kylas.sales.workflow.domain.processor.deal.Money;
@@ -54,7 +59,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
-import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -201,7 +205,7 @@ class WorkflowProcessorTest {
     ArgumentCaptor<Workflow> workflowArgumentCaptor = ArgumentCaptor.forClass(Workflow.class);
     verify(workflowService, times(1)).updateExecutedEventDetails(workflowArgumentCaptor.capture());
     Workflow executedWorkflow = workflowArgumentCaptor.getValue();
-    Assertions.assertThat(executedWorkflow.getId()).isEqualTo(workflowId100);
+    assertThat(executedWorkflow.getId()).isEqualTo(workflowId100);
   }
 
 
@@ -291,9 +295,9 @@ class WorkflowProcessorTest {
     ArgumentCaptor<Metadata> metadataArgumentCaptor = ArgumentCaptor.forClass(Metadata.class);
     verify(entityUpdatedCommandPublisher, times(2)).execute(metadataArgumentCaptor.capture(), any(Lead.class));
     List<Metadata> allValues = metadataArgumentCaptor.getAllValues();
-    Assertions.assertThat(allValues.size()).isEqualTo(2);
-    Assertions.assertThat(allValues.get(0).getExecutedWorkflows()).containsExactlyInAnyOrder("WF_99", "WF_100");
-    Assertions.assertThat(allValues.get(1).getExecutedWorkflows()).containsExactlyInAnyOrder("WF_99", "WF_100");
+    assertThat(allValues.size()).isEqualTo(2);
+    assertThat(allValues.get(0).getExecutedWorkflows()).containsExactlyInAnyOrder("WF_99", "WF_100");
+    assertThat(allValues.get(1).getExecutedWorkflows()).containsExactlyInAnyOrder("WF_99", "WF_100");
   }
 
   @Test
@@ -343,8 +347,8 @@ class WorkflowProcessorTest {
     ArgumentCaptor<Metadata> metadataArgumentCaptor = ArgumentCaptor.forClass(Metadata.class);
     verify(entityUpdatedCommandPublisher, times(1)).execute(metadataArgumentCaptor.capture(), any(Lead.class));
     List<Metadata> allValues = metadataArgumentCaptor.getAllValues();
-    Assertions.assertThat(allValues.size()).isEqualTo(1);
-    Assertions.assertThat(allValues.get(0).getExecutedWorkflows()).containsExactlyInAnyOrder("WF_99");
+    assertThat(allValues.size()).isEqualTo(1);
+    assertThat(allValues.get(0).getExecutedWorkflows()).containsExactlyInAnyOrder("WF_99");
   }
 
   @Test
@@ -423,8 +427,11 @@ class WorkflowProcessorTest {
     workflowProcessor.process(leadEvent);
 
     //Then
+    ArgumentCaptor<Actionable> actionableArgumentCaptor = ArgumentCaptor.forClass(Actionable.class);
     verify(entityUpdatedCommandPublisher, times(1))
-        .execute(any(Metadata.class), any(Actionable.class));
+        .execute(any(Metadata.class), actionableArgumentCaptor.capture());
+    Actionable actionable = actionableArgumentCaptor.getValue();
+    assertThat(actionable.getEventName()).isEqualTo("workflow.lead.reassign");
   }
 
 
@@ -457,6 +464,130 @@ class WorkflowProcessorTest {
     List<Workflow> workflows = Arrays.asList(workflowMock);
 
     given(workflowService.findActiveBy(tenantId, LEAD, CREATED)).willReturn(workflows);
+    doNothing().when(entityUpdatedCommandPublisher).execute(any(Metadata.class), any(ReassignDetail.class));
+
+    //when
+    workflowProcessor.process(leadEvent);
+
+    //Then
+    verifyNoInteractions(entityUpdatedCommandPublisher);
+  }
+
+  @Test
+  public void givenDealEvent_withReassignActions_shouldPublishEvent() {
+    // given
+    long tenantId = 101;
+    long userId = 10L;
+    long workflowId = 99L;
+
+    var dealDetail = new DealDetail();
+    dealDetail.setId(55L);
+    Metadata metadata = new Metadata(tenantId, userId, DEAL, null, null, EntityAction.CREATED);
+
+    var dealEvent = new DealEvent(dealDetail, null, metadata);
+
+    Workflow workflowMock = mock(Workflow.class);
+    given(workflowMock.getId()).willReturn(workflowId);
+
+    ReassignAction reassignAction = mock(ReassignAction.class);
+    when(reassignAction.getOwnerId()).thenReturn(2000L);
+    when(reassignAction.getType()).thenReturn(REASSIGN);
+
+    Set<AbstractWorkflowAction> actions = new HashSet<>();
+    actions.add(reassignAction);
+
+    given(workflowMock.getWorkflowActions()).willReturn(actions);
+    WorkflowTrigger workflowTriggerMock = mock(WorkflowTrigger.class);
+    given(workflowTriggerMock.getTriggerType()).willReturn(TriggerType.EVENT);
+    given(workflowTriggerMock.getTriggerFrequency()).willReturn(CREATED);
+    given(workflowMock.getWorkflowTrigger()).willReturn(workflowTriggerMock);
+
+    List<Workflow> workflows = Arrays.asList(workflowMock);
+
+    given(workflowService.findActiveBy(tenantId, DEAL, CREATED)).willReturn(workflows);
+    doNothing().when(entityUpdatedCommandPublisher).execute(any(Metadata.class), any(ReassignDetail.class));
+
+    //when
+    workflowProcessor.process(dealEvent);
+
+    //Then
+    ArgumentCaptor<Actionable> actionableArgumentCaptor = ArgumentCaptor.forClass(Actionable.class);
+    verify(entityUpdatedCommandPublisher, times(1))
+        .execute(any(Metadata.class), actionableArgumentCaptor.capture());
+    Actionable actionable = actionableArgumentCaptor.getValue();
+    assertThat(actionable.getEventName()).isEqualTo("workflow.deal.reassign");
+  }
+
+  @Test
+  public void givenEntityEvent_withReassignActionsAndInvalidEntity_shouldNotPublishEvent() {
+    // given
+    long tenantId = 101;
+    long userId = 10L;
+    long workflowId = 99L;
+
+    var dealDetail = new DealDetail();
+    dealDetail.setId(55L);
+    Metadata metadata = new Metadata(tenantId, userId, USER, null, null, EntityAction.CREATED);
+
+    var dealEvent = new DealEvent(dealDetail, null, metadata);
+
+    Workflow workflowMock = mock(Workflow.class);
+    given(workflowMock.getId()).willReturn(workflowId);
+
+    ReassignAction reassignAction = mock(ReassignAction.class);
+    when(reassignAction.getOwnerId()).thenReturn(2000L);
+    when(reassignAction.getType()).thenReturn(REASSIGN);
+
+    Set<AbstractWorkflowAction> actions = new HashSet<>();
+    actions.add(reassignAction);
+
+    given(workflowMock.getWorkflowActions()).willReturn(actions);
+    WorkflowTrigger workflowTriggerMock = mock(WorkflowTrigger.class);
+    given(workflowTriggerMock.getTriggerType()).willReturn(TriggerType.EVENT);
+    given(workflowTriggerMock.getTriggerFrequency()).willReturn(CREATED);
+    given(workflowMock.getWorkflowTrigger()).willReturn(workflowTriggerMock);
+
+    List<Workflow> workflows = Arrays.asList(workflowMock);
+
+    given(workflowService.findActiveBy(tenantId, USER, CREATED)).willReturn(workflows);
+    doThrow(InvalidEntityException.class).when(entityUpdatedCommandPublisher).execute(any(Metadata.class), any(ReassignDetail.class));
+
+    //when
+    //then
+    assertThatExceptionOfType(InvalidEntityException.class)
+        .isThrownBy(() -> workflowProcessor.process(dealEvent));
+  }
+
+
+  @Test
+  public void givenDealEvent_withoutReassignActions_shouldNotPublishEvent() {
+    // given
+    long tenantId = 101;
+    long userId = 10L;
+    long workflowId = 99L;
+
+    var lead = new LeadDetail();
+    lead.setFirstName("Tony");
+    lead.setLastName("Stark");
+    lead.setId(55L);
+    Metadata metadata = new Metadata(tenantId, userId, DEAL, null, null, EntityAction.CREATED);
+
+    var leadEvent = new LeadEvent(lead, null, metadata);
+
+    Workflow workflowMock = mock(Workflow.class);
+    given(workflowMock.getId()).willReturn(workflowId);
+
+    Set<AbstractWorkflowAction> actions = new HashSet<>();
+
+    given(workflowMock.getWorkflowActions()).willReturn(actions);
+    WorkflowTrigger workflowTriggerMock = mock(WorkflowTrigger.class);
+    given(workflowTriggerMock.getTriggerType()).willReturn(TriggerType.EVENT);
+    given(workflowTriggerMock.getTriggerFrequency()).willReturn(CREATED);
+    given(workflowMock.getWorkflowTrigger()).willReturn(workflowTriggerMock);
+
+    List<Workflow> workflows = Arrays.asList(workflowMock);
+
+    given(workflowService.findActiveBy(tenantId, DEAL, CREATED)).willReturn(workflows);
     doNothing().when(entityUpdatedCommandPublisher).execute(any(Metadata.class), any(ReassignDetail.class));
 
     //when
@@ -694,7 +825,7 @@ class WorkflowProcessorTest {
     ArgumentCaptor<Workflow> workflowArgumentCaptor = ArgumentCaptor.forClass(Workflow.class);
     verify(workflowService, times(1)).updateExecutedEventDetails(workflowArgumentCaptor.capture());
     Workflow executedWorkflow = workflowArgumentCaptor.getValue();
-    Assertions.assertThat(executedWorkflow.getId()).isEqualTo(workflowId100);
+    assertThat(executedWorkflow.getId()).isEqualTo(workflowId100);
   }
   private Workflow getMockEditPropertyWorkflow(
       long workflowId, TriggerFrequency updated, String propertyName, String propertyValue) {

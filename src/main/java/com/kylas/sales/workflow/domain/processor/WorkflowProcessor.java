@@ -103,7 +103,7 @@ public class WorkflowProcessor {
     workflowActions.stream().filter(workflowAction -> workflowAction.getType().equals(ActionType.REASSIGN))
         .map(workflowAction -> (ReassignAction) workflowAction).findFirst().ifPresent(
         reassignAction -> entityUpdatedCommandPublisher
-            .execute(metadata, convertToReassignDetail(event.getEntityId(), reassignAction.getOwnerId())));
+            .execute(metadata, new ReassignDetail(event.getEntityId(), reassignAction.getOwnerId(), metadata.getEntityType())));
   }
 
   private void processEditPropertyActions(Set<EditPropertyAction> editPropertyActions, Metadata metadata, Actionable entity) {
@@ -132,9 +132,4 @@ public class WorkflowProcessor {
         metadata.getEntityId(), metadata);
     entityUpdatedCommandPublisher.execute(metadata, entity);
   }
-
-  private ReassignDetail convertToReassignDetail(Long entityId, Long ownerId) {
-    return new ReassignDetail(entityId, ownerId);
-  }
-
 }

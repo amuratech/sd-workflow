@@ -86,10 +86,10 @@ public class EventListener {
 
   private void processLeadEvent(Message message) {
     try {
-      var leadCreatedEvent = objectMapper.readValue(new String(message.getBody()), LeadEvent.class);
-      var metadata = leadCreatedEvent.getMetadata();
+      var leadEvent = objectMapper.readValue(new String(message.getBody()), LeadEvent.class);
+      var metadata = leadEvent.getMetadata();
       internalAuthProvider.loginWith(metadata.getUserId(), metadata.getTenantId());
-      workflowProcessor.process(leadCreatedEvent);
+      workflowProcessor.process(leadEvent);
     } catch (JsonProcessingException e) {
       log.error(e.getMessage());
     }
@@ -97,10 +97,10 @@ public class EventListener {
 
   private void processDealEvent(Message message) {
     try {
-      var dealCreatedEvent = objectMapper.readValue(new String(message.getBody()), DealEvent.class);
-      var metadata = dealCreatedEvent.getMetadata();
+      var dealEvent = objectMapper.readValue(new String(message.getBody()), DealEvent.class);
+      var metadata = dealEvent.getMetadata();
       internalAuthProvider.loginWith(metadata.getUserId(), metadata.getTenantId());
-      workflowProcessor.process(dealCreatedEvent);
+      workflowProcessor.process(dealEvent);
     } catch (JsonProcessingException e) {
       log.error(e.getMessage());
     }

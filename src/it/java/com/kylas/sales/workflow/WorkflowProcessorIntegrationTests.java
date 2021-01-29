@@ -77,6 +77,9 @@ public class WorkflowProcessorIntegrationTests {
   static final String SALES_CONTACT_UPDATE_QUEUE = "q.workflow.contact.update.sales";
   static final String SALES_CONTACT_UPDATE_QUEUE_NEW = "q.workflow.contact.update.sales_new";
   static final String CONTACT_UPDATE_COMMAND_QUEUE = "workflow.contact.update";
+  static final String DEAL_REASSIGN_QUEUE = "workflow.deal.reassign.deal_service";
+  static final String DEAL_REASSIGN_QUEUE_NEW = "workflow.deal.reassign.deal_service_new";
+  static final String DEAL_REASSIGN_COMMAND_QUEUE = "workflow.deal.reassign";
 
   private static RabbitMQContainer rabbitMQContainer =
       new RabbitMQContainer("rabbitmq:3.7-management-alpine");
@@ -374,7 +377,7 @@ public class WorkflowProcessorIntegrationTests {
   @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
   @AutoConfigureTestDatabase(replace = Replace.NONE)
   @ContextConfiguration(initializers = {TestMqSetup.class, TestDatabaseInitializer.class})
-  @DisplayName("Tests that publish reassign event when lead created/updated")
+  @DisplayName("Tests that publish reassign event when entity created/updated")
   class ReassignIntegrationTests {
 
     @Test
@@ -422,6 +425,58 @@ public class WorkflowProcessorIntegrationTests {
       mockMqListener.latch.await(3, TimeUnit.SECONDS);
       JSONAssert
           .assertEquals(getResourceAsString("/contracts/mq/command/lead-reassign-patch-command-2.json"), mockMqListener.actualMessage,
+              JSONCompareMode.STRICT);
+
+      Workflow workflow = workflowFacade.get(301);
+      Assertions.assertThat(workflow.getWorkflowExecutedEvent().getLastTriggeredAt()).isNotNull();
+      Assertions.assertThat(workflow.getWorkflowExecutedEvent().getTriggerCount()).isEqualTo(152);
+    }
+
+    @Test
+    @Sql("/test-scripts/insert-reassign-deal-workflow.sql")
+    public void givenDealCreatedEvent_shouldPublish_reassignEvent() throws IOException, InterruptedException, JSONException {
+      //given
+      String authenticationToken = "some-token";
+      User aUser = UserStub.aUser(12L, 99L, true, true, true, true, true)
+          .withName("user 1");
+      given(authService.getLoggedInUser()).willReturn(aUser);
+      given(authService.getAuthenticationToken()).willReturn(authenticationToken);
+
+      String resourceAsString = getResourceAsString("/contracts/mq/events/deal-created-reassign-event.json");
+      DealEvent dealCreatedEvent = objectMapper.readValue(resourceAsString, DealEvent.class);
+      initializeRabbitMqListener(DEAL_REASSIGN_COMMAND_QUEUE, DEAL_REASSIGN_QUEUE);
+      //when
+      rabbitTemplate.convertAndSend(DEAL_EXCHANGE, DealEvent.getDealCreatedEventName(),
+          dealCreatedEvent);
+      //then
+      mockMqListener.latch.await(3, TimeUnit.SECONDS);
+      JSONAssert
+          .assertEquals(getResourceAsString("/contracts/mq/command/deal-reassign-patch-command.json"), mockMqListener.actualMessage,
+              JSONCompareMode.STRICT);
+
+      Workflow workflow = workflowFacade.get(301);
+      Assertions.assertThat(workflow.getWorkflowExecutedEvent().getLastTriggeredAt()).isNotNull();
+      Assertions.assertThat(workflow.getWorkflowExecutedEvent().getTriggerCount()).isEqualTo(152);
+    }
+
+    @Test
+    @Sql("/test-scripts/insert-reassign-update-deal-workflow.sql")
+    public void givenDealUpdatedEvent_shouldPublish_reassignEvent() throws IOException, InterruptedException, JSONException {
+      //given
+      User aUser = UserStub.aUser(12L, 99L, true, true, true, true, true)
+          .withName("user 1");
+      given(authService.getLoggedInUser()).willReturn(aUser);
+
+      String resourceAsString = getResourceAsString("/contracts/mq/events/deal-updated-reassign-event-payload.json");
+      DealEvent dealUpdatedEvent = objectMapper.readValue(resourceAsString, DealEvent.class);
+      initializeRabbitMqListener(DEAL_REASSIGN_COMMAND_QUEUE, DEAL_REASSIGN_QUEUE_NEW);
+      //when
+      rabbitTemplate.convertAndSend(DEAL_EXCHANGE, DealEvent.getDealUpdatedEventName(),
+          dealUpdatedEvent);
+      //then
+      mockMqListener.latch.await(3, TimeUnit.SECONDS);
+      JSONAssert
+          .assertEquals(getResourceAsString("/contracts/mq/command/deal-reassign-patch-command-2.json"), mockMqListener.actualMessage,
               JSONCompareMode.STRICT);
 
       Workflow workflow = workflowFacade.get(301);
@@ -612,6 +667,9 @@ public class WorkflowProcessorIntegrationTests {
       rabbitMQContainer.withExchange(WORKFLOW_EXCHANGE, "topic").withQueue(SALES_CONTACT_UPDATE_QUEUE_NEW);
       rabbitMQContainer.withExchange(WORKFLOW_EXCHANGE, "topic").withQueue(CONTACT_UPDATE_COMMAND_QUEUE);
 
+      rabbitMQContainer.withExchange(DEAL_EXCHANGE, "topic").withQueue(DEAL_REASSIGN_QUEUE);
+      rabbitMQContainer.withExchange(DEAL_EXCHANGE, "topic").withQueue(DEAL_REASSIGN_QUEUE_NEW);
+      rabbitMQContainer.withExchange(WORKFLOW_EXCHANGE, "topic").withQueue(DEAL_REASSIGN_COMMAND_QUEUE);
       withServices.start();
 
       addInlinedPropertiesToEnvironment(

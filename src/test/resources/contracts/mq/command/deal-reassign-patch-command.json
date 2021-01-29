@@ -1,0 +1,17 @@
+{
+  "entity": {
+    "entityId": 999,
+    "ownerId": 2000
+  },
+  "metadata": {
+    "tenantId": 99,
+    "userId": 12,
+    "entityType": "DEAL",
+    "workflowId": "WF_301",
+    "executedWorkflows": [
+      "WF_301"
+    ],
+    "entityAction": "CREATED",
+    "entityId": 999
+  }
+}
