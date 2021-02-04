@@ -26,6 +26,7 @@ import com.kylas.sales.workflow.common.dto.condition.Operator;
 import com.kylas.sales.workflow.common.dto.condition.WorkflowCondition.ConditionExpression;
 import com.kylas.sales.workflow.domain.ConditionFacade;
 import com.kylas.sales.workflow.domain.exception.InvalidEntityException;
+import com.kylas.sales.workflow.domain.processor.contact.Contact;
 import com.kylas.sales.workflow.domain.processor.contact.ContactDetail;
 import com.kylas.sales.workflow.domain.processor.deal.DealDetail;
 import com.kylas.sales.workflow.domain.processor.deal.Money;
@@ -777,7 +778,7 @@ class WorkflowProcessorTest {
     List<Workflow> workflows = Arrays.asList(workflowMock);
 
     given(workflowService.findActiveBy(tenantId, CONTACT, TriggerFrequency.CREATED)).willReturn(workflows);
-    doNothing().when(entityUpdatedCommandPublisher).execute(any(Metadata.class), any(ContactDetail.class));
+    doNothing().when(entityUpdatedCommandPublisher).execute(any(Metadata.class), any(Contact.class));
     when(valueConverter.getValue(any(EditPropertyAction.class), any(Field.class), any(EntityType.class))).thenReturn(value);
     // when
     workflowProcessor.process(contactCreatedEvent);
@@ -815,7 +816,7 @@ class WorkflowProcessorTest {
     List<Workflow> workflows = Arrays.asList(workflowMockUpdate);
 
     given(workflowService.findActiveBy(tenantId, CONTACT, TriggerFrequency.UPDATED)).willReturn(workflows);
-    doNothing().when(entityUpdatedCommandPublisher).execute(any(Metadata.class), any(ContactDetail.class));
+    doNothing().when(entityUpdatedCommandPublisher).execute(any(Metadata.class), any(Contact.class));
     when(valueConverter.getValue(any(EditPropertyAction.class), any(Field.class), any(EntityType.class))).thenReturn(value);
     // when
     workflowProcessor.process(contactUpdatedEvent);

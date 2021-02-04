@@ -30,6 +30,8 @@ public class ReassignDetail implements Serializable, Actionable {
         return "workflow.lead.reassign";
       case DEAL:
         return "workflow.deal.reassign";
+      case CONTACT:
+        return "workflow.contact.reassign";
     }
     throw new InvalidEntityException();
   }

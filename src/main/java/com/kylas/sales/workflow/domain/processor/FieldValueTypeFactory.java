@@ -1,5 +1,7 @@
 package com.kylas.sales.workflow.domain.processor;
 
+import com.kylas.sales.workflow.domain.exception.InvalidEntityException;
+import com.kylas.sales.workflow.domain.processor.FieldValueType.ContactFieldValueType;
 import com.kylas.sales.workflow.domain.processor.FieldValueType.DealFieldValueType;
 import com.kylas.sales.workflow.domain.processor.FieldValueType.LeadFieldValueType;
 import com.kylas.sales.workflow.domain.workflow.EntityType;
@@ -12,9 +14,11 @@ public class FieldValueTypeFactory {
         return new LeadFieldValueType();
       case DEAL:
         return new DealFieldValueType();
+      case CONTACT:
+        return new ContactFieldValueType();
       default:
         break;
     }
-    return new LeadFieldValueType();
+    throw new InvalidEntityException();
   }
 }

@@ -2,9 +2,9 @@ DELETE FROM workflow_executed_event;
 DELETE FROM edit_property_action;
 DELETE FROM parameter;
 DELETE FROM webhook_action;
-DELETE FROM reassign_action;
 DELETE FROM abstract_workflow_action;
 DELETE FROM workflow_condition;
+DELETE FROM reassign_action;
 DELETE FROM workflow_trigger;
 DELETE FROM workflow;
 DELETE FROM users;
@@ -18,9 +18,9 @@ INSERT INTO workflow
 (id, name, description, entity_type,
 tenant_id, created_by, created_at, updated_by, updated_at )
 OVERRIDING SYSTEM VALUE VALUES
-(301, 'Workflow 1', 'Workflow 1', 'LEAD',99, 12, now(), 12, now()),
-(302, 'Workflow 1', 'Workflow 9', 'LEAD',99, 12, now(), 12, now()),
-(303, 'Workflow 3', 'Workflow 3', 'LEAD',75, 15, now(), 15, now());
+(301, 'Workflow 1', 'Workflow 1', 'CONTACT',99, 12, now(), 12, now()),
+(302, 'Workflow 1', 'Workflow 9', 'CONTACT',99, 12, now(), 12, now()),
+(303, 'Workflow 3', 'Workflow 3', 'CONTACT',75, 15, now(), 15, now());
 
 INSERT INTO workflow_trigger (id, trigger_type, trigger_frequency, workflow_id)
 OVERRIDING SYSTEM VALUE VALUES

@@ -139,4 +139,37 @@ public class AttributeFactory {
     private final String name;
     private final String pathToField;
   }
+
+
+  @AllArgsConstructor
+  @Getter
+  public enum ContactAttribute implements EntityAttribute {
+    ID("id", "id"),
+    SALUTATION("salutation", "salutation.name"),
+    FIRST_NAME("firstName", "firstName"),
+    LAST_NAME("lastName", "lastName"),
+    EMAILS("emails", "emails"),
+    PHONE_NUMBERS("phoneNumbers", "phoneNumbers"),
+    TIMEZONE("timezone", "timezone"),
+    ADDRESS("address", "address"),
+    CITY("city", "city"),
+    STATE("state", "state"),
+    COUNTRY("country", "country"),
+    ZIPCODE("zipcode", "zipcode"),
+    FACEBOOK("facebook", "facebook"),
+    TWITTER("twitter", "twitter"),
+    LINKEDIN("linkedin", "linkedin"),
+    COMPANY("company", "company.name"),
+    DEPARTMENT("department", "department"),
+    DESIGNATION("designation", "designation"),
+    CREATED_BY("createdBy", "createdBy.name"),
+    CREATED_AT("createdAt", "createdAt"),
+    UPDATED_BY("updatedBy", "updatedBy.name"),
+    UPDATED_AT("updatedAt", "updatedAt"),
+    STAKEHOLDER("stakeholder", "stakeholder"),
+    DO_NOT_DISTURB("dnd", "dnd");
+
+    private final String name;
+    private final String pathToField;
+  }
 }

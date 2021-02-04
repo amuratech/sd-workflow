@@ -1,0 +1,24 @@
+{
+  "entity": {
+    "id": 999,
+    "ownerId": {
+      "id": 2000,
+      "name": "ownerId"
+    }
+  },
+  "oldEntity": {
+    "id": 999,
+    "ownerId": {
+      "id": 2001,
+      "name": "ownerId"
+    }
+  },
+  "metadata": {
+    "entityAction": "UPDATED",
+    "tenantId": 99,
+    "userId": 12,
+    "entityType": "CONTACT",
+    "workflowId": null,
+    "executedWorkflows": []
+  }
+}

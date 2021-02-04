@@ -967,6 +967,73 @@ class WorkflowControllerTest {
   }
 
   @Test
+  public void givenContactWorkflow_withReassignAction_shouldCreateIt() throws IOException {
+    //given
+    var requestPayload = getResourceAsString("classpath:contracts/reassign/create-contact-workflow-with-reassign-action-request.json");
+    given(workflowService.create(argThat(workflowRequest -> {
+      return workflowRequest.getActions().stream().allMatch(action -> action.getType().equals(ActionType.REASSIGN));
+    }))).willReturn(Mono.just(new WorkflowSummary(1L)));
+
+    //when
+    var workflowResponse = buildWebClient()
+        .post()
+        .uri("/v1/workflows")
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(requestPayload).retrieve()
+        .bodyToMono(String.class);
+
+    //then
+    var expectedResponse =
+        getResourceAsString("classpath:contracts/workflow/api/create-contact-workflow-response.json");
+    StepVerifier.create(workflowResponse)
+        .assertNext(json -> {
+          try {
+            JSONAssert.assertEquals(expectedResponse, json, false);
+          } catch (JSONException e) {
+            fail(e.getMessage());
+          }
+        }).verifyComplete();
+  }
+
+  @Test
+  public void givenContactWorkflow_withReassignAction_shouldUpdateIt() throws IOException {
+    //given
+    var requestPayload = getResourceAsString("classpath:contracts/reassign/update-contact-workflow-with-reassign-action-request.json");
+    WorkflowTrigger trigger = new WorkflowTrigger(TriggerType.EVENT, TriggerFrequency.CREATED);
+    Condition condition = new Condition(ConditionType.FOR_ALL.name(), null);
+    List<ActionResponse> actions =
+        List.of(new ActionResponse(ActionType.REASSIGN, new ReassignAction(20003L, "Tony Stark")));
+    User user = new User(5000L, "Tony Stark");
+    WorkflowDetail workflowDetail = new WorkflowDetail(1L, "Workflow 1", "Workflow Description", EntityType.CONTACT, trigger, condition, actions,
+        user,
+        user, null, null, null, 0L, null, true);
+    given(workflowService.update(eq(1L), argThat(workflowRequest -> {
+      return workflowRequest.getActions().stream().allMatch(action -> action.getType().equals(ActionType.REASSIGN));
+    }))).willReturn(Mono.just(workflowDetail));
+
+    //when
+    var workflowResponse = buildWebClient()
+        .put()
+        .uri("/v1/workflows/1")
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(requestPayload)
+        .retrieve()
+        .bodyToMono(String.class);
+
+    //then
+    var expectedResponse =
+        getResourceAsString("classpath:contracts/reassign/update-contact-workflow-reassign-action-response.json");
+    StepVerifier.create(workflowResponse)
+        .assertNext(json -> {
+          try {
+            JSONAssert.assertEquals(expectedResponse, json, false);
+          } catch (JSONException e) {
+            fail(e.getMessage());
+          }
+        }).verifyComplete();
+  }
+
+  @Test
   public void givenWorkflowRequest_withIdNameCondition_shouldCreateIt() throws JSONException, IOException {
     //given
     var requestPayload =
@@ -1002,7 +1069,7 @@ class WorkflowControllerTest {
     var requestPayload = getResourceAsString("classpath:contracts/workflow/api/create-workflow-request-with-entity-contact.json");
     given(workflowService.create(argThat(workflowRequest ->
         {
-          List<ValueType> mockList = List.of(ARRAY, PLAIN);
+          List<ValueType> mockList = List.of(ARRAY, PLAIN, OBJECT);
           List<ValueType> valueTypeList = new ArrayList<>();
           workflowRequest.getActions().stream().filter(action -> action.getType().equals(ActionType.EDIT_PROPERTY)).forEach(action -> {
             EditPropertyAction payload = (EditPropertyAction) action.getPayload();
@@ -1043,6 +1110,7 @@ class WorkflowControllerTest {
     //given
     var requestPayload = getResourceAsString("classpath:contracts/workflow/api/update-workflow-request-with-entity-contact.json");
     WorkflowTrigger trigger = new WorkflowTrigger(TriggerType.EVENT, TriggerFrequency.CREATED);
+    ObjectMapper objectMapper = new ObjectMapper();
     Condition condition = new Condition(ConditionType.FOR_ALL.name(), null);
     List<ActionResponse> actions =
         List.of(
@@ -1062,7 +1130,18 @@ class WorkflowControllerTest {
             new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("linkedIn", "https://linkedin.com/james", PLAIN)),
             new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("department", "CBI", PLAIN)),
             new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("designation", "Inspector", PLAIN)),
-            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("stakeholder", true, PLAIN)));
+            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("stakeholder", true, PLAIN)),
+            new ActionResponse(ActionType.EDIT_PROPERTY,
+                new EditPropertyAction("company", objectMapper.readValue("{\"id\":201,\"name\":\"Uflex\"}", Object.class), OBJECT)),
+            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("associatedDeals",
+                objectMapper.readValue("[{\"id\":100,\"name\":\"BestDeal\"}]", Object[].class), ARRAY)),
+            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("phoneNumbers",
+                objectMapper
+                    .readValue("[{\"type\":\"HOME\",\"code\":\"0253\",\"value\":\"+0253\",\"dialCode\":\"2459817\",\"isPrimary\":true}]",
+                        Object[].class),
+                ARRAY)),
+            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("emails",
+                objectMapper.readValue("[{\"type\":\"OFFICE\",\"value\":\"john150@outlook.com\",\"isPrimary\":true}]", Object[].class), ARRAY)));
 
     User user = new User(5000L, "Tony Stark");
     WorkflowDetail workflowDetail = new WorkflowDetail(1L, "Workflow 1", "Workflow Description", EntityType.CONTACT, trigger, condition, actions,
@@ -1070,7 +1149,7 @@ class WorkflowControllerTest {
         user, null, null, null, 0L, null, true);
     given(workflowService.update(eq(1L), argThat(workflowRequest ->
         {
-          List<ValueType> mockList = List.of(PLAIN);
+          List<ValueType> mockList = List.of(ARRAY, PLAIN, OBJECT);
           List<ValueType> valueTypeList = new ArrayList<>();
           workflowRequest.getActions().stream().filter(action -> action.getType().equals(ActionType.EDIT_PROPERTY)).forEach(action -> {
             EditPropertyAction payload = (EditPropertyAction) action.getPayload();
@@ -1082,7 +1161,7 @@ class WorkflowControllerTest {
               && workflowRequest.getTrigger().getName().equals(TriggerType.EVENT)
               && workflowRequest.getTrigger().getTriggerFrequency().equals(TriggerFrequency.CREATED)
               && workflowRequest.getCondition().getConditionType().equals(ConditionType.FOR_ALL)
-              && valueTypeList.size() == 17
+              && valueTypeList.size() == 21
               && valueTypeList.containsAll(mockList)
               && workflowRequest.isActive();
         }
@@ -1219,15 +1298,40 @@ class WorkflowControllerTest {
     //given
     var requestPayload =
         getResourceAsString("classpath:contracts/workflow/api/contact-workflow-request-with-idName-condition.json");
+    ObjectMapper objectMapper = new ObjectMapper();
+    WorkflowTrigger trigger = new WorkflowTrigger(TriggerType.EVENT, TriggerFrequency.CREATED);
+    Condition condition = new Condition(ConditionType.FOR_ALL.name(), null);
+    List<ActionResponse> actions =
+        List.of(
+            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("salutation", "1319", PLAIN)),
+            new ActionResponse(ActionType.EDIT_PROPERTY,
+                new EditPropertyAction("company", objectMapper.readValue("{\"id\":201,\"name\":\"Uflex\"}", Object.class), OBJECT)),
+            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("associatedDeals",
+                objectMapper.readValue("[{\"id\":100,\"name\":\"BestDeal\"}]", Object[].class), ARRAY)),
+            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("phoneNumbers",
+                objectMapper
+                    .readValue("[{\"type\":\"HOME\",\"code\":\"0253\",\"value\":\"+0253\",\"dialCode\":\"2459817\",\"isPrimary\":true}]",
+                        Object[].class),
+                ARRAY)),
+            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("emails",
+                objectMapper.readValue("[{\"type\":\"OFFICE\",\"value\":\"john150@outlook.com\",\"isPrimary\":true}]", Object[].class), ARRAY)));
+
     given(workflowService.create(argThat(workflowRequest ->
         {
+          List<ValueType> mockList = List.of(OBJECT, PLAIN, ARRAY);
+          List<ValueType> valueTypeList = new ArrayList<>();
+          workflowRequest.getActions().stream().filter(action -> action.getType().equals(ActionType.EDIT_PROPERTY)).forEach(action -> {
+            EditPropertyAction payload = (EditPropertyAction) action.getPayload();
+            valueTypeList.add(payload.getValueType());
+          });
           ExpressionElement expressionElement = workflowRequest.getCondition().getConditions().get(0);
           return workflowRequest.getName().equalsIgnoreCase("Workflow 1")
               && workflowRequest.getDescription().equalsIgnoreCase("Workflow Description")
               && workflowRequest.getCondition().getConditionType().equals(ConditionType.CONDITION_BASED)
               && expressionElement.getName().equals("createdBy")
               && expressionElement.getOperator().equals(Operator.EQUAL)
-              && ((LinkedHashMap) expressionElement.getValue()).get("id").equals(200);
+              && ((LinkedHashMap) expressionElement.getValue()).get("id").equals(200)
+              && ((LinkedHashMap) expressionElement.getValue()).get("name").equals("John Cena");
         })
     )).willReturn(Mono.just(new WorkflowSummary(1L)));
     //when

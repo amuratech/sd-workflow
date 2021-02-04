@@ -1,7 +1,5 @@
 package com.kylas.sales.workflow.domain.workflow.action;
 
-import static com.kylas.sales.workflow.domain.workflow.EntityType.LEAD;
-import static com.kylas.sales.workflow.domain.workflow.action.webhook.attribute.AttributeFactory.LeadAttribute.PIPELINE;
 import static java.lang.String.valueOf;
 import static java.util.Collections.emptyList;
 import static org.apache.commons.lang3.BooleanUtils.toBooleanObject;
@@ -53,20 +51,14 @@ public class ValueConverter implements AttributeConverter<Object, String> {
   }
 
   public Object getValue(EditPropertyAction editPropertyAction, Field field, EntityType entityType) {
-    try {
 
-      switch (editPropertyAction.getValueType()) {
-        case ARRAY:
-          return convertToListOrArray(editPropertyAction.getValue(), field);
-        case OBJECT:
-          return editPropertyAction.getName().equals(PIPELINE.getName()) && entityType.equals(LEAD)
-              ? convertToObject(objectMapper.readValue(valueOf(editPropertyAction.getValue()), IdName.class).getId(), field)
-              : convertToObject(editPropertyAction.getValue(), field);
-        case PLAIN:
-          return convertToWrapper(editPropertyAction.getValue(), field);
-      }
-    } catch (JsonProcessingException e) {
-      log.error("Exception while extracting value from {}", editPropertyAction.getValue());
+    switch (editPropertyAction.getValueType()) {
+      case ARRAY:
+        return convertToListOrArray(editPropertyAction.getValue(), field);
+      case OBJECT:
+        return convertToObject(editPropertyAction, field, entityType);
+      case PLAIN:
+        return convertToWrapper(editPropertyAction.getValue(), field);
     }
     return field.getType();
   }
@@ -88,8 +80,12 @@ public class ValueConverter implements AttributeConverter<Object, String> {
     return emptyList();
   }
 
-  private static Object convertToObject(Object value, Field field) {
+  private static Object convertToObject(EditPropertyAction editPropertyAction, Field field, EntityType entityType) {
+    Object value = editPropertyAction.getValue();
     try {
+      if (entityType.getIdNameFields().contains(editPropertyAction.getName())) {
+        return objectMapper.readValue(valueOf(value), IdName.class).getId();
+      }
       return objectMapper.readValue(valueOf(value), field.getType());
     } catch (JsonProcessingException e) {
       log.error("error while converting object to JSON String. {}", value);

@@ -1,0 +1,32 @@
+{
+  "id": 1,
+  "name": "Workflow 1",
+  "description": "Workflow Description",
+  "entityType": "CONTACT",
+  "trigger": {
+    "name": "EVENT",
+    "triggerFrequency": "CREATED"
+  },
+  "condition": {
+    "conditionType": "FOR_ALL"
+  },
+  "actions": [
+    {
+      "type": "REASSIGN",
+      "payload": {
+        "id": 20003,
+        "name": "Tony Stark"
+      }
+    }
+  ],
+  "createdBy": {
+    "id": 5000,
+    "name": "Tony Stark"
+  },
+  "updatedBy": {
+    "id": 5000,
+    "name": "Tony Stark"
+  },
+  "triggerCount": 0,
+  "active": true
+}

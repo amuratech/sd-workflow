@@ -77,5 +77,35 @@ public interface FieldValueType {
     }
   }
 
+  class ContactFieldValueType implements FieldValueType {
+
+    @Getter
+    @AllArgsConstructor
+    private enum FieldValueTypes {
+      PHONE_NUMBERS("phoneNumbers", ARRAY),
+      ASSOCIATED_DEALS("associatedDeals", ARRAY),
+      COMPANY("company", OBJECT),
+      EMAILS("emails", ARRAY),
+      OTHER("other", PLAIN);
+
+      private final String fieldName;
+      private final ValueType valueType;
+    }
+
+    @Override
+    public boolean isInValidValueType(String name, ValueType valueType) {
+      if (isNull(valueType)) {
+        return true;
+      }
+      FieldValueTypes fieldValueTypes = Arrays
+          .stream(FieldValueTypes.values()).filter(value -> value.getFieldName().equals(name)).findAny()
+          .orElse(FieldValueTypes.OTHER);
+      if (fieldValueTypes.equals(FieldValueTypes.OTHER) && valueType.equals(PLAIN)) {
+        return false;
+      }
+      return !fieldValueTypes.getValueType().equals(valueType);
+    }
+  }
+
   boolean isInValidValueType(String name, ValueType valueType);
 }

@@ -155,6 +155,60 @@
         "value": true,
         "valueType": "PLAIN"
       }
+    },
+    {
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "company",
+        "value": {
+          "id": 201,
+          "name": "Uflex"
+        },
+        "valueType": "OBJECT"
+      }
+    },
+    {
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "associatedDeals",
+        "value": [
+          {
+            "id": 100,
+            "name": "BestDeal"
+          }
+        ],
+        "valueType": "ARRAY"
+      }
+    },
+    {
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "phoneNumbers",
+        "value": [
+          {
+            "type": "HOME",
+            "code": "0253",
+            "value": "+0253",
+            "dialCode": "2459817",
+            "isPrimary": true
+          }
+        ],
+        "valueType": "ARRAY"
+      }
+    },
+    {
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "emails",
+        "value": [
+          {
+            "type": "OFFICE",
+            "value": "john150@outlook.com",
+            "isPrimary": true
+          }
+        ],
+        "valueType": "ARRAY"
+      }
     }
   ]
 }

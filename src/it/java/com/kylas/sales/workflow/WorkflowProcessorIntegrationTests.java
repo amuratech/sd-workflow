@@ -16,7 +16,6 @@ import com.kylas.sales.workflow.config.TestDatabaseInitializer;
 import com.kylas.sales.workflow.domain.WorkflowFacade;
 import com.kylas.sales.workflow.domain.user.User;
 import com.kylas.sales.workflow.domain.workflow.Workflow;
-import com.kylas.sales.workflow.mq.event.ContactEvent;
 import com.kylas.sales.workflow.mq.event.DealEvent;
 import com.kylas.sales.workflow.mq.event.LeadEvent;
 import com.kylas.sales.workflow.security.AuthService;
@@ -27,6 +26,8 @@ import java.util.concurrent.TimeUnit;
 import org.apache.commons.io.FileUtils;
 import org.assertj.core.api.Assertions;
 import org.json.JSONException;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -74,12 +75,10 @@ public class WorkflowProcessorIntegrationTests {
   static final String DEAL_UPDATE_QUEUE = "q.workflow.deal.update";
   static final String DEAL_UPDATE_QUEUE_NEW = "q.workflow.deal.update_new";
   static final String DEAL_UPDATE_COMMAND = "workflow.deal.update";
-  static final String SALES_CONTACT_UPDATE_QUEUE = "q.workflow.contact.update.sales";
-  static final String SALES_CONTACT_UPDATE_QUEUE_NEW = "q.workflow.contact.update.sales_new";
-  static final String CONTACT_UPDATE_COMMAND_QUEUE = "workflow.contact.update";
   static final String DEAL_REASSIGN_QUEUE = "workflow.deal.reassign.deal_service";
   static final String DEAL_REASSIGN_QUEUE_NEW = "workflow.deal.reassign.deal_service_new";
   static final String DEAL_REASSIGN_COMMAND_QUEUE = "workflow.deal.reassign";
+  static final String SALES_LEAD_UPDATE_QUEUE_NEW_2 = "q.workflow.lead.update.sales_new2";
 
   private static RabbitMQContainer rabbitMQContainer =
       new RabbitMQContainer("rabbitmq:3.7-management-alpine");
@@ -97,6 +96,16 @@ public class WorkflowProcessorIntegrationTests {
   WorkflowFacade workflowFacade;
   @MockBean
   AuthService authService;
+
+  @BeforeAll
+  public static void initialise() {
+    rabbitMQContainer.start();
+  }
+
+  @AfterAll
+  public static void tearDown() {
+    rabbitMQContainer.stop();
+  }
 
   @Test
   @Sql("/test-scripts/insert-create-lead-workflow.sql")
@@ -161,7 +170,8 @@ public class WorkflowProcessorIntegrationTests {
 
     String resourceAsString = getResourceAsString("/contracts/mq/events/sales-lead-updated-event-payload.json");
     LeadEvent leadEvent = objectMapper.readValue(resourceAsString, LeadEvent.class);
-    initializeRabbitMqListener(LEAD_UPDATE_COMMAND_QUEUE, SALES_LEAD_UPDATE_QUEUE_NEW);
+    initializeRabbitMqListener(LEAD_UPDATE_COMMAND_QUEUE,
+        SALES_LEAD_UPDATE_QUEUE_NEW);
     //when
     rabbitTemplate.convertAndSend(SALES_EXCHANGE, LeadEvent.getLeadUpdatedEventName(),
         leadEvent);
@@ -551,30 +561,26 @@ public class WorkflowProcessorIntegrationTests {
   @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
   @AutoConfigureTestDatabase(replace = Replace.NONE)
   @ContextConfiguration(initializers = {TestMqSetup.class, TestDatabaseInitializer.class})
-  @DisplayName("Tests that publish event when contact created/updated")
-  class ContactWorkflowProcessorIntegrationTests {
+  public class WorkflowProcessorMultiActionTests {
 
     @Test
-    @Sql("/test-scripts/insert-create-contact-workflow.sql")
-    public void givenContactCreateEvent_shouldUpdatePropertyAndPublishCommand() throws IOException, InterruptedException, JSONException {
+    @Sql("/test-scripts/integration/multiple-action-lead-workflow.sql")
+    public void givenLeadCreateEvent_shouldExecuteMultipleActions() throws IOException, InterruptedException, JSONException {
       //given
-      String authenticationToken = "some-token";
       User aUser = UserStub.aUser(12L, 99L, true, true, true, true, true)
           .withName("user 1");
       given(authService.getLoggedInUser()).willReturn(aUser);
-      given(authService.getAuthenticationToken()).willReturn(authenticationToken);
 
-      String resourceAsString = getResourceAsString("/contracts/mq/events/contact-created-event.json");
-      ContactEvent contactEvent = objectMapper.readValue(resourceAsString, ContactEvent.class);
-      initializeRabbitMqListener(CONTACT_UPDATE_COMMAND_QUEUE, SALES_CONTACT_UPDATE_QUEUE);
+      String resourceAsString = getResourceAsString("/contracts/mq/events/lead-created-v2-event.json");
+      LeadEvent leadEvent = objectMapper.readValue(resourceAsString, LeadEvent.class);
       //when
-      rabbitTemplate.convertAndSend(SALES_EXCHANGE, ContactEvent.getContactCreatedEventName(),
-          contactEvent);
+      initializeRabbitMqListener(LEAD_UPDATE_COMMAND_QUEUE, SALES_LEAD_UPDATE_QUEUE_NEW_2);
+      rabbitTemplate.convertAndSend(SALES_EXCHANGE, LeadEvent.getLeadCreatedEventName(),
+          leadEvent);
       //then
       mockMqListener.latch.await(3, TimeUnit.SECONDS);
-
       JSONAssert
-          .assertEquals(getResourceAsString("/contracts/mq/command/contact-update-patch-command.json"), mockMqListener.actualMessage,
+          .assertEquals(getResourceAsString("/contracts/mq/command/lead-update-patch-command-2.json"), mockMqListener.actualMessage,
               JSONCompareMode.STRICT);
 
       Workflow workflow = workflowFacade.get(301);
@@ -582,30 +588,6 @@ public class WorkflowProcessorIntegrationTests {
       Assertions.assertThat(workflow.getWorkflowExecutedEvent().getTriggerCount()).isEqualTo(152);
     }
 
-    @Test
-    @Sql("/test-scripts/insert-update-contact-workflow.sql")
-    public void givenContactUpdatedEvent_shouldUpdatePropertyAndPublishCommand() throws IOException, InterruptedException, JSONException {
-      //given
-      User aUser = UserStub.aUser(12L, 99L, true, true, true, true, true)
-          .withName("user 1");
-      given(authService.getLoggedInUser()).willReturn(aUser);
-
-      String resourceAsString = getResourceAsString("/contracts/mq/events/sales-contact-updated-event-payload.json");
-      ContactEvent contactEvent = objectMapper.readValue(resourceAsString, ContactEvent.class);
-      initializeRabbitMqListener(CONTACT_UPDATE_COMMAND_QUEUE, SALES_CONTACT_UPDATE_QUEUE_NEW);
-      //when
-      rabbitTemplate.convertAndSend(SALES_EXCHANGE, ContactEvent.getContactUpdatedEventName(),
-          contactEvent);
-      //then
-      mockMqListener.latch.await(3, TimeUnit.SECONDS);
-      JSONAssert
-          .assertEquals(getResourceAsString("/contracts/mq/command/contact-update-patch-command-3.json"), mockMqListener.actualMessage,
-              JSONCompareMode.STRICT);
-
-      Workflow workflow = workflowFacade.get(301);
-      Assertions.assertThat(workflow.getWorkflowExecutedEvent().getLastTriggeredAt()).isNotNull();
-      Assertions.assertThat(workflow.getWorkflowExecutedEvent().getTriggerCount()).isEqualTo(152);
-    }
 
   }
 
@@ -651,6 +633,7 @@ public class WorkflowProcessorIntegrationTests {
     public void initialize(ConfigurableApplicationContext configurableApplicationContext) {
       var withServices =
           rabbitMQContainer.withExchange(SALES_EXCHANGE, "topic").withQueue(SALES_LEAD_UPDATE_QUEUE);
+      rabbitMQContainer.withExchange(SALES_EXCHANGE, "topic").withQueue(SALES_LEAD_UPDATE_QUEUE_NEW_2);
       rabbitMQContainer.withExchange(SALES_EXCHANGE, "topic").withQueue(SALES_LEAD_REASSIGN_QUEUE);
       rabbitMQContainer.withExchange(SALES_EXCHANGE, "topic").withQueue(SALES_LEAD_REASSIGN_QUEUE_NEW);
       rabbitMQContainer.withExchange(WORKFLOW_EXCHANGE, "topic").withQueue(LEAD_UPDATE_COMMAND_QUEUE);
@@ -661,12 +644,6 @@ public class WorkflowProcessorIntegrationTests {
       rabbitMQContainer.withExchange(WORKFLOW_EXCHANGE, "topic").withQueue(DEAL_UPDATE_QUEUE);
       rabbitMQContainer.withExchange(WORKFLOW_EXCHANGE, "topic").withQueue(DEAL_UPDATE_QUEUE_NEW);
       rabbitMQContainer.withExchange(WORKFLOW_EXCHANGE, "topic").withQueue(DEAL_UPDATE_COMMAND);
-      rabbitMQContainer.withExchange(SALES_EXCHANGE, "topic").withQueue(SALES_CONTACT_UPDATE_QUEUE);
-      rabbitMQContainer.withExchange(SALES_EXCHANGE, "topic").withQueue(SALES_CONTACT_UPDATE_QUEUE_NEW);
-      rabbitMQContainer.withExchange(WORKFLOW_EXCHANGE, "topic").withQueue(SALES_CONTACT_UPDATE_QUEUE);
-      rabbitMQContainer.withExchange(WORKFLOW_EXCHANGE, "topic").withQueue(SALES_CONTACT_UPDATE_QUEUE_NEW);
-      rabbitMQContainer.withExchange(WORKFLOW_EXCHANGE, "topic").withQueue(CONTACT_UPDATE_COMMAND_QUEUE);
-
       rabbitMQContainer.withExchange(DEAL_EXCHANGE, "topic").withQueue(DEAL_REASSIGN_QUEUE);
       rabbitMQContainer.withExchange(DEAL_EXCHANGE, "topic").withQueue(DEAL_REASSIGN_QUEUE_NEW);
       rabbitMQContainer.withExchange(WORKFLOW_EXCHANGE, "topic").withQueue(DEAL_REASSIGN_COMMAND_QUEUE);
