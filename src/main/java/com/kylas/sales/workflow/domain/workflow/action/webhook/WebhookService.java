@@ -8,6 +8,7 @@ import static com.kylas.sales.workflow.domain.workflow.action.webhook.attribute.
 import static com.kylas.sales.workflow.domain.workflow.action.webhook.attribute.AttributeFactory.LeadAttribute.EMAILS;
 import static com.kylas.sales.workflow.domain.workflow.action.webhook.attribute.AttributeFactory.LeadAttribute.PHONE_NUMBERS;
 import static com.kylas.sales.workflow.domain.workflow.action.webhook.attribute.AttributeFactory.LeadAttribute.REQUIREMENT_PRODUCTS;
+import static com.kylas.sales.workflow.domain.workflow.action.webhook.attribute.AttributeFactory.WebhookEntity.CONTACT;
 import static com.kylas.sales.workflow.domain.workflow.action.webhook.attribute.AttributeFactory.WebhookEntity.CREATED_BY;
 import static com.kylas.sales.workflow.domain.workflow.action.webhook.attribute.AttributeFactory.WebhookEntity.LEAD_OWNER;
 import static com.kylas.sales.workflow.domain.workflow.action.webhook.attribute.AttributeFactory.WebhookEntity.TENANT;
@@ -66,6 +67,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.util.function.Tuple2;
+import reactor.util.function.Tuple3;
 
 @Service
 @Slf4j
@@ -94,7 +96,7 @@ public class WebhookService {
 
   public Flux<EntityConfig> getConfigurations() {
     return Mono
-        .zip(attributeFactory.getUserAttributes(), attributeFactory.getLeadAttributes())
+        .zip(attributeFactory.getUserAttributes(), attributeFactory.getLeadAttributes(), attributeFactory.getContactAttributes())
         .map(tuples ->
             stream(attributeFactory.getEntities())
                 .map(webhookEntity -> new EntityConfig(webhookEntity.name(), webhookEntity.getDisplayName(), getAttributesFor(tuples, webhookEntity)))
@@ -102,9 +104,10 @@ public class WebhookService {
         .flatMapMany(Flux::fromIterable);
   }
 
-  private List<Attribute> getAttributesFor(Tuple2<List<Attribute>, List<Attribute>> tuples, WebhookEntity webhookEntity) {
+  private List<Attribute> getAttributesFor(Tuple3<List<Attribute>, List<Attribute>, List<Attribute>> tuples, WebhookEntity webhookEntity) {
     return webhookEntity.getType().equals(USER) ? tuples.getT1() :
         webhookEntity.getType().equals(LEAD) ? tuples.getT2() :
+            webhookEntity.getType().equals(EntityType.CONTACT) ?tuples.getT3():
             webhookEntity.getType().equals(EntityType.TENANT) ? TenantAttribute.getAttributes() : emptyList();
   }
 

@@ -155,6 +155,108 @@
     ]
   },
   {
+    "entity": "CONTACT",
+    "entityDisplayName": "Contact",
+    "fields": [
+      {
+        "name": "id",
+        "displayName": "Id"
+      },
+      {
+        "name": "salutation",
+        "displayName": "Salutation"
+      },
+      {
+        "name": "firstName",
+        "displayName": "First Name"
+      },
+      {
+        "name": "lastName",
+        "displayName": "Last Name"
+      },
+      {
+        "name": "emails",
+        "displayName": "Emails"
+      },
+      {
+        "name": "phoneNumbers",
+        "displayName": "Phone Numbers"
+      },
+      {
+        "name": "timezone",
+        "displayName": "Timezone"
+      },
+      {
+        "name": "address",
+        "displayName": "Address"
+      },
+      {
+        "name": "city",
+        "displayName": "City"
+      },
+      {
+        "name": "state",
+        "displayName": "State"
+      },
+      {
+        "name": "country",
+        "displayName": "Country"
+      },
+      {
+        "name": "zipcode",
+        "displayName": "Zipcode"
+      },
+      {
+        "name": "facebook",
+        "displayName": "Facebook"
+      },
+      {
+        "name": "twitter",
+        "displayName": "Twitter"
+      },
+      {
+        "name": "linkedin",
+        "displayName": "Linked In"
+      },
+      {
+        "name": "company",
+        "displayName": "Company"
+      },
+      {
+        "name": "department",
+        "displayName": "Department"
+      },
+      {
+        "name": "designation",
+        "displayName": "Designation"
+      },
+      {
+        "name": "createdBy",
+        "displayName": "Created By"
+      },
+      {
+        "name": "createdAt",
+        "displayName": "Created At"
+      },
+      {
+        "name": "updatedBy",
+        "displayName": "Updated By"
+      },
+      {
+        "name": "updatedAt",
+        "displayName": "Updated At"
+      },
+      {
+        "name": "stakeholder",
+        "displayName": "Stakeholder"
+      },
+      {
+        "name": "dnd",
+        "displayName": "Do Not Disturb"
+      }
+    ]
+  },
+  {
     "entity": "LEAD_OWNER",
     "entityDisplayName": "Lead Owner",
     "fields": [

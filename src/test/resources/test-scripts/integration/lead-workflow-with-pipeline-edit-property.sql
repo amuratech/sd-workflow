@@ -1,5 +1,6 @@
 DELETE FROM parameter;
 DELETE FROM webhook_action;
+DELETE FROM reassign_action;
 DELETE FROM edit_property_action;
 DELETE FROM workflow_executed_event;
 DELETE FROM abstract_workflow_action;

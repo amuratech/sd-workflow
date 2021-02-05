@@ -59,19 +59,21 @@ class WebhookServiceTest {
     //given
     var userAttributes = List.of(new Attribute("firstName", "First Name"), new Attribute("lastName", "Last Name"));
     var leadAttributes = List.of(new Attribute("id", "Id"), new Attribute("pipeline", "Pipeline"));
+    var contactAttributes=List.of(new Attribute("id", "Id"),new Attribute("address", "Address"));
     given(attributeFactory.getUserAttributes()).willReturn(Mono.just(userAttributes));
     given(attributeFactory.getLeadAttributes()).willReturn(Mono.just(leadAttributes));
+    given(attributeFactory.getContactAttributes()).willReturn(Mono.just(contactAttributes));
     given(attributeFactory.getEntities()).willCallRealMethod();
     //when
     List<EntityConfig> configurations = webhookService.getConfigurations().collectList().block();
 
     //then
-    assertThat(configurations).isNotNull().hasSize(6);
+    assertThat(configurations).isNotNull().hasSize(7);
     assertThat(configurations.stream().map(EntityConfig::getEntityDisplayName))
-        .containsExactly("Custom Parameter", "Lead", "Lead Owner", "Created By", "Updated By", "Tenant");
+        .containsExactly("Custom Parameter", "Lead", "Contact", "Lead Owner", "Created By", "Updated By", "Tenant");
 
     assertThat(configurations.stream().map(EntityConfig::getEntity))
-        .containsExactly("CUSTOM", "LEAD", "LEAD_OWNER", "CREATED_BY", "UPDATED_BY", "TENANT");
+        .containsExactly("CUSTOM", "LEAD", "CONTACT", "LEAD_OWNER", "CREATED_BY", "UPDATED_BY", "TENANT");
 
     var leadConfig = configurations.stream()
         .filter(config -> config.getEntityDisplayName().equals("Lead")).findFirst();
@@ -79,6 +81,13 @@ class WebhookServiceTest {
     assertThat(leadConfig.get().getFields()).isNotEmpty();
     assertThat(leadConfig.get().getFields().stream().map(Attribute::getName))
         .containsExactly("id", "pipeline");
+
+    var contactConfig = configurations.stream()
+        .filter(config -> config.getEntityDisplayName().equals("Contact")).findFirst();
+    assertThat(contactConfig).isPresent();
+    assertThat(contactConfig.get().getFields()).isNotEmpty();
+    assertThat(contactConfig.get().getFields().stream().map(Attribute::getName))
+        .containsExactly("id", "address");
 
     var userConfig = configurations.stream()
         .filter(config -> config.getEntityDisplayName().equals("Lead Owner")).findFirst();

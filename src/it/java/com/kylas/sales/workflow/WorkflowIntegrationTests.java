@@ -451,6 +451,15 @@ public class WorkflowIntegrationTests {
                     .withHeader(CONTENT_TYPE, APPLICATION_JSON_VALUE)
                     .withStatus(200)
                     .withBody(getResourceAsString("/contracts/config/response/get-all-lead-fields.json"))));
+
+    stubFor(
+        get("/config/v1/entities/contact/fields")
+            .withHeader(AUTHORIZATION, matching("Bearer " + authenticationToken))
+            .willReturn(
+                aResponse()
+                    .withHeader(CONTENT_TYPE, APPLICATION_JSON_VALUE)
+                    .withStatus(200)
+                    .withBody(getResourceAsString("/contracts/config/response/get-all-contact-fields.json"))));
     //when
     String response = buildWebClient()
         .get()

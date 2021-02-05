@@ -48,6 +48,16 @@ public class AttributeFactory {
                 .map(attribute -> new Attribute(attribute.name, getDisplayName(entityDefinitions, attribute.name)))
                 .collect(Collectors.toList()));
   }
+  public Mono<List<Attribute>> getContactAttributes() {
+    var authenticationToken = authService.getAuthenticationToken();
+    return configService
+        .getFields("contact", authenticationToken)
+        .collectList()
+        .map(entityDefinitions ->
+            stream(ContactAttribute.values())
+                .map(attribute -> new Attribute(attribute.name, getDisplayName(entityDefinitions, attribute.name)))
+                .collect(Collectors.toList()));
+  }
 
   public WebhookEntity[] getEntities() {
     return WebhookEntity.values();
@@ -66,6 +76,7 @@ public class AttributeFactory {
   public enum WebhookEntity {
     CUSTOM("Custom Parameter", EntityType.CUSTOM),
     LEAD("Lead", EntityType.LEAD),
+    CONTACT("Contact",EntityType.CONTACT),
     LEAD_OWNER("Lead Owner", EntityType.USER),
     CREATED_BY("Created By", EntityType.USER),
     UPDATED_BY("Updated By", EntityType.USER),
@@ -172,4 +183,5 @@ public class AttributeFactory {
     private final String name;
     private final String pathToField;
   }
+
 }
