@@ -13,12 +13,12 @@ import lombok.Getter;
 public enum EntityType {
   LEAD(true) {
     public List<String> getIdNameFields() {
-      return List.of(LeadAttribute.PIPELINE.name());
+      return List.of(LeadAttribute.PIPELINE.getName());
     }
   },
   CONTACT(true) {
     public List<String> getIdNameFields() {
-      return List.of(ContactAttribute.COMPANY.name());
+      return List.of(ContactAttribute.COMPANY.getName());
     }
   },
   DEAL(true) {

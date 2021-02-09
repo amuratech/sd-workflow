@@ -184,7 +184,7 @@ public class ContactWorkflowProcessorIntegrationTests {
   @AutoConfigureTestDatabase(replace = Replace.NONE)
   @ContextConfiguration(initializers = {TestMqSetup.class, TestDatabaseInitializer.class})
   @DisplayName("Tests that verify workflow condition evaluation")
-  class ContactWorkflowConditionTests {
+  class ContactWorkflowConditionIntegrationTests {
 
     @Test
     @Sql("/test-scripts/integration/insert-contact-workflows-with-condition.sql")

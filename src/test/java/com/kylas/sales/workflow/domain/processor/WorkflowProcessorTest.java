@@ -22,6 +22,7 @@ import static org.mockito.Mockito.when;
 
 import com.kylas.sales.workflow.api.WorkflowService;
 import com.kylas.sales.workflow.api.request.Condition;
+import com.kylas.sales.workflow.common.dto.ActionDetail.EditPropertyAction.ValueType;
 import com.kylas.sales.workflow.common.dto.condition.Operator;
 import com.kylas.sales.workflow.common.dto.condition.WorkflowCondition.ConditionExpression;
 import com.kylas.sales.workflow.domain.ConditionFacade;
@@ -31,6 +32,7 @@ import com.kylas.sales.workflow.domain.processor.contact.ContactDetail;
 import com.kylas.sales.workflow.domain.processor.deal.DealDetail;
 import com.kylas.sales.workflow.domain.processor.deal.Money;
 import com.kylas.sales.workflow.domain.processor.deal.Pipeline;
+import com.kylas.sales.workflow.domain.processor.exception.WorkflowExecutionException;
 import com.kylas.sales.workflow.domain.processor.lead.IdName;
 import com.kylas.sales.workflow.domain.processor.lead.Lead;
 import com.kylas.sales.workflow.domain.processor.lead.LeadDetail;
@@ -60,6 +62,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -828,6 +831,187 @@ class WorkflowProcessorTest {
     Workflow executedWorkflow = workflowArgumentCaptor.getValue();
     assertThat(executedWorkflow.getId()).isEqualTo(workflowId100);
   }
+
+  @Test
+  public void givenLeadEvent_withIdNameProperties_andInvalidValue_shouldThrow() {
+    // given
+    long tenantId = 101;
+    long userId = 10L;
+    long workflowId = 99L;
+
+    var lead = new LeadDetail();
+    lead.setFirstName("Tony");
+    lead.setLastName("Stark");
+    lead.setId(55L);
+    Metadata metadata = new Metadata(tenantId, userId, LEAD, null, null, EntityAction.CREATED);
+
+    var leadEvent = new LeadEvent(lead, null, metadata);
+
+    Workflow workflowMock = mock(Workflow.class);
+    given(workflowMock.getId()).willReturn(workflowId);
+
+    Set<AbstractWorkflowAction> actions = new HashSet<>();
+
+    EditPropertyAction editPropertyAction = mock(EditPropertyAction.class);
+    given(editPropertyAction.getName()).willReturn("pipeline");
+    given(editPropertyAction.getValue()).willReturn("textValue");
+    given(editPropertyAction.getType()).willReturn(EDIT_PROPERTY);
+    actions.add(editPropertyAction);
+
+    given(workflowMock.getWorkflowActions()).willReturn(actions);
+    WorkflowTrigger workflowTriggerMock = mock(WorkflowTrigger.class);
+    given(workflowTriggerMock.getTriggerType()).willReturn(TriggerType.EVENT);
+    given(workflowTriggerMock.getTriggerFrequency()).willReturn(CREATED);
+    given(workflowMock.getWorkflowTrigger()).willReturn(workflowTriggerMock);
+
+    List<Workflow> workflows = Arrays.asList(workflowMock);
+
+    given(workflowService.findActiveBy(tenantId, LEAD, CREATED)).willReturn(workflows);
+    doNothing().when(entityUpdatedCommandPublisher).execute(any(Metadata.class), any(Lead.class));
+    when(valueConverter.getValue(any(EditPropertyAction.class), any(Field.class), any(EntityType.class))).thenReturn("textValue");
+    // when
+    //then
+    Assertions.assertThatExceptionOfType(WorkflowExecutionException.class)
+        .isThrownBy(() -> workflowProcessor.process(leadEvent));
+  }
+
+  @Test
+  public void givenLeadEvent_withIdNameProperties_andValidValue_shouldPublishEvent() throws NoSuchFieldException {
+    // given
+    long tenantId = 101;
+    long userId = 10L;
+    long workflowId = 99L;
+
+    var lead = new LeadDetail();
+    lead.setFirstName("Tony");
+    lead.setLastName("Stark");
+    lead.setId(55L);
+    Metadata metadata = new Metadata(tenantId, userId, LEAD, null, null, EntityAction.CREATED);
+
+    var leadEvent = new LeadEvent(lead, null, metadata);
+
+    Workflow workflowMock = mock(Workflow.class);
+    given(workflowMock.getId()).willReturn(workflowId);
+
+    Set<AbstractWorkflowAction> actions = new HashSet<>();
+    String value = "{\"id\":1,\"name\":\"new pipeline\"}";
+
+    EditPropertyAction editPropertyAction = mock(EditPropertyAction.class);
+    given(editPropertyAction.getName()).willReturn("pipeline");
+    given(editPropertyAction.getValue()).willReturn(value);
+    given(editPropertyAction.getValueType()).willReturn(ValueType.OBJECT);
+    given(editPropertyAction.getType()).willReturn(EDIT_PROPERTY);
+    actions.add(editPropertyAction);
+
+    given(workflowMock.getWorkflowActions()).willReturn(actions);
+    WorkflowTrigger workflowTriggerMock = mock(WorkflowTrigger.class);
+    given(workflowTriggerMock.getTriggerType()).willReturn(TriggerType.EVENT);
+    given(workflowTriggerMock.getTriggerFrequency()).willReturn(CREATED);
+    given(workflowMock.getWorkflowTrigger()).willReturn(workflowTriggerMock);
+
+    List<Workflow> workflows = Arrays.asList(workflowMock);
+
+    given(workflowService.findActiveBy(tenantId, LEAD, CREATED)).willReturn(workflows);
+    doNothing().when(entityUpdatedCommandPublisher).execute(any(Metadata.class), any(Lead.class));
+    when(valueConverter.getValue(editPropertyAction, lead.getClass().getDeclaredField(editPropertyAction.getName()), LEAD))
+        .thenReturn(1);
+    // when
+    workflowProcessor.process(leadEvent);
+    //then
+    verify(entityUpdatedCommandPublisher, times(1))
+        .execute(any(Metadata.class), any(Actionable.class));
+  }
+
+
+  @Test
+  public void givenContactEvent_withIdNameProperties_andInvalidValue_shouldThrow() {
+    // given
+    long tenantId = 101;
+    long userId = 10L;
+    long workflowId = 99L;
+
+    var contactDetail = new ContactDetail();
+    contactDetail.setFirstName("Tony");
+    contactDetail.setLastName("Stark");
+    contactDetail.setId(55L);
+    Metadata metadata = new Metadata(tenantId, userId, CONTACT, null, null, EntityAction.CREATED);
+
+    var contactEvent = new ContactEvent(contactDetail, null, metadata);
+
+    Workflow workflowMock = mock(Workflow.class);
+    given(workflowMock.getId()).willReturn(workflowId);
+
+    Set<AbstractWorkflowAction> actions = new HashSet<>();
+
+    EditPropertyAction editPropertyAction = mock(EditPropertyAction.class);
+    given(editPropertyAction.getName()).willReturn("company");
+    given(editPropertyAction.getValue()).willReturn("textValue");
+    given(editPropertyAction.getType()).willReturn(EDIT_PROPERTY);
+    actions.add(editPropertyAction);
+
+    given(workflowMock.getWorkflowActions()).willReturn(actions);
+    WorkflowTrigger workflowTriggerMock = mock(WorkflowTrigger.class);
+    given(workflowTriggerMock.getTriggerType()).willReturn(TriggerType.EVENT);
+    given(workflowTriggerMock.getTriggerFrequency()).willReturn(CREATED);
+    given(workflowMock.getWorkflowTrigger()).willReturn(workflowTriggerMock);
+
+    List<Workflow> workflows = Arrays.asList(workflowMock);
+
+    given(workflowService.findActiveBy(tenantId, CONTACT, CREATED)).willReturn(workflows);
+    doNothing().when(entityUpdatedCommandPublisher).execute(any(Metadata.class), any(Contact.class));
+    when(valueConverter.getValue(any(EditPropertyAction.class), any(Field.class), any(EntityType.class))).thenReturn("textValue");
+    // when
+    //then
+    Assertions.assertThatExceptionOfType(WorkflowExecutionException.class)
+        .isThrownBy(() -> workflowProcessor.process(contactEvent));
+  }
+
+  @Test
+  public void givenContactEvent_withIdNameProperties_andValidValue_shouldPublishEvent() throws NoSuchFieldException {
+    // given
+    long tenantId = 101;
+    long userId = 10L;
+    long workflowId = 99L;
+
+    var contactDetail = new ContactDetail();
+    contactDetail.setFirstName("Tony");
+    contactDetail.setLastName("Stark");
+    contactDetail.setId(55L);
+    Metadata metadata = new Metadata(tenantId, userId, CONTACT, null, null, EntityAction.CREATED);
+
+    var contactEvent = new ContactEvent(contactDetail, null, metadata);
+
+    Workflow workflowMock = mock(Workflow.class);
+    given(workflowMock.getId()).willReturn(workflowId);
+    String value = "{\"id\":1,\"name\":\"new pipeline\"}";
+
+    Set<AbstractWorkflowAction> actions = new HashSet<>();
+
+    EditPropertyAction editPropertyAction = mock(EditPropertyAction.class);
+    given(editPropertyAction.getName()).willReturn("company");
+    given(editPropertyAction.getValue()).willReturn(value);
+    given(editPropertyAction.getType()).willReturn(EDIT_PROPERTY);
+    actions.add(editPropertyAction);
+
+    given(workflowMock.getWorkflowActions()).willReturn(actions);
+    WorkflowTrigger workflowTriggerMock = mock(WorkflowTrigger.class);
+    given(workflowTriggerMock.getTriggerType()).willReturn(TriggerType.EVENT);
+    given(workflowTriggerMock.getTriggerFrequency()).willReturn(CREATED);
+    given(workflowMock.getWorkflowTrigger()).willReturn(workflowTriggerMock);
+
+    List<Workflow> workflows = Arrays.asList(workflowMock);
+
+    given(workflowService.findActiveBy(tenantId, CONTACT, CREATED)).willReturn(workflows);
+    doNothing().when(entityUpdatedCommandPublisher).execute(any(Metadata.class), any(Contact.class));
+    when(valueConverter.getValue(editPropertyAction, contactDetail.getClass().getDeclaredField(editPropertyAction.getName()), CONTACT)).thenReturn(1);
+    // when
+    workflowProcessor.process(contactEvent);
+    //then
+    verify(entityUpdatedCommandPublisher, times(1))
+        .execute(any(Metadata.class), any(Actionable.class));
+  }
+
+
   private Workflow getMockEditPropertyWorkflow(
       long workflowId, TriggerFrequency updated, String propertyName, String propertyValue) {
 
