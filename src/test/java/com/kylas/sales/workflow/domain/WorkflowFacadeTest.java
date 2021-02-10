@@ -16,6 +16,8 @@ import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 import com.kylas.sales.workflow.api.request.Condition.ExpressionElement;
 import com.kylas.sales.workflow.common.dto.ActionDetail;
@@ -23,6 +25,7 @@ import com.kylas.sales.workflow.common.dto.ActionDetail.CreateTaskAction;
 import com.kylas.sales.workflow.common.dto.ActionDetail.WebhookAction;
 import com.kylas.sales.workflow.common.dto.ActionDetail.WebhookAction.AuthorizationType;
 import com.kylas.sales.workflow.common.dto.ActionResponse;
+import com.kylas.sales.workflow.common.dto.UsageRecord;
 import com.kylas.sales.workflow.common.dto.condition.Operator;
 import com.kylas.sales.workflow.config.TestDatabaseInitializer;
 import com.kylas.sales.workflow.domain.exception.InsufficientPrivilegeException;
@@ -41,6 +44,8 @@ import com.kylas.sales.workflow.domain.workflow.action.reassign.ReassignAction;
 import com.kylas.sales.workflow.domain.workflow.action.task.DueDate;
 import com.kylas.sales.workflow.domain.workflow.action.webhook.Parameter;
 import com.kylas.sales.workflow.domain.workflow.action.webhook.attribute.AttributeFactory.WebhookEntity;
+import com.kylas.sales.workflow.mq.WorkflowEventPublisher;
+import com.kylas.sales.workflow.mq.event.TenantUsageEvent;
 import com.kylas.sales.workflow.security.AuthService;
 import com.kylas.sales.workflow.stubs.UserStub;
 import com.kylas.sales.workflow.stubs.WorkflowStub;
@@ -54,6 +59,7 @@ import javax.transaction.Transactional;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase.Replace;
@@ -80,6 +86,8 @@ class WorkflowFacadeTest {
   UserService userService;
   @Autowired
   WorkflowFacade workflowFacade;
+  @MockBean
+  private WorkflowEventPublisher workflowEventPublisher;
 
   @Transactional
   @Test
@@ -1357,6 +1365,35 @@ class WorkflowFacadeTest {
 
     assertThat(workflows.size()).isEqualTo(1);
     assertThat(workflows.get(0).getId()).isEqualTo(304);
+  }
+
+  @Transactional
+  @Test
+  @Sql("/test-scripts/insert-workflow-usage-records.sql")
+  public void givenUsageRequestByTenants_shouldFetchIt() {
+    //given
+    ArgumentCaptor<TenantUsageEvent> eventCaptor = ArgumentCaptor.forClass(TenantUsageEvent.class);
+
+    //when
+    workflowFacade.publishTenantUsage();
+
+    //then
+    verify(workflowEventPublisher, times(1))
+        .publishTenantUsage(eventCaptor.capture());
+
+    var captured = eventCaptor.getValue();
+    assertThat(captured).isNotNull();
+
+    List<UsageRecord> records = captured.getUsageRecords();
+    assertThat(records).isNotEmpty();
+    assertThat(records).anyMatch(record ->
+        record.getUsageEntity().equals("ACTIVE_WORKFLOW")
+            && record.getTenantId() == 99
+            && record.getCount() == 1);
+    assertThat(records).anyMatch(record ->
+        record.getUsageEntity().equals("ACTIVE_WORKFLOW")
+            && record.getTenantId() == 75
+            && record.getCount() == 2);
   }
 
 }

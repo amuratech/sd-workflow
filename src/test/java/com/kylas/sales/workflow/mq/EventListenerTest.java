@@ -3,6 +3,8 @@ package com.kylas.sales.workflow.mq;
 import static com.kylas.sales.workflow.domain.workflow.EntityType.DEAL;
 import static com.kylas.sales.workflow.mq.RabbitMqConfig.DEAL_EXCHANGE;
 import static com.kylas.sales.workflow.mq.RabbitMqConfig.SALES_EXCHANGE;
+import static com.kylas.sales.workflow.mq.RabbitMqConfig.SCHEDULER_EXCHANGE;
+import static com.kylas.sales.workflow.mq.RabbitMqConfig.USAGE_REQUEST_EVENT;
 import static com.kylas.sales.workflow.mq.event.ContactEvent.getContactCreatedEventName;
 import static com.kylas.sales.workflow.mq.event.ContactEvent.getContactUpdatedEventName;
 import static com.kylas.sales.workflow.mq.event.DealEvent.getDealCreatedEventName;
@@ -20,6 +22,7 @@ import static org.springframework.test.context.support.TestPropertySourceUtils.a
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kylas.sales.workflow.config.TestDatabaseInitializer;
+import com.kylas.sales.workflow.domain.WorkflowFacade;
 import com.kylas.sales.workflow.domain.processor.WorkflowProcessor;
 import com.kylas.sales.workflow.domain.processor.deal.DealDetail;
 import com.kylas.sales.workflow.mq.EventListenerTest.TestMqSetup;
@@ -67,6 +70,8 @@ class EventListenerTest {
   private ObjectMapper objectMapper;
   @MockBean
   private WorkflowProcessor workflowProcessor;
+  @MockBean
+  private WorkflowFacade workflowFacade;
   @Captor
   ArgumentCaptor<LeadEvent> leadEventArgumentCaptor;
   @Captor
@@ -271,7 +276,17 @@ class EventListenerTest {
     assertThat(eventReceived.getOldEntity().getSalutation().getId()).isEqualTo(473);
     assertThat(eventReceived.getMetadata().getTenantId()).isEqualTo(99L);
     assertThat(eventReceived.getMetadata().getEntityAction()).isEqualTo(UPDATED);
+  }
 
+  @Test
+  public void givenCollectUsageRequest_shouldCaptureIt() throws Exception {
+    //given
+    String event = "collect.usage";
+    //when
+    rabbitTemplate.convertAndSend(SCHEDULER_EXCHANGE, USAGE_REQUEST_EVENT, event);
+    //then
+    latch.await(3, TimeUnit.SECONDS);
+    verify(workflowFacade, times(1)).publishTenantUsage();
   }
 
   private String getResourceAsString(String resourcePath) throws IOException {

@@ -1,0 +1,14 @@
+{
+  "usageRecords": [
+    {
+      "tenantId": 2000,
+      "usageEntity": "ACTIVE_WORKFLOW",
+      "count": 50
+    },
+    {
+      "tenantId": 3000,
+      "usageEntity": "ACTIVE_WORKFLOW",
+      "count": 60
+    }
+  ]
+}

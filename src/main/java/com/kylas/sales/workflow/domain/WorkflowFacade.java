@@ -16,6 +16,7 @@ import static org.apache.commons.lang3.StringUtils.isBlank;
 import com.kylas.sales.workflow.api.request.WorkflowRequest;
 import com.kylas.sales.workflow.common.dto.ActionDetail.EditPropertyAction;
 import com.kylas.sales.workflow.common.dto.ActionResponse;
+import com.kylas.sales.workflow.common.dto.UsageRecord;
 import com.kylas.sales.workflow.domain.exception.InsufficientPrivilegeException;
 import com.kylas.sales.workflow.domain.exception.InvalidActionException;
 import com.kylas.sales.workflow.domain.exception.InvalidValueTypeException;
@@ -29,6 +30,8 @@ import com.kylas.sales.workflow.domain.workflow.TriggerFrequency;
 import com.kylas.sales.workflow.domain.workflow.Workflow;
 import com.kylas.sales.workflow.domain.workflow.WorkflowTrigger;
 import com.kylas.sales.workflow.domain.workflow.action.AbstractWorkflowAction;
+import com.kylas.sales.workflow.mq.WorkflowEventPublisher;
+import com.kylas.sales.workflow.mq.event.TenantUsageEvent;
 import com.kylas.sales.workflow.security.AuthService;
 import java.util.HashSet;
 import java.util.List;
@@ -54,6 +57,7 @@ public class WorkflowFacade {
   private final UserService userService;
   private final UserFacade userFacade;
   private final ConditionFacade conditionFacade;
+  private final WorkflowEventPublisher workflowEventPublisher;
 
   @Autowired
   public WorkflowFacade(
@@ -62,13 +66,14 @@ public class WorkflowFacade {
       AuthService authService,
       UserService userService,
       UserFacade userFacade,
-      ConditionFacade conditionFacade) {
+      ConditionFacade conditionFacade, WorkflowEventPublisher workflowEventPublisher) {
     this.workflowRepository = workflowRepository;
     this.workflowExecutedEventRepository = workflowExecutedEventRepository;
     this.authService = authService;
     this.userService = userService;
     this.userFacade = userFacade;
     this.conditionFacade = conditionFacade;
+    this.workflowEventPublisher = workflowEventPublisher;
   }
 
   public Mono<Workflow> create(WorkflowRequest workflowRequest) {
@@ -273,5 +278,10 @@ public class WorkflowFacade {
     if (isInvalidValueType) {
       throw new InvalidValueTypeException();
     }
+  }
+
+  public void publishTenantUsage() {
+    List<UsageRecord> usageRecords = workflowRepository.getActiveCountByTenantId();
+    workflowEventPublisher.publishTenantUsage(new TenantUsageEvent(usageRecords));
   }
 }

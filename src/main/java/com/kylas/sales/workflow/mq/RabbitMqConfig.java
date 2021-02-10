@@ -28,6 +28,9 @@ public class RabbitMqConfig {
   static final String DEAL_UPDATED_QUEUE = "q.deal.updated.workflow";
   static final String SALES_CONTACT_CREATED_QUEUE = "q.contact.created.workflow";
   static final String SALES_CONTACT_UPDATED_QUEUE = "q.contact.updated.workflow";
+  static final String SCHEDULER_EXCHANGE = "ex.scheduler";
+  static final String USAGE_QUEUE = "q.collect.usage.workflow";
+  static final String USAGE_REQUEST_EVENT = "scheduler.collect.usage";
 
 
   @Bean
@@ -46,12 +49,14 @@ public class RabbitMqConfig {
   public Declarables topicBindings() {
     var salesExchange = new TopicExchange(SALES_EXCHANGE, true, false);
     var dealExchange = new TopicExchange(DEAL_EXCHANGE, true, false);
+    var schedulerExchange = new TopicExchange(SCHEDULER_EXCHANGE, true, false);
     var salesLeadCreatedQueue = new Queue(SALES_LEAD_CREATED_QUEUE, true);
     var salesLeadUpdatedQueue = new Queue(SALES_LEAD_UPDATED_QUEUE, true);
     var dealCreatedQueue = new Queue(DEAL_CREATED_QUEUE, true);
     var dealUpdatedQueue = new Queue(DEAL_UPDATED_QUEUE, true);
     var salesContactCreatedQueue = new Queue(SALES_CONTACT_CREATED_QUEUE, true);
     var salesContactUpdatedQueue = new Queue(SALES_CONTACT_UPDATED_QUEUE, true);
+    var usageQueue = new Queue(USAGE_QUEUE, true);
 
     return new Declarables(
         salesLeadCreatedQueue,
@@ -62,6 +67,11 @@ public class RabbitMqConfig {
         dealUpdatedQueue,
         salesContactCreatedQueue,
         salesContactUpdatedQueue,
+        schedulerExchange,
+        usageQueue,
+
+        BindingBuilder.bind(usageQueue).to(schedulerExchange)
+            .with(USAGE_REQUEST_EVENT),
 
         BindingBuilder.bind(salesLeadCreatedQueue).to(salesExchange)
             .with(getLeadCreatedEventName()),

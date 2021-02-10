@@ -6,9 +6,11 @@ import static com.kylas.sales.workflow.mq.RabbitMqConfig.SALES_CONTACT_CREATED_Q
 import static com.kylas.sales.workflow.mq.RabbitMqConfig.SALES_CONTACT_UPDATED_QUEUE;
 import static com.kylas.sales.workflow.mq.RabbitMqConfig.SALES_LEAD_CREATED_QUEUE;
 import static com.kylas.sales.workflow.mq.RabbitMqConfig.SALES_LEAD_UPDATED_QUEUE;
+import static com.kylas.sales.workflow.mq.RabbitMqConfig.USAGE_QUEUE;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.kylas.sales.workflow.domain.WorkflowFacade;
 import com.kylas.sales.workflow.domain.processor.WorkflowProcessor;
 import com.kylas.sales.workflow.mq.event.ContactEvent;
 import com.kylas.sales.workflow.mq.event.DealEvent;
@@ -27,13 +29,15 @@ public class EventListener {
   private final ObjectMapper objectMapper;
   private final WorkflowProcessor workflowProcessor;
   private final InternalAuthProvider internalAuthProvider;
+  private final WorkflowFacade workflowFacade;
 
   @Autowired
   public EventListener(ObjectMapper objectMapper, WorkflowProcessor workflowProcessor,
-      InternalAuthProvider internalAuthProvider) {
+      InternalAuthProvider internalAuthProvider, WorkflowFacade workflowFacade) {
     this.objectMapper = objectMapper;
     this.workflowProcessor = workflowProcessor;
     this.internalAuthProvider = internalAuthProvider;
+    this.workflowFacade = workflowFacade;
   }
 
   @RabbitListener(queues = SALES_LEAD_CREATED_QUEUE)
@@ -82,6 +86,14 @@ public class EventListener {
         message.getMessageProperties().getConsumerTag(),
         message.getMessageProperties().getReceivedRoutingKey());
     processContactEvent(message);
+  }
+
+  @RabbitListener(queues = USAGE_QUEUE)
+  public void listenCollectUsageEvent(Message message) {
+    log.info("Received request to collect workflow usage with MessageId:{}, EventName:{} ",
+        message.getMessageProperties().getMessageId(),
+        message.getMessageProperties().getReceivedRoutingKey());
+    workflowFacade.publishTenantUsage();
   }
 
   private void processLeadEvent(Message message) {
