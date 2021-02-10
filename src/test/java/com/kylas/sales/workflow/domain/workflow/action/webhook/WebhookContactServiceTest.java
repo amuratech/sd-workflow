@@ -5,7 +5,7 @@ import static com.kylas.sales.workflow.common.dto.ActionDetail.WebhookAction.Aut
 import static com.kylas.sales.workflow.common.dto.ActionDetail.WebhookAction.AuthorizationType.BEARER_TOKEN;
 import static com.kylas.sales.workflow.common.dto.ActionDetail.WebhookAction.AuthorizationType.NONE;
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
@@ -21,18 +21,14 @@ import static org.springframework.http.HttpMethod.POST;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kylas.sales.workflow.common.dto.Tenant;
 import com.kylas.sales.workflow.config.TestDatabaseInitializer;
-import com.kylas.sales.workflow.domain.processor.lead.Email;
-import com.kylas.sales.workflow.domain.processor.lead.EmailType;
+import com.kylas.sales.workflow.domain.processor.contact.ContactDetail;
 import com.kylas.sales.workflow.domain.processor.lead.IdName;
-import com.kylas.sales.workflow.domain.processor.lead.LeadDetail;
-import com.kylas.sales.workflow.domain.processor.lead.PhoneNumber;
-import com.kylas.sales.workflow.domain.processor.lead.PhoneType;
 import com.kylas.sales.workflow.domain.service.UserService;
 import com.kylas.sales.workflow.domain.user.User;
 import com.kylas.sales.workflow.domain.user.User.Metadata;
 import com.kylas.sales.workflow.domain.workflow.EntityType;
 import com.kylas.sales.workflow.domain.workflow.action.webhook.attribute.AttributeFactory;
-import com.kylas.sales.workflow.domain.workflow.action.webhook.attribute.AttributeFactory.LeadAttribute;
+import com.kylas.sales.workflow.domain.workflow.action.webhook.attribute.AttributeFactory.ContactAttribute;
 import com.kylas.sales.workflow.domain.workflow.action.webhook.attribute.AttributeFactory.UserAttribute;
 import com.kylas.sales.workflow.domain.workflow.action.webhook.attribute.AttributeFactory.WebhookEntity;
 import com.kylas.sales.workflow.domain.workflow.action.webhook.attribute.TenantAttribute;
@@ -44,6 +40,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import org.apache.commons.io.FileUtils;
+import org.assertj.core.api.Assertions;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -69,7 +66,7 @@ import reactor.core.publisher.Mono;
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 @AutoConfigureTestDatabase(replace = Replace.NONE)
 @ContextConfiguration(initializers = {TestDatabaseInitializer.class})
-class WebhookExecutionServiceTest {
+class WebhookContactServiceTest {
 
   private WebhookService webhookService;
   @MockBean
@@ -86,7 +83,8 @@ class WebhookExecutionServiceTest {
   private ObjectMapper objectMapper;
   @Autowired
   ResourceLoader resourceLoader;
-  @Autowired List<ParameterBuilder> parameterBuilders;
+  @Autowired
+  List<ParameterBuilder> parameterBuilders;
   @BeforeEach
   void init() {
     WebClient webClient =
@@ -105,27 +103,27 @@ class WebhookExecutionServiceTest {
     given(exchangeFunction.exchange(any())).willReturn(mockResponse);
 
     // when
-    LeadDetail lead = getStubbedLead(12L);
-    lead.setFirstName("Tony");
-    lead.setCreatedBy(new IdName(12L, "user"));
+    ContactDetail contact = getStubbedContact(12L);
+    contact.setFirstName("Tony");
+    contact.setCreatedBy(new IdName(12L, "user"));
     List<Parameter> parameters = List.of(
-        new Parameter("leadFirstName", WebhookEntity.LEAD, LeadAttribute.FIRST_NAME.getName()),
-        new Parameter("leadCreator", WebhookEntity.LEAD, LeadAttribute.CREATED_BY.getName()));
-    WebhookAction action = new WebhookAction("LeadCityWebhook", "some description", GET, NONE,
+        new Parameter("contactFirstName", WebhookEntity.CONTACT, ContactAttribute.FIRST_NAME.getName()),
+        new Parameter("contactCreator", WebhookEntity.CONTACT, ContactAttribute.CREATED_BY.getName()));
+    WebhookAction action = new WebhookAction("ContactCityWebhook", "some description", GET, NONE,
         "http://some-random-host:9000/get-webhook", parameters, null);
 
     //when
-    webhookService.execute(action, lead, EntityType.LEAD);
+    webhookService.execute(action, contact, EntityType.CONTACT);
 
     //then
     verify(exchangeFunction).exchange(argThat(request ->
         request.method().equals(GET) &&
-            request.url().toString().equals("http://some-random-host:9000/get-webhook?leadFirstName=Tony&leadCreator=user")));
+            request.url().toString().equals("http://some-random-host:9000/get-webhook?contactFirstName=Tony&contactCreator=user")));
     verifyNoInteractions(userService);
   }
 
   @Test
-  public void givenWorkflowRequest_withLeadOwnerParameters_shouldCreate() {
+  public void givenWorkflowRequest_withContactOwnerParameters_shouldCreate() {
     // given
     String authenticationToken = "some-token";
     given(authService.getAuthenticationToken()).willReturn(authenticationToken);
@@ -143,22 +141,22 @@ class WebhookExecutionServiceTest {
     given(exchangeFunction.exchange(any())).willReturn(mockResponse);
 
     // when
-    LeadDetail lead = getStubbedLead(12L);
-    lead.setFirstName("Tony");
-    lead.setCreatedBy(new IdName(12L, "user"));
+    ContactDetail contact = getStubbedContact(12L);
+    contact.setFirstName("Tony");
+    contact.setCreatedBy(new IdName(12L, "user"));
     List<Parameter> parameters = List.of(
-        new Parameter("leadFirstName", WebhookEntity.LEAD, LeadAttribute.FIRST_NAME.getName()),
-        new Parameter("ownerFirstName", WebhookEntity.LEAD_OWNER, UserAttribute.FIRST_NAME.getName()));
+        new Parameter("contactFirstName", WebhookEntity.CONTACT, ContactAttribute.FIRST_NAME.getName()),
+        new Parameter("ownerFirstName", WebhookEntity.CONTACT_OWNER, UserAttribute.FIRST_NAME.getName()));
     WebhookAction action = new WebhookAction("OwnerWebhook", "some description", GET, NONE,
         "http://some-random-host:9000/get-webhook", parameters, null);
 
     //when
-    webhookService.execute(action, lead, EntityType.LEAD);
+    webhookService.execute(action, contact,EntityType.CONTACT);
 
     //then
     verify(exchangeFunction).exchange(argThat(request ->
         request.method().equals(GET) &&
-            request.url().toString().equals("http://some-random-host:9000/get-webhook?ownerFirstName=Amit&leadFirstName=Tony")));
+            request.url().toString().equals("http://some-random-host:9000/get-webhook?contactFirstName=Tony&ownerFirstName=Amit")));
     verify(userService, times(1))
         .getUserDetails(eq(12L), anyString());
   }
@@ -176,22 +174,22 @@ class WebhookExecutionServiceTest {
     given(exchangeFunction.exchange(any())).willReturn(mockResponse);
 
     // when
-    LeadDetail lead = getStubbedLead(12L);
-    lead.setFirstName("Tony");
-    lead.setCreatedBy(new IdName(12L, "user"));
+    ContactDetail contact = getStubbedContact(12L);
+    contact.setFirstName("Tony");
+    contact.setCreatedBy(new IdName(12L, "user"));
     List<Parameter> parameters = List.of(
-        new Parameter("leadFirstName", WebhookEntity.LEAD, LeadAttribute.FIRST_NAME.getName()),
+        new Parameter("contactFirstName", WebhookEntity.CONTACT, ContactAttribute.FIRST_NAME.getName()),
         new Parameter("tenantAccountName", WebhookEntity.TENANT, TenantAttribute.ACCOUNT_NAME.getName()));
     WebhookAction action = new WebhookAction("OwnerWebhook", "some description", GET, NONE,
         "http://some-random-host:9000/get-webhook", parameters, null);
 
     //when
-    webhookService.execute(action, lead, EntityType.LEAD);
+    webhookService.execute(action, contact,EntityType.CONTACT);
 
     //then
     verify(exchangeFunction).exchange(argThat(request ->
         request.method().equals(GET) &&
-            request.url().toString().equals("http://some-random-host:9000/get-webhook?tenantAccountName=TenantAccountName&leadFirstName=Tony")));
+            request.url().toString().equals("http://some-random-host:9000/get-webhook?contactFirstName=Tony&tenantAccountName=TenantAccountName")));
     verify(userService, times(1))
         .getTenantDetails(anyString());
   }
@@ -205,22 +203,22 @@ class WebhookExecutionServiceTest {
     given(exchangeFunction.exchange(any())).willReturn(mockResponse);
 
     // when
-    LeadDetail lead = getStubbedLead(12L);
-    lead.setFirstName("Tony");
-    lead.setCreatedBy(new IdName(12L, "user"));
+    ContactDetail contact = getStubbedContact(12L);
+    contact.setFirstName("Tony");
+    contact.setCreatedBy(new IdName(12L, "user"));
     List<Parameter> parameters = List.of(
-        new Parameter("leadFirstName", WebhookEntity.LEAD, LeadAttribute.FIRST_NAME.getName()),
+        new Parameter("contactFirstName", WebhookEntity.CONTACT, ContactAttribute.FIRST_NAME.getName()),
         new Parameter("doctorStrange", WebhookEntity.CUSTOM, "Stephen"));
     WebhookAction action = new WebhookAction("OwnerWebhook", "some description", GET, NONE,
         "http://some-random-host:9000/get-webhook", parameters, null);
 
     //when
-    webhookService.execute(action, lead, EntityType.LEAD);
+    webhookService.execute(action, contact,EntityType.CONTACT);
 
     //then
     verify(exchangeFunction).exchange(argThat(request ->
         request.method().equals(GET) &&
-            request.url().toString().equals("http://some-random-host:9000/get-webhook?doctorStrange=Stephen&leadFirstName=Tony")));
+            request.url().toString().equals("http://some-random-host:9000/get-webhook?doctorStrange=Stephen&contactFirstName=Tony")));
   }
 
   @Test
@@ -235,11 +233,11 @@ class WebhookExecutionServiceTest {
     given(exchangeFunction.exchange(any())).willReturn(mockResponse);
 
     // when
-    LeadDetail lead = getStubbedLead(12L);
-    lead.setFirstName("Tony");
-    lead.setCreatedBy(new IdName(12L, "user"));
+    ContactDetail contact = getStubbedContact(12L);
+    contact.setFirstName("Tony");
+    contact.setCreatedBy(new IdName(12L, "user"));
     List<Parameter> parameters = List.of(
-        new Parameter("leadFirstName", WebhookEntity.LEAD, LeadAttribute.FIRST_NAME.getName()));
+        new Parameter("contactFirstName", WebhookEntity.CONTACT, ContactAttribute.FIRST_NAME.getName()));
     var authorization = getResourceAsString("classpath:contracts/webhook/create-with-bearer-token.json");
 
     var authParam = cryptoService.encrypt(Base64.getEncoder().encodeToString(authorization.getBytes(UTF_8)));
@@ -247,12 +245,12 @@ class WebhookExecutionServiceTest {
         "http://some-random-host:9000/get-webhook", parameters, authParam);
 
     //when
-    webhookService.execute(action, lead, EntityType.LEAD);
+    webhookService.execute(action, contact,EntityType.CONTACT);
 
     //then
     verify(exchangeFunction).exchange(argThat(request -> {
-      assertThat(request.method()).isEqualTo(GET);
-      assertThat(request.headers()).containsEntry(AUTHORIZATION, List.of("Bearer some-bearer-token"));
+      Assertions.assertThat(request.method()).isEqualTo(GET);
+      Assertions.assertThat(request.headers()).containsEntry(AUTHORIZATION, List.of("Bearer some-bearer-token"));
       return true;
     }));
   }
@@ -269,11 +267,11 @@ class WebhookExecutionServiceTest {
     given(exchangeFunction.exchange(any())).willReturn(mockResponse);
 
     // when
-    LeadDetail lead = getStubbedLead(12L);
-    lead.setFirstName("Tony");
-    lead.setCreatedBy(new IdName(12L, "user"));
+    ContactDetail contact = getStubbedContact(12L);
+    contact.setFirstName("Tony");
+    contact.setCreatedBy(new IdName(12L, "user"));
     List<Parameter> parameters = List.of(
-        new Parameter("leadFirstName", WebhookEntity.LEAD, LeadAttribute.FIRST_NAME.getName()));
+        new Parameter("contactFirstName", WebhookEntity.CONTACT, ContactAttribute.FIRST_NAME.getName()));
     var authorization = getResourceAsString("classpath:contracts/webhook/create-with-basic-auth.json");
 
     var authParam = cryptoService.encrypt(Base64.getEncoder().encodeToString(authorization.getBytes(UTF_8)));
@@ -281,13 +279,13 @@ class WebhookExecutionServiceTest {
         "http://some-random-host:9000/get-webhook", parameters, authParam);
 
     //when
-    webhookService.execute(action, lead, EntityType.LEAD);
+    webhookService.execute(action, contact,EntityType.CONTACT);
 
     //then
     verify(exchangeFunction).exchange(argThat(request -> {
-      assertThat(request.method()).isEqualTo(GET);
+      Assertions.assertThat(request.method()).isEqualTo(GET);
       var encoded = Base64.getEncoder().encodeToString("tony.stark:IAmIronman".getBytes(UTF_8));
-      assertThat(request.headers()).containsEntry(AUTHORIZATION, List.of("Basic " + encoded));
+      Assertions.assertThat(request.headers()).containsEntry(AUTHORIZATION, List.of("Basic " + encoded));
       return true;
     }));
   }
@@ -304,11 +302,11 @@ class WebhookExecutionServiceTest {
     given(exchangeFunction.exchange(any())).willReturn(mockResponse);
 
     // when
-    LeadDetail lead = getStubbedLead(12L);
-    lead.setFirstName("Tony");
-    lead.setCreatedBy(new IdName(12L, "user"));
+    ContactDetail contact = getStubbedContact(12L);
+    contact.setFirstName("Tony");
+    contact.setCreatedBy(new IdName(12L, "user"));
     List<Parameter> parameters = List.of(
-        new Parameter("leadFirstName", WebhookEntity.LEAD, LeadAttribute.FIRST_NAME.getName()));
+        new Parameter("contactFirstName", WebhookEntity.CONTACT, ContactAttribute.FIRST_NAME.getName()));
     var authorization = getResourceAsString("classpath:contracts/webhook/create-with-api-key-auth.json");
 
     var authParam = cryptoService.encrypt(Base64.getEncoder().encodeToString(authorization.getBytes(UTF_8)));
@@ -316,54 +314,14 @@ class WebhookExecutionServiceTest {
         "http://some-random-host:9000/get-webhook", parameters, authParam);
 
     //when
-    webhookService.execute(action, lead, EntityType.LEAD);
+    webhookService.execute(action, contact,EntityType.CONTACT);
 
     //then
     verify(exchangeFunction).exchange(argThat(request -> {
-      assertThat(request.method()).isEqualTo(GET);
-      assertThat(request.headers()).containsEntry("captain.america", List.of("JustAnotherBottleExperiment"));
+      Assertions.assertThat(request.method()).isEqualTo(GET);
+      Assertions.assertThat(request.headers()).containsEntry("captain.america", List.of("JustAnotherBottleExperiment"));
       return true;
     }));
-  }
-
-  @Test
-  public void givenWorkflowRequest_withCollectionParameters_shouldCreate() {
-    // given
-    String authenticationToken = "some-token";
-    given(authService.getAuthenticationToken()).willReturn(authenticationToken);
-    var mockResponse = Mono.just(ClientResponse.create(HttpStatus.OK).build());
-    given(exchangeFunction.exchange(any())).willReturn(mockResponse);
-
-    // when
-    LeadDetail lead = getStubbedLead(12L);
-    lead.setFirstName("Tony");
-    lead.setCreatedBy(new IdName(12L, "user"));
-    Email[] emails = {
-        new Email(EmailType.OFFICE, "abc@kylas.io", true),
-        new Email(EmailType.PERSONAL, "def@kylas.io", false)};
-
-    PhoneNumber[] phoneNumbers = {
-        new PhoneNumber(PhoneType.PERSONAL, null, "8600990099", "+91", true),
-        new PhoneNumber(PhoneType.HOME, null, "8600990022", "+91", false)};
-
-    lead.setEmails(emails);
-    lead.setPhoneNumbers(phoneNumbers);
-    List<Parameter> parameters = List.of(
-        new Parameter("leadFirstName", WebhookEntity.LEAD, LeadAttribute.FIRST_NAME.getName()),
-        new Parameter("leadEmails", WebhookEntity.LEAD, LeadAttribute.EMAILS.getName()),
-        new Parameter("leadPhones", WebhookEntity.LEAD, LeadAttribute.PHONE_NUMBERS.getName()));
-    WebhookAction action = new WebhookAction("OwnerWebhook", "some description", GET, NONE,
-        "http://some-random-host:9000/get-webhook", parameters, null);
-
-    //when
-    webhookService.execute(action, lead, EntityType.LEAD);
-
-    //then
-    verify(exchangeFunction).exchange(argThat(request ->
-        request.method().equals(GET) &&
-            request.url().toString()
-                .equals(
-                    "http://some-random-host:9000/get-webhook?leadEmails=abc@kylas.io&leadEmails=def@kylas.io&leadFirstName=Tony&leadPhones=+91%208600990099&leadPhones=+91%208600990022")));
   }
 
   @Test
@@ -378,17 +336,17 @@ class WebhookExecutionServiceTest {
         .willReturn(Mono.just(ClientResponse.create(HttpStatus.OK).build()));
 
     // when
-    LeadDetail lead = getStubbedLead(12L);
-    lead.setFirstName("Tony");
-    lead.setCreatedBy(new IdName(12L, "user"));
+    ContactDetail contact = getStubbedContact(12L);
+    contact.setFirstName("Tony");
+    contact.setCreatedBy(new IdName(12L, "user"));
     List<Parameter> parameters = List.of(
-        new Parameter("leadFirstName", WebhookEntity.LEAD, LeadAttribute.FIRST_NAME.getName()),
-        new Parameter("leadCreator", WebhookEntity.LEAD, LeadAttribute.CREATED_BY.getName()));
+        new Parameter("contactFirstName", WebhookEntity.CONTACT, ContactAttribute.FIRST_NAME.getName()),
+        new Parameter("contactCreator", WebhookEntity.CONTACT, ContactAttribute.CREATED_BY.getName()));
     WebhookAction action = new WebhookAction("LeadCityWebhook", "some description", POST, NONE,
         "http://some-random-host:9000/get-webhook", parameters, null);
 
     //when
-    webhookService.execute(action, lead, EntityType.LEAD);
+    webhookService.execute(action, contact,EntityType.CONTACT);
 
     //then
     verify(exchangeFunction)
@@ -396,7 +354,7 @@ class WebhookExecutionServiceTest {
           assertThat(request.method()).isEqualTo(POST);
           assertThat(request.url().toString()).isEqualTo("http://some-random-host:9000/get-webhook");
           assertThat(request.body()).isNotNull();
-          var properties = Map.of("leadFirstName", "Tony", "leadCreator", "user");
+          var properties = Map.of("contactFirstName", "Tony", "contactCreator", "user");
           assertThat(request.body()).isEqualToComparingFieldByField(BodyInserters.fromValue(properties));
           return true;
         }));
@@ -422,41 +380,42 @@ class WebhookExecutionServiceTest {
     given(exchangeFunction.exchange(any())).willReturn(mockResponse);
 
     // when
-    LeadDetail lead = getStubbedLead(12L);
-    lead.setFirstName("Tony");
-    lead.setCreatedBy(new IdName(12L, "user"));
-    lead.setEmails(null);
-    lead.setPhoneNumbers(null);
+    ContactDetail contact = getStubbedContact(12L);
+    contact.setFirstName("Tony");
+    contact.setCreatedBy(new IdName(12L, "user"));
+    contact.setEmails(null);
+    contact.setPhoneNumbers(null);
     List<Parameter> parameters = List.of(
-        new Parameter("leadFirstName", WebhookEntity.LEAD, LeadAttribute.FIRST_NAME.getName()),
-        new Parameter("leadEmails", WebhookEntity.LEAD, LeadAttribute.EMAILS.getName()),
-        new Parameter("leadPhones", WebhookEntity.LEAD, LeadAttribute.PHONE_NUMBERS.getName()),
-        new Parameter("leadProducts", WebhookEntity.LEAD, LeadAttribute.REQUIREMENT_PRODUCTS.getName()),
-        new Parameter("ownerPhones", WebhookEntity.LEAD_OWNER, UserAttribute.PHONE_NUMBERS.getName()));
+        new Parameter("contactFirstName", WebhookEntity.CONTACT, ContactAttribute.FIRST_NAME.getName()),
+        new Parameter("contactEmails", WebhookEntity.CONTACT, ContactAttribute.EMAILS.getName()),
+        new Parameter("contactPhones", WebhookEntity.CONTACT, ContactAttribute.PHONE_NUMBERS.getName()),
+        new Parameter("ownerPhones", WebhookEntity.CONTACT_OWNER, UserAttribute.PHONE_NUMBERS.getName()));
     WebhookAction action = new WebhookAction("OwnerWebhook", "some description", GET, NONE,
         "http://some-random-host:9000/get-webhook", parameters, null);
 
     //when
-    webhookService.execute(action, lead, EntityType.LEAD);
+    webhookService.execute(action, contact,EntityType.CONTACT);
 
     //then
     verify(exchangeFunction).exchange(argThat(request ->
         request.method().equals(GET) &&
             request.url().toString()
-                .equals("http://some-random-host:9000/get-webhook?leadFirstName=Tony")));
+                .equals("http://some-random-host:9000/get-webhook?contactFirstName=Tony")));
   }
 
   @NotNull
-  private LeadDetail getStubbedLead(long userId) {
-    var lead = new LeadDetail();
-    lead.setOwnerId(new IdName(userId, "user"));
-    lead.setCreatedBy(new IdName(userId, "user"));
-    lead.setUpdatedBy(new IdName(userId, "user"));
-    return lead;
+  private ContactDetail getStubbedContact(long userId) {
+    var contact = new ContactDetail();
+    contact.setOwnerId(new IdName(userId, "user"));
+    contact.setCreatedBy(new IdName(userId, "user"));
+    contact.setUpdatedBy(new IdName(userId, "user"));
+    return contact;
   }
 
   private String getResourceAsString(String path) throws IOException {
     var resource = resourceLoader.getResource(path);
     return FileUtils.readFileToString(resource.getFile(), "UTF-8");
   }
+
+
 }

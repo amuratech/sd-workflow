@@ -4,6 +4,7 @@ import static java.util.Objects.isNull;
 
 import com.kylas.sales.workflow.domain.processor.exception.WorkflowExecutionException;
 import com.kylas.sales.workflow.domain.workflow.EntityType;
+import com.kylas.sales.workflow.domain.workflow.action.webhook.attribute.AttributeFactory.ContactAttribute;
 import com.kylas.sales.workflow.domain.workflow.action.webhook.attribute.AttributeFactory.LeadAttribute;
 import com.kylas.sales.workflow.domain.workflow.action.webhook.attribute.AttributeFactory.UserAttribute;
 import com.kylas.sales.workflow.domain.workflow.action.webhook.attribute.AttributeFactory.WebhookEntity;
@@ -45,10 +46,7 @@ public class Parameter {
   }
 
   public String fetchPathToField() {
-    EntityAttribute[] values =
-        entity.getType().equals(EntityType.LEAD) ? LeadAttribute.values()
-            : entity.getType().equals(EntityType.USER) ? UserAttribute.values() :
-                entity.getType().equals(EntityType.TENANT) ? TenantAttribute.values() : null;
+    EntityAttribute[] values = entity.getEntityAttributes();
 
     return isNull(values) ? this.name
         : Arrays.stream(values)

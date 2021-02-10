@@ -1,6 +1,11 @@
 package com.kylas.sales.workflow;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.matching;
+import static com.github.tomakehurst.wiremock.client.WireMock.okForContentType;
+import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static org.mockito.BDDMockito.given;
+import static org.springframework.http.HttpHeaders.AUTHORIZATION;
 import static org.springframework.test.context.support.TestPropertySourceUtils.addInlinedPropertiesToEnvironment;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -42,6 +47,7 @@ import org.springframework.cloud.contract.wiremock.AutoConfigureWireMock;
 import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.http.MediaType;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.jdbc.Sql;
 import org.testcontainers.containers.RabbitMQContainer;
@@ -234,6 +240,128 @@ public class ContactWorkflowProcessorIntegrationTests {
       Assertions.assertThat(workflow302.getWorkflowExecutedEvent().getTriggerCount()).isEqualTo(1);
     }
   }
+
+  @Nested
+  @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
+  @AutoConfigureTestDatabase(replace = Replace.NONE)
+  @ContextConfiguration(initializers = {ContactWorkflowProcessorIntegrationTests.TestMqSetup.class, TestDatabaseInitializer.class})
+  @DisplayName("Tests that execute webhooks on Contact event")
+  class WebhookContactIntegrationTests {
+
+    @Test
+    @Sql("/test-scripts/create-webhook-workflow-for-contact.sql")
+    public void givenContactCreateEvent_usingMethodGET_shouldExecute()
+        throws IOException, InterruptedException {
+      // given
+      String authenticationToken = "some-token";
+      User aUser = UserStub.aUser(12L, 99L, true, true, true, true, true).withName("user 1");
+      given(authService.getLoggedInUser()).willReturn(aUser);
+      given(authService.getAuthenticationToken()).willReturn(authenticationToken);
+
+      stubFor(
+          get("/iam/v1/users/10")
+              .withHeader(AUTHORIZATION, matching("Bearer " + authenticationToken))
+              .willReturn(
+                  okForContentType(
+                      MediaType.APPLICATION_JSON_VALUE,
+                      getResourceAsString("/contracts/user/responses/user-details-by-id.json"))));
+
+      stubFor(
+          get("/iam/v1/tenants")
+              .withHeader(AUTHORIZATION, matching("Bearer " + authenticationToken))
+              .willReturn(
+                  okForContentType(
+                      MediaType.APPLICATION_JSON_VALUE,
+                      getResourceAsString("/contracts/user/responses/tenant-details.json"))));
+
+      String resourceAsString =
+          getResourceAsString("/contracts/mq/events/contact-created-v2-event.json");
+      ContactEvent contactEvent = objectMapper.readValue(resourceAsString, ContactEvent.class);
+      initializeRabbitMqListener(CONTACT_UPDATE_COMMAND_QUEUE, SALES_CONTACT_UPDATE_QUEUE);
+      // when
+      rabbitTemplate.convertAndSend(SALES_EXCHANGE, ContactEvent.getContactCreatedEventName(), contactEvent);
+      mockMqListener.latch.await(3, TimeUnit.SECONDS);
+      // then
+      Workflow workflow = workflowFacade.get(301);
+      Assertions.assertThat(workflow.getWorkflowExecutedEvent().getLastTriggeredAt()).isNotNull();
+      Assertions.assertThat(workflow.getWorkflowExecutedEvent().getTriggerCount()).isEqualTo(152);
+    }
+
+    @Test
+    @Sql("/test-scripts/create-post-webhook-workflow-for-contact.sql")
+    public void givenContactCreateEvent_usingMethodPOST_shouldExecute()
+        throws IOException, InterruptedException {
+      // given
+      String authenticationToken = "some-token";
+      User aUser = UserStub.aUser(12L, 99L, true, true, true, true, true).withName("user 1");
+      given(authService.getLoggedInUser()).willReturn(aUser);
+      given(authService.getAuthenticationToken()).willReturn(authenticationToken);
+
+      stubFor(
+          get("/iam/v1/users/10")
+              .withHeader(AUTHORIZATION, matching("Bearer " + authenticationToken))
+              .willReturn(
+                  okForContentType(
+                      MediaType.APPLICATION_JSON_VALUE,
+                      getResourceAsString("/contracts/user/responses/user-details-by-id.json"))));
+
+      stubFor(
+          get("/iam/v1/tenants")
+              .withHeader(AUTHORIZATION, matching("Bearer " + authenticationToken))
+              .willReturn(
+                  okForContentType(
+                      MediaType.APPLICATION_JSON_VALUE,
+                      getResourceAsString("/contracts/user/responses/tenant-details.json"))));
+
+      String resourceAsString =
+          getResourceAsString("/contracts/mq/events/contact-created-v2-event.json");
+      ContactEvent contactEvent = objectMapper.readValue(resourceAsString, ContactEvent.class);
+      initializeRabbitMqListener(CONTACT_UPDATE_COMMAND_QUEUE, SALES_CONTACT_UPDATE_QUEUE);
+      // when
+      rabbitTemplate.convertAndSend(SALES_EXCHANGE, ContactEvent.getContactCreatedEventName(), contactEvent);
+      mockMqListener.latch.await(3, TimeUnit.SECONDS);
+      // then
+      Workflow workflow = workflowFacade.get(301);
+      Assertions.assertThat(workflow.getWorkflowExecutedEvent().getTriggerCount()).isEqualTo(152);
+    }
+
+    @Test
+    @Sql("/test-scripts/create-put-webhook-workflow-for-contact.sql")
+    public void givenContactCreateEvent_usingMethodPUT_shouldExecute()
+        throws IOException, InterruptedException {
+      // given
+      String authenticationToken = "some-token";
+      User aUser = UserStub.aUser(12L, 99L, true, true, true, true, true).withName("user 1");
+      given(authService.getLoggedInUser()).willReturn(aUser);
+      given(authService.getAuthenticationToken()).willReturn(authenticationToken);
+
+      stubFor(
+          get("/iam/v1/users/10")
+              .willReturn(
+                  okForContentType(
+                      MediaType.APPLICATION_JSON_VALUE,
+                      getResourceAsString("/contracts/user/responses/user-details-by-id.json"))));
+
+      stubFor(
+          get("/iam/v1/tenants")
+              .willReturn(
+                  okForContentType(
+                      MediaType.APPLICATION_JSON_VALUE,
+                      getResourceAsString("/contracts/user/responses/tenant-details.json"))));
+
+      String resourceAsString =
+          getResourceAsString("/contracts/mq/events/contact-created-v2-event.json");
+      ContactEvent contactEvent = objectMapper.readValue(resourceAsString, ContactEvent.class);
+      initializeRabbitMqListener(CONTACT_UPDATE_COMMAND_QUEUE, SALES_CONTACT_UPDATE_QUEUE);
+      // when
+      rabbitTemplate.convertAndSend(SALES_EXCHANGE, ContactEvent.getContactCreatedEventName(), contactEvent);
+      mockMqListener.latch.await(3, TimeUnit.SECONDS);
+      // then
+      Workflow workflow = workflowFacade.get(301);
+      Assertions.assertThat(workflow.getWorkflowExecutedEvent().getTriggerCount()).isEqualTo(152);
+    }
+  }
+
 
   @Nested
   @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)

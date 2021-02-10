@@ -98,7 +98,7 @@ public class WorkflowProcessor {
 
     workflowActions.stream().filter(workflowAction -> workflowAction.getType().equals(ActionType.WEBHOOK))
         .map(workflowAction -> (WebhookAction) workflowAction).forEach(webhookAction ->
-        webhookService.execute(webhookAction, event.getEntity()));
+        webhookService.execute(webhookAction, event.getEntity(),event.getMetadata().getEntityType()));
 
     workflowActions.stream().filter(workflowAction -> workflowAction.getType().equals(ActionType.REASSIGN))
         .map(workflowAction -> (ReassignAction) workflowAction).findFirst().ifPresent(

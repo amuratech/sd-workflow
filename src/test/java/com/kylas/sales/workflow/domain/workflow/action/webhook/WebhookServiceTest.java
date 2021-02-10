@@ -12,9 +12,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kylas.sales.workflow.domain.processor.lead.IdName;
 import com.kylas.sales.workflow.domain.processor.lead.LeadDetail;
 import com.kylas.sales.workflow.domain.service.UserService;
+import com.kylas.sales.workflow.domain.workflow.EntityType;
 import com.kylas.sales.workflow.domain.workflow.action.webhook.attribute.Attribute;
 import com.kylas.sales.workflow.domain.workflow.action.webhook.attribute.AttributeFactory;
+import com.kylas.sales.workflow.domain.workflow.action.webhook.parameter.ContactParameterBuilder;
+import com.kylas.sales.workflow.domain.workflow.action.webhook.parameter.LeadParameterBuilder;
+import com.kylas.sales.workflow.domain.workflow.action.webhook.parameter.ParameterBuilder;
 import com.kylas.sales.workflow.security.AuthService;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -49,9 +54,12 @@ class WebhookServiceTest {
 
   @BeforeEach
   void init() {
+    List<ParameterBuilder> parameterBuilders = new ArrayList<>();
+    parameterBuilders.add(new LeadParameterBuilder(userService));
+    parameterBuilders.add(new ContactParameterBuilder(userService));
     WebClient webClient =
         WebClient.builder().exchangeFunction(exchangeFunction).build();
-    webhookService = new WebhookService(attributeFactory, userService, authService, webClient, cryptoService, objectMapper);
+    webhookService = new WebhookService(attributeFactory, authService, webClient, cryptoService, objectMapper, parameterBuilders);
   }
 
   @Test
@@ -68,12 +76,12 @@ class WebhookServiceTest {
     List<EntityConfig> configurations = webhookService.getConfigurations().collectList().block();
 
     //then
-    assertThat(configurations).isNotNull().hasSize(7);
+    assertThat(configurations).isNotNull().hasSize(8);
     assertThat(configurations.stream().map(EntityConfig::getEntityDisplayName))
-        .containsExactly("Custom Parameter", "Lead", "Contact", "Lead Owner", "Created By", "Updated By", "Tenant");
+        .containsExactly("Custom Parameter", "Lead", "Contact", "Contact Owner", "Lead Owner", "Created By", "Updated By", "Tenant");
 
     assertThat(configurations.stream().map(EntityConfig::getEntity))
-        .containsExactly("CUSTOM", "LEAD", "CONTACT", "LEAD_OWNER", "CREATED_BY", "UPDATED_BY", "TENANT");
+        .containsExactly("CUSTOM", "LEAD", "CONTACT", "CONTACT_OWNER", "LEAD_OWNER", "CREATED_BY", "UPDATED_BY", "TENANT");
 
     var leadConfig = configurations.stream()
         .filter(config -> config.getEntityDisplayName().equals("Lead")).findFirst();
@@ -108,6 +116,7 @@ class WebhookServiceTest {
   @Test
   public void webhookAction_withoutParameters_shouldBeExecuted() {
     //given
+
     given(authService.getAuthenticationToken())
         .willReturn("some-token");
     given(exchangeFunction.exchange(any())).willReturn(Mono.just(ClientResponse.create(HttpStatus.OK).build()));
@@ -122,7 +131,7 @@ class WebhookServiceTest {
 
     //when
     //then
-    assertDoesNotThrow(() -> webhookService.execute(action, lead));
+    assertDoesNotThrow(() -> webhookService.execute(action, lead, EntityType.LEAD));
   }
 
 }

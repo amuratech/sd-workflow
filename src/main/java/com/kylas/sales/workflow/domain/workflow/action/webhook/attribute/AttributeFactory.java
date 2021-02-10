@@ -74,16 +74,18 @@ public class AttributeFactory {
   @AllArgsConstructor
   @Getter
   public enum WebhookEntity {
-    CUSTOM("Custom Parameter", EntityType.CUSTOM),
-    LEAD("Lead", EntityType.LEAD),
-    CONTACT("Contact",EntityType.CONTACT),
-    LEAD_OWNER("Lead Owner", EntityType.USER),
-    CREATED_BY("Created By", EntityType.USER),
-    UPDATED_BY("Updated By", EntityType.USER),
-    TENANT("Tenant", EntityType.TENANT);
+    CUSTOM("Custom Parameter", EntityType.CUSTOM,null),
+    LEAD("Lead", EntityType.LEAD,LeadAttribute.values()),
+    CONTACT("Contact", EntityType.CONTACT,ContactAttribute.values()),
+    CONTACT_OWNER("Contact Owner", EntityType.USER,UserAttribute.values()),
+    LEAD_OWNER("Lead Owner", EntityType.USER,UserAttribute.values()),
+    CREATED_BY("Created By", EntityType.USER,UserAttribute.values()),
+    UPDATED_BY("Updated By", EntityType.USER,UserAttribute.values()),
+    TENANT("Tenant", EntityType.TENANT,TenantAttribute.values());
 
     private final String displayName;
     private final EntityType type;
+    private final EntityAttribute[] entityAttributes;
   }
 
   @AllArgsConstructor

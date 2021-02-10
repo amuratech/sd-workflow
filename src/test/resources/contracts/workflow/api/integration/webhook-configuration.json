@@ -257,6 +257,64 @@
     ]
   },
   {
+    "entity": "CONTACT_OWNER",
+    "entityDisplayName": "Contact Owner",
+    "fields": [
+      {
+        "name": "salutation",
+        "displayName": "Salutation"
+      },
+      {
+        "name": "firstName",
+        "displayName": "First Name"
+      },
+      {
+        "name": "lastName",
+        "displayName": "Last Name"
+      },
+      {
+        "name": "email",
+        "displayName": "Email"
+      },
+      {
+        "name": "phoneNumbers",
+        "displayName": "Phone Numbers"
+      },
+      {
+        "name": "designation",
+        "displayName": "Designation"
+      },
+      {
+        "name": "department",
+        "displayName": "Department"
+      },
+      {
+        "name": "currency",
+        "displayName": "Currency"
+      },
+      {
+        "name": "timezone",
+        "displayName": "Timezone"
+      },
+      {
+        "name": "signature",
+        "displayName": "Signature"
+      },
+      {
+        "name": "language",
+        "displayName": "Language"
+      },
+      {
+        "name": "createdBy",
+        "displayName": "Created By"
+      },
+      {
+        "name": "updatedBy",
+        "displayName": "Updated By"
+      }
+    ]
+  },
+  {
     "entity": "LEAD_OWNER",
     "entityDisplayName": "Lead Owner",
     "fields": [
