@@ -1,0 +1,56 @@
+{
+  "id": 301,
+  "name": "Workflow 1",
+  "description": "Workflow Description",
+  "entityType": "DEAL",
+  "trigger": {
+    "name": "EVENT",
+    "triggerFrequency": "UPDATED"
+  },
+  "condition": {
+    "conditionType": "FOR_ALL"
+  },
+  "actions": [
+    {
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "salutation",
+        "value": 1319,
+        "valueType": "PLAIN"
+      }
+    },
+    {
+      "type": "REASSIGN",
+      "payload": {
+        "id": 20003,
+        "name": "Tony Stark"
+      }
+    },
+    {
+      "type": "CREATE_TASK",
+      "payload": {
+        "name": "new task",
+        "description": "new task description",
+        "priority": 11,
+        "outcome": "contacted",
+        "type": 12,
+        "status": 13,
+        "assignedTo": 5,
+        "dueDate": {
+          "days": 4,
+          "hours": 3
+        }
+      }
+    }
+  ],
+  "createdBy": {
+    "id": 12,
+    "name": "Steve"
+  },
+  "updatedBy": {
+    "id": 12,
+    "name": "Steve"
+  },
+  "triggerCount": 0,
+  "active": true
+}

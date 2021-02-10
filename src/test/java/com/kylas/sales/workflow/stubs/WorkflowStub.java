@@ -140,7 +140,7 @@ public class WorkflowStub {
       ConditionType conditionType,
       ActionType actionType,
       String propertyName,
-      String propertyValue,
+      Object propertyValue,
       ValueType propertyValueType,
       boolean canCreate, boolean canRead, User createdBy, User updatedBy, Date createdAndUpdatedAt
   ) {

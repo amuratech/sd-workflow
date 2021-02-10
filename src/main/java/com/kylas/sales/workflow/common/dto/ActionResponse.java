@@ -25,7 +25,8 @@ public class ActionResponse {
   @JsonSubTypes({
       @JsonSubTypes.Type(value = ActionDetail.EditPropertyAction.class, name = "EDIT_PROPERTY"),
       @JsonSubTypes.Type(value = ActionDetail.WebhookAction.class, name = "WEBHOOK"),
-      @JsonSubTypes.Type(value = ActionDetail.ReassignAction.class, name = "REASSIGN")
+      @JsonSubTypes.Type(value = ActionDetail.ReassignAction.class, name = "REASSIGN"),
+      @JsonSubTypes.Type(value = ActionDetail.CreateTaskAction.class, name = "CREATE_TASK")
   })
   private ActionDetail payload;
 

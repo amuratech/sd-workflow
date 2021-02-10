@@ -1,6 +1,7 @@
 package com.kylas.sales.workflow.common.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.kylas.sales.workflow.domain.workflow.action.task.DueDate;
 import com.kylas.sales.workflow.domain.workflow.action.webhook.Parameter;
 import java.util.List;
 import lombok.AllArgsConstructor;
@@ -48,5 +49,21 @@ public interface ActionDetail {
 
     private final Long id;
     private final String name;
+  }
+
+  @Getter
+  @JsonIgnoreProperties(ignoreUnknown = true)
+  @AllArgsConstructor
+  class CreateTaskAction implements ActionDetail {
+
+    private final String name;
+    private final String description;
+    private final Long priority;
+    private final String outcome;
+    private final Long type;
+    private final Long status;
+    private final Long assignedTo;
+    private final DueDate dueDate;
+
   }
 }

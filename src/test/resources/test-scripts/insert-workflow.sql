@@ -2,6 +2,7 @@ DELETE FROM parameter;
 DELETE FROM webhook_action;
 DELETE FROM reassign_action;
 DELETE FROM edit_property_action;
+DELETE FROM create_task_action;
 DELETE FROM workflow_executed_event;
 DELETE FROM abstract_workflow_action;
 DELETE FROM workflow_condition;
@@ -65,6 +66,9 @@ VALUES ('a0eebc55-9c0b-4ef8-bb6d-6bb9bd380a11', 301, 'firstName', 'Tony 301','PL
 ('f0eebc55-9c0b-4ef8-bb6d-6bb9bd380a11', 305, 'product', '{"id":26,"name":"Marketing Service"}','OBJECT'),
 ('f0eebc55-9c0b-4ef8-bb6d-6bb9bd380a13', 305, 'company', '{"id":26,"name":"Marketing Service"}','OBJECT');
 
+INSERT INTO create_task_action(id, workflow_id, name, description, priority, outcome, type, status, assigned_to, due_days, due_hours)
+VALUES ('a0eebc55-9c0b-4ef8-bb6d-6bb9bd380a11', 301, 'new task', 'new task desc', 2, 'contacted', 3, 4, 5, 4, 2),
+('b0eebc55-9c0b-4ef8-bb6d-6bb9bd380a11', 305, 'new task', 'new task desc', 2, 'contacted', 3, 4, 5, 4, 2);
 
 INSERT INTO workflow_executed_event(id, workflow_id, last_triggered_at, trigger_count)
 OVERRIDING SYSTEM VALUE VALUES

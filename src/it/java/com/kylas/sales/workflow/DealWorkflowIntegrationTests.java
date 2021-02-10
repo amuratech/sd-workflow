@@ -158,6 +158,100 @@ public class DealWorkflowIntegrationTests {
         .verifyComplete();
   }
 
+  @Test
+  public void givenDealWorkflowRequest_withCreateTaskAction_shouldCreate() throws IOException {
+    // given
+    stubFor(
+        get("/iam/v1/users/12")
+            .withHeader(AUTHORIZATION, matching("Bearer " + authenticationToken))
+            .willReturn(
+                aResponse()
+                    .withHeader("Content-Type", "application/json")
+                    .withStatus(200)
+                    .withBody(
+                        getResourceAsString("/contracts/user/responses/user-details-by-id.json"))));
+    var workflowRequest =
+        getResourceAsString("/contracts/workflow/api/task/deal-create-workflow-with-create-task-action-request.json");
+    // when
+    var workflowResponse =
+        buildWebClient()
+            .post()
+            .uri("/v1/workflows")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(workflowRequest)
+            .retrieve()
+            .bodyToMono(String.class);
+    // then
+    var expectedResponse =
+        getResourceAsString("/contracts/workflow/api/create-workflow-response.json");
+    StepVerifier.create(workflowResponse)
+        .assertNext(
+            json -> {
+              try {
+                WorkflowSummary workflowSummary = objectMapper.readValue(json, WorkflowSummary.class);
+                Assertions.assertThat(workflowSummary.getId()).isGreaterThan(0);
+              } catch (IOException e) {
+                fail(e.getMessage());
+              }
+            })
+        .verifyComplete();
+  }
+
+  @Test
+  @Sql("/test-scripts/integration/insert-deal-workflow-for-integration-test.sql")
+  public void givenDealWorkflowUpdateRequest_withNewTaskAction_shouldUpdateWorkflow() throws IOException {
+
+    stubFor(
+        get("/iam/v1/users/12")
+            .withHeader(AUTHORIZATION, matching("Bearer " + authenticationToken))
+            .willReturn(
+                aResponse()
+                    .withHeader(CONTENT_TYPE, APPLICATION_JSON_VALUE)
+                    .withStatus(200)
+                    .withBody(
+                        getResourceAsString("/contracts/user/responses/user-details-by-id.json"))));
+
+    stubFor(
+        get("/iam/v1/users/20003")
+            .withHeader(AUTHORIZATION, matching("Bearer " + authenticationToken))
+            .willReturn(
+                aResponse()
+                    .withHeader(CONTENT_TYPE, APPLICATION_JSON_VALUE)
+                    .withStatus(200)
+                    .withBody(
+                        getResourceAsString("/contracts/user/responses/user-details-by-id.json"))));
+
+    var workflowRequest =
+        getResourceAsString("/contracts/workflow/api/task/deal-update-workflow-with-create-task-action-request.json");
+    // when
+    var workflowResponse =
+        buildWebClient()
+            .put()
+            .uri("/v1/workflows/301")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(workflowRequest)
+            .retrieve()
+            .bodyToMono(String.class);
+    // then
+    var expectedResponse =
+        getResourceAsString("/contracts/workflow/api/task/deal-update-workflow-with-create-task-action-response.json");
+    StepVerifier.create(workflowResponse)
+        .assertNext(
+            json -> {
+              try {
+                JSONAssert.assertEquals(
+                    expectedResponse,
+                    json,
+                    new CustomComparator(
+                        JSONCompareMode.STRICT,
+                        getCustomizationsToBeIgnored()));
+              } catch (JSONException e) {
+                fail(e.getMessage());
+              }
+            })
+        .verifyComplete();
+  }
+
   private Customization[] getCustomizationsToBeIgnored() {
     List<Customization> list = new ArrayList<>();
     range(0, 9).forEach(element -> {

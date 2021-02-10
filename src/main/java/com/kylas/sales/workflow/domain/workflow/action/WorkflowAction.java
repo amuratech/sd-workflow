@@ -3,6 +3,7 @@ package com.kylas.sales.workflow.domain.workflow.action;
 import com.kylas.sales.workflow.common.dto.ActionResponse;
 import com.kylas.sales.workflow.domain.workflow.Workflow;
 import com.kylas.sales.workflow.domain.workflow.action.reassign.ReassignAction;
+import com.kylas.sales.workflow.domain.workflow.action.task.CreateTaskAction;
 import com.kylas.sales.workflow.domain.workflow.action.webhook.WebhookAction;
 
 public interface WorkflowAction {
@@ -41,6 +42,17 @@ public interface WorkflowAction {
       @Override
       public ActionResponse toActionResponse(AbstractWorkflowAction workflowAction) {
         return ReassignAction.toActionResponse((ReassignAction) workflowAction);
+      }
+    },
+    CREATE_TASK {
+      @Override
+      public AbstractWorkflowAction create(ActionResponse action) {
+        return CreateTaskAction.createNew(action);
+      }
+
+      @Override
+      public ActionResponse toActionResponse(AbstractWorkflowAction workflowAction) {
+        return CreateTaskAction.toActionResponse((CreateTaskAction) workflowAction);
       }
     };
 

@@ -1,0 +1,50 @@
+{
+  "name": "Workflow 1",
+  "description": "Workflow Description",
+  "entityType": "CONTACT",
+  "trigger": {
+    "name": "EVENT",
+    "triggerFrequency": "UPDATED",
+    "payload": {
+    }
+  },
+  "condition": {
+    "conditionType": "FOR_ALL"
+  },
+  "actions": [
+    {
+      "id": "08518b20-23f9-11eb-adc1-0242ac120003",
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "salutation",
+        "value": 1319,
+        "valueType": "PLAIN"
+      }
+    },
+    {
+      "id": "08518b20-23f9-11eb-adc1-0242ac120004",
+      "type": "REASSIGN",
+      "payload": {
+        "id": 20003,
+        "name": "Tony Stark"
+      }
+    },
+    {
+      "id": "08518b20-23f9-11eb-adc1-0242ac120005",
+      "type": "CREATE_TASK",
+      "payload": {
+        "name": "new task",
+        "description": "new task description",
+        "priority": 11,
+        "outcome": "contacted",
+        "type": 12,
+        "status": 13,
+        "assignedTo": 5,
+        "dueDate": {
+          "days": 4,
+          "hours": 3
+        }
+      }
+    }
+  ]
+}

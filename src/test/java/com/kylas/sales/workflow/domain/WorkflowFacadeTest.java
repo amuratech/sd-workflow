@@ -1,7 +1,14 @@
 package com.kylas.sales.workflow.domain;
 
 import static com.kylas.sales.workflow.common.dto.ActionDetail.EditPropertyAction.ValueType.PLAIN;
+import static com.kylas.sales.workflow.domain.workflow.ConditionType.FOR_ALL;
+import static com.kylas.sales.workflow.domain.workflow.EntityType.CONTACT;
+import static com.kylas.sales.workflow.domain.workflow.EntityType.DEAL;
+import static com.kylas.sales.workflow.domain.workflow.EntityType.LEAD;
 import static com.kylas.sales.workflow.domain.workflow.TriggerFrequency.CREATED;
+import static com.kylas.sales.workflow.domain.workflow.TriggerFrequency.UPDATED;
+import static com.kylas.sales.workflow.domain.workflow.TriggerType.EVENT;
+import static com.kylas.sales.workflow.domain.workflow.action.WorkflowAction.ActionType.CREATE_TASK;
 import static com.kylas.sales.workflow.domain.workflow.action.WorkflowAction.ActionType.EDIT_PROPERTY;
 import static com.kylas.sales.workflow.domain.workflow.action.WorkflowAction.ActionType.REASSIGN;
 import static com.kylas.sales.workflow.domain.workflow.action.WorkflowAction.ActionType.WEBHOOK;
@@ -12,6 +19,7 @@ import static org.mockito.BDDMockito.given;
 
 import com.kylas.sales.workflow.api.request.Condition.ExpressionElement;
 import com.kylas.sales.workflow.common.dto.ActionDetail;
+import com.kylas.sales.workflow.common.dto.ActionDetail.CreateTaskAction;
 import com.kylas.sales.workflow.common.dto.ActionDetail.WebhookAction;
 import com.kylas.sales.workflow.common.dto.ActionDetail.WebhookAction.AuthorizationType;
 import com.kylas.sales.workflow.common.dto.ActionResponse;
@@ -19,22 +27,24 @@ import com.kylas.sales.workflow.common.dto.condition.Operator;
 import com.kylas.sales.workflow.config.TestDatabaseInitializer;
 import com.kylas.sales.workflow.domain.exception.InsufficientPrivilegeException;
 import com.kylas.sales.workflow.domain.exception.InvalidActionException;
+import com.kylas.sales.workflow.domain.exception.InvalidWorkflowRequestException;
 import com.kylas.sales.workflow.domain.exception.WorkflowNotFoundException;
 import com.kylas.sales.workflow.domain.service.UserService;
 import com.kylas.sales.workflow.domain.user.User;
 import com.kylas.sales.workflow.domain.workflow.ConditionType;
 import com.kylas.sales.workflow.domain.workflow.EntityType;
-import com.kylas.sales.workflow.domain.workflow.TriggerFrequency;
 import com.kylas.sales.workflow.domain.workflow.TriggerType;
 import com.kylas.sales.workflow.domain.workflow.Workflow;
 import com.kylas.sales.workflow.domain.workflow.WorkflowCondition;
 import com.kylas.sales.workflow.domain.workflow.action.EditPropertyAction;
 import com.kylas.sales.workflow.domain.workflow.action.reassign.ReassignAction;
+import com.kylas.sales.workflow.domain.workflow.action.task.DueDate;
 import com.kylas.sales.workflow.domain.workflow.action.webhook.Parameter;
 import com.kylas.sales.workflow.domain.workflow.action.webhook.attribute.AttributeFactory.WebhookEntity;
 import com.kylas.sales.workflow.security.AuthService;
 import com.kylas.sales.workflow.stubs.UserStub;
 import com.kylas.sales.workflow.stubs.WorkflowStub;
+import java.io.IOException;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
@@ -115,6 +125,205 @@ class WorkflowFacadeTest {
         })
         .verifyComplete();
   }
+
+  @Transactional
+  @Test
+  @Sql("/test-scripts/insert-users.sql")
+  public void givenLeadWorkflowRequest_withCreateTaskAction_shouldCreateIt() {
+    //given
+    User aUser = UserStub.aUser(11L, 99L, true, true, true, true, true)
+        .withName("user 1");
+    given(authService.getLoggedInUser()).willReturn(aUser);
+
+    given(userService.getUserDetails(11L, authService.getAuthenticationToken()))
+        .willReturn(
+            Mono.just(
+                aUser));
+    var actions = Set.of(new ActionResponse(CREATE_TASK,
+        new CreateTaskAction("new Task", "new task description", 1L, "contacted", 2L, 3L, 4L,
+            new DueDate(12, 2))));
+
+    var workflowRequest = WorkflowStub.aWorkflowRequestWithActions("Workflow 1", "Workflow 1", LEAD, EVENT, CREATED, FOR_ALL, actions);
+    //when
+    var workflowMono = workflowFacade.create(workflowRequest);
+    //then
+    StepVerifier.create(workflowMono)
+        .expectNextMatches(workflow -> {
+          assertThat(workflow.getId())
+              .isNotNull()
+              .isGreaterThan(0L);
+
+          assertThat(workflow.getWorkflowTrigger().getTriggerFrequency()).isEqualTo(CREATED);
+          assertThat(workflow.getWorkflowTrigger().getTriggerType()).isEqualTo(TriggerType.EVENT);
+
+          assertThat(workflow.getWorkflowActions().size()).isEqualTo(1);
+          assertThat(workflow.getEntityType()).isEqualTo(LEAD);
+          com.kylas.sales.workflow.domain.workflow.action.task.CreateTaskAction createTaskAction = (com.kylas.sales.workflow.domain.workflow.action.task.CreateTaskAction) workflow
+              .getWorkflowActions().iterator().next();
+          assertThat(createTaskAction.getType()).isEqualTo(CREATE_TASK);
+          assertThat(createTaskAction.getName()).isEqualTo("new Task");
+          assertThat(createTaskAction.getDescription()).isEqualTo("new task description");
+          assertThat(createTaskAction.getPriority()).isEqualTo(1L);
+          assertThat(createTaskAction.getOutcome()).isEqualTo("contacted");
+          assertThat(createTaskAction.getTaskType()).isEqualTo(2L);
+          assertThat(createTaskAction.getStatus()).isEqualTo(3L);
+          assertThat(createTaskAction.getAssignedTo()).isEqualTo(4L);
+          assertThat(createTaskAction.getDueDate().getDays()).isEqualTo(12);
+          assertThat(createTaskAction.getDueDate().getHours()).isEqualTo(2);
+
+          assertThat(workflow.getWorkflowCondition().getType()).isEqualTo(ConditionType.FOR_ALL);
+
+          assertThat(workflow.getWorkflowExecutedEvent().getLastTriggeredAt()).isNull();
+          assertThat(workflow.getWorkflowExecutedEvent().getId()).isGreaterThan(0);
+          assertThat(workflow.getWorkflowExecutedEvent().getTriggerCount()).isEqualTo(0);
+
+          assertThat(workflow.isActive()).isTrue();
+          return true;
+        })
+        .verifyComplete();
+  }
+
+
+  @Transactional
+  @Test
+  @Sql("/test-scripts/insert-users.sql")
+  public void givenDealWorkflowRequest_withCreateTaskAction_shouldCreateIt() {
+    //given
+    User aUser = UserStub.aUser(11L, 99L, true, true, true, true, true)
+        .withName("user 1");
+    given(authService.getLoggedInUser()).willReturn(aUser);
+
+    given(userService.getUserDetails(11L, authService.getAuthenticationToken()))
+        .willReturn(
+            Mono.just(
+                aUser));
+    var actions = Set.of(new ActionResponse(CREATE_TASK,
+        new CreateTaskAction("new Task", "new task description", 1L, "contacted", 2L, 3L, 4L,
+            new DueDate(12, 2))));
+
+    var workflowRequest = WorkflowStub.aWorkflowRequestWithActions("Workflow 1", "Workflow 1", DEAL, EVENT, CREATED, FOR_ALL, actions);
+    //when
+    var workflowMono = workflowFacade.create(workflowRequest);
+    //then
+    StepVerifier.create(workflowMono)
+        .expectNextMatches(workflow -> {
+          assertThat(workflow.getId())
+              .isNotNull()
+              .isGreaterThan(0L);
+
+          assertThat(workflow.getWorkflowTrigger().getTriggerFrequency()).isEqualTo(CREATED);
+          assertThat(workflow.getWorkflowTrigger().getTriggerType()).isEqualTo(TriggerType.EVENT);
+
+          assertThat(workflow.getWorkflowActions().size()).isEqualTo(1);
+          assertThat(workflow.getEntityType()).isEqualTo(DEAL);
+          com.kylas.sales.workflow.domain.workflow.action.task.CreateTaskAction createTaskAction = (com.kylas.sales.workflow.domain.workflow.action.task.CreateTaskAction) workflow
+              .getWorkflowActions().iterator().next();
+          assertThat(createTaskAction.getType()).isEqualTo(CREATE_TASK);
+          assertThat(createTaskAction.getName()).isEqualTo("new Task");
+          assertThat(createTaskAction.getDescription()).isEqualTo("new task description");
+          assertThat(createTaskAction.getPriority()).isEqualTo(1L);
+          assertThat(createTaskAction.getOutcome()).isEqualTo("contacted");
+          assertThat(createTaskAction.getTaskType()).isEqualTo(2L);
+          assertThat(createTaskAction.getStatus()).isEqualTo(3L);
+          assertThat(createTaskAction.getAssignedTo()).isEqualTo(4L);
+          assertThat(createTaskAction.getDueDate().getDays()).isEqualTo(12);
+          assertThat(createTaskAction.getDueDate().getHours()).isEqualTo(2);
+
+          assertThat(workflow.getWorkflowCondition().getType()).isEqualTo(ConditionType.FOR_ALL);
+
+          assertThat(workflow.getWorkflowExecutedEvent().getLastTriggeredAt()).isNull();
+          assertThat(workflow.getWorkflowExecutedEvent().getId()).isGreaterThan(0);
+          assertThat(workflow.getWorkflowExecutedEvent().getTriggerCount()).isEqualTo(0);
+
+          assertThat(workflow.isActive()).isTrue();
+          return true;
+        })
+        .verifyComplete();
+  }
+
+  @Transactional
+  @Test
+  @Sql("/test-scripts/insert-users.sql")
+  public void givenContactWorkflowRequest_withCreateTaskAction_shouldCreateIt() {
+    //given
+    User aUser = UserStub.aUser(11L, 99L, true, true, true, true, true)
+        .withName("user 1");
+    given(authService.getLoggedInUser()).willReturn(aUser);
+
+    given(userService.getUserDetails(11L, authService.getAuthenticationToken()))
+        .willReturn(
+            Mono.just(
+                aUser));
+    var actions = Set.of(new ActionResponse(CREATE_TASK,
+        new CreateTaskAction("new Task", "new task description", 1L, "contacted", 2L, 3L, 4L,
+            new DueDate(12, 2))));
+
+    var workflowRequest = WorkflowStub.aWorkflowRequestWithActions("Workflow 1", "Workflow 1", CONTACT, EVENT, CREATED, FOR_ALL, actions);
+    //when
+    var workflowMono = workflowFacade.create(workflowRequest);
+    //then
+    StepVerifier.create(workflowMono)
+        .expectNextMatches(workflow -> {
+          assertThat(workflow.getId())
+              .isNotNull()
+              .isGreaterThan(0L);
+
+          assertThat(workflow.getWorkflowTrigger().getTriggerFrequency()).isEqualTo(CREATED);
+          assertThat(workflow.getWorkflowTrigger().getTriggerType()).isEqualTo(TriggerType.EVENT);
+
+          assertThat(workflow.getWorkflowActions().size()).isEqualTo(1);
+          assertThat(workflow.getEntityType()).isEqualTo(CONTACT);
+          com.kylas.sales.workflow.domain.workflow.action.task.CreateTaskAction createTaskAction = (com.kylas.sales.workflow.domain.workflow.action.task.CreateTaskAction) workflow
+              .getWorkflowActions().iterator().next();
+          assertThat(createTaskAction.getType()).isEqualTo(CREATE_TASK);
+          assertThat(createTaskAction.getName()).isEqualTo("new Task");
+          assertThat(createTaskAction.getDescription()).isEqualTo("new task description");
+          assertThat(createTaskAction.getPriority()).isEqualTo(1L);
+          assertThat(createTaskAction.getOutcome()).isEqualTo("contacted");
+          assertThat(createTaskAction.getTaskType()).isEqualTo(2L);
+          assertThat(createTaskAction.getStatus()).isEqualTo(3L);
+          assertThat(createTaskAction.getAssignedTo()).isEqualTo(4L);
+          assertThat(createTaskAction.getDueDate().getDays()).isEqualTo(12);
+          assertThat(createTaskAction.getDueDate().getHours()).isEqualTo(2);
+
+          assertThat(workflow.getWorkflowCondition().getType()).isEqualTo(ConditionType.FOR_ALL);
+
+          assertThat(workflow.getWorkflowExecutedEvent().getLastTriggeredAt()).isNull();
+          assertThat(workflow.getWorkflowExecutedEvent().getId()).isGreaterThan(0);
+          assertThat(workflow.getWorkflowExecutedEvent().getTriggerCount()).isEqualTo(0);
+
+          assertThat(workflow.isActive()).isTrue();
+          return true;
+        })
+        .verifyComplete();
+  }
+
+  @Transactional
+  @Test
+  @Sql("/test-scripts/insert-users.sql")
+  public void givenCreateWorkflowRequest_withCreateTaskActionAndInvalidPropertyValues_shouldThrow() throws IOException {
+    //given
+    User aUser = UserStub.aUser(11L, 99L, true, true, true, true, true)
+        .withName("user 1");
+    given(authService.getLoggedInUser()).willReturn(aUser);
+
+    given(userService.getUserDetails(11L, authService.getAuthenticationToken()))
+        .willReturn(
+            Mono.just(
+                aUser));
+    var actions = Set.of(new ActionResponse(CREATE_TASK,
+        new CreateTaskAction(null, "new task description", null, "contacted", null, null, null,
+            new DueDate(12, 2))));
+
+    var workflowRequest = WorkflowStub.aWorkflowRequestWithActions("Workflow 1", "Workflow 1", CONTACT, EVENT, CREATED, FOR_ALL, actions);
+    //when
+    //then
+    var workflowMono = workflowFacade.create(workflowRequest);
+    StepVerifier.create(workflowMono)
+        .expectError(InvalidWorkflowRequestException.class)
+        .verify();
+  }
+
 
   @Transactional
   @Test
@@ -289,6 +498,176 @@ class WorkflowFacadeTest {
         })
         .verifyComplete();
   }
+
+  @Transactional
+  @Test
+  @Sql("/test-scripts/insert-workflow.sql")
+  public void givenLeadWorkflowUpdateRequest_withCreateTaskAction_shouldUpdateIt() {
+    //given
+    User aUser = UserStub.aUser(11L, 99L, true, true, true, true, true)
+        .withName("user 1");
+    given(authService.getLoggedInUser()).willReturn(aUser);
+
+    given(userService.getUserDetails(11L, authService.getAuthenticationToken()))
+        .willReturn(
+            Mono.just(
+                aUser));
+    var actions = Set.of(new ActionResponse(CREATE_TASK,
+        new CreateTaskAction("new Task", "new task description", 1L, "contacted", 2L, 3L, 4L,
+            new DueDate(12, 2))));
+
+    var workflowRequest = WorkflowStub.aWorkflowRequestWithActions("Workflow 1", "Workflow 1", LEAD, EVENT, UPDATED, FOR_ALL, actions);
+    //when
+    var workflowMono = workflowFacade.update(301L, workflowRequest);
+    //then
+    StepVerifier.create(workflowMono)
+        .expectNextMatches(workflow -> {
+          assertThat(workflow.getId())
+              .isNotNull()
+              .isGreaterThan(0L);
+
+          assertThat(workflow.getWorkflowTrigger().getTriggerFrequency()).isEqualTo(UPDATED);
+          assertThat(workflow.getWorkflowTrigger().getTriggerType()).isEqualTo(TriggerType.EVENT);
+
+          assertThat(workflow.getWorkflowActions().size()).isEqualTo(1);
+          com.kylas.sales.workflow.domain.workflow.action.task.CreateTaskAction createTaskAction = (com.kylas.sales.workflow.domain.workflow.action.task.CreateTaskAction) workflow
+              .getWorkflowActions().iterator().next();
+
+          assertThat(createTaskAction.getType()).isEqualTo(CREATE_TASK);
+          assertThat(createTaskAction.getName()).isEqualTo("new Task");
+          assertThat(createTaskAction.getDescription()).isEqualTo("new task description");
+          assertThat(createTaskAction.getPriority()).isEqualTo(1L);
+          assertThat(createTaskAction.getOutcome()).isEqualTo("contacted");
+          assertThat(createTaskAction.getTaskType()).isEqualTo(2L);
+          assertThat(createTaskAction.getStatus()).isEqualTo(3L);
+          assertThat(createTaskAction.getAssignedTo()).isEqualTo(4L);
+          assertThat(createTaskAction.getDueDate().getDays()).isEqualTo(12);
+          assertThat(createTaskAction.getDueDate().getHours()).isEqualTo(2);
+
+          assertThat(workflow.getWorkflowCondition().getType()).isEqualTo(ConditionType.FOR_ALL);
+
+          assertThat(workflow.getWorkflowExecutedEvent().getLastTriggeredAt()).isNull();
+          assertThat(workflow.getWorkflowExecutedEvent().getId()).isGreaterThan(0);
+
+          assertThat(workflow.isActive()).isTrue();
+          return true;
+        })
+        .verifyComplete();
+  }
+
+  @Transactional
+  @Test
+  @Sql("/test-scripts/insert-workflow.sql")
+  public void givenDealWorkflowUpdateRequest_withCreateTaskAction_shouldUpdateIt() {
+    //given
+    User aUser = UserStub.aUser(11L, 99L, true, true, true, true, true)
+        .withName("user 1");
+    given(authService.getLoggedInUser()).willReturn(aUser);
+
+    given(userService.getUserDetails(11L, authService.getAuthenticationToken()))
+        .willReturn(
+            Mono.just(
+                aUser));
+    String dueDate = "{\"days\":12,\"hours\":2}";
+    var actions = Set.of(new ActionResponse(CREATE_TASK,
+        new CreateTaskAction("new Task", "new task description", 1L, "contacted", 2L, 3L, 4L,
+            new DueDate(12, 2))));
+
+    var workflowRequest = WorkflowStub.aWorkflowRequestWithActions("Workflow 1", "Workflow 1", DEAL, EVENT, UPDATED, FOR_ALL, actions);
+    //when
+    var workflowMono = workflowFacade.update(305L, workflowRequest);
+    //then
+    StepVerifier.create(workflowMono)
+        .expectNextMatches(workflow -> {
+          assertThat(workflow.getId())
+              .isNotNull()
+              .isGreaterThan(0L);
+
+          assertThat(workflow.getWorkflowTrigger().getTriggerFrequency()).isEqualTo(UPDATED);
+          assertThat(workflow.getWorkflowTrigger().getTriggerType()).isEqualTo(TriggerType.EVENT);
+
+          assertThat(workflow.getWorkflowActions().size()).isEqualTo(1);
+          com.kylas.sales.workflow.domain.workflow.action.task.CreateTaskAction createTaskAction = (com.kylas.sales.workflow.domain.workflow.action.task.CreateTaskAction) workflow
+              .getWorkflowActions().iterator().next();
+
+          assertThat(createTaskAction.getType()).isEqualTo(CREATE_TASK);
+          assertThat(createTaskAction.getName()).isEqualTo("new Task");
+          assertThat(createTaskAction.getDescription()).isEqualTo("new task description");
+          assertThat(createTaskAction.getPriority()).isEqualTo(1L);
+          assertThat(createTaskAction.getOutcome()).isEqualTo("contacted");
+          assertThat(createTaskAction.getTaskType()).isEqualTo(2L);
+          assertThat(createTaskAction.getStatus()).isEqualTo(3L);
+          assertThat(createTaskAction.getAssignedTo()).isEqualTo(4L);
+          assertThat(createTaskAction.getDueDate().getDays()).isEqualTo(12);
+          assertThat(createTaskAction.getDueDate().getHours()).isEqualTo(2);
+
+          assertThat(workflow.getWorkflowCondition().getType()).isEqualTo(ConditionType.FOR_ALL);
+
+          assertThat(workflow.getWorkflowExecutedEvent().getLastTriggeredAt()).isNull();
+          assertThat(workflow.getWorkflowExecutedEvent().getId()).isGreaterThan(0);
+
+          assertThat(workflow.isActive()).isTrue();
+          return true;
+        })
+        .verifyComplete();
+  }
+
+  @Transactional
+  @Test
+  @Sql("/test-scripts/insert-create-contact-workflow.sql")
+  public void givenContactWorkflowUpdateRequest_withCreateTaskAction_shouldUpdateIt() {
+    //given
+    User aUser = UserStub.aUser(11L, 99L, true, true, true, true, true)
+        .withName("user 1");
+    given(authService.getLoggedInUser()).willReturn(aUser);
+
+    given(userService.getUserDetails(11L, authService.getAuthenticationToken()))
+        .willReturn(
+            Mono.just(
+                aUser));
+    var actions = Set.of(new ActionResponse(CREATE_TASK,
+        new CreateTaskAction("new Task", "new task description", 1L, "contacted", 2L, 3L, 4L,
+            new DueDate(12, 2))));
+
+    var workflowRequest = WorkflowStub.aWorkflowRequestWithActions("Workflow 1", "Workflow 1", CONTACT, EVENT, UPDATED, FOR_ALL, actions);
+    //when
+    var workflowMono = workflowFacade.update(301L, workflowRequest);
+    //then
+    StepVerifier.create(workflowMono)
+        .expectNextMatches(workflow -> {
+          assertThat(workflow.getId())
+              .isNotNull()
+              .isGreaterThan(0L);
+
+          assertThat(workflow.getWorkflowTrigger().getTriggerFrequency()).isEqualTo(UPDATED);
+          assertThat(workflow.getWorkflowTrigger().getTriggerType()).isEqualTo(TriggerType.EVENT);
+
+          assertThat(workflow.getWorkflowActions().size()).isEqualTo(1);
+          com.kylas.sales.workflow.domain.workflow.action.task.CreateTaskAction createTaskAction = (com.kylas.sales.workflow.domain.workflow.action.task.CreateTaskAction) workflow
+              .getWorkflowActions().iterator().next();
+
+          assertThat(createTaskAction.getType()).isEqualTo(CREATE_TASK);
+          assertThat(createTaskAction.getName()).isEqualTo("new Task");
+          assertThat(createTaskAction.getDescription()).isEqualTo("new task description");
+          assertThat(createTaskAction.getPriority()).isEqualTo(1L);
+          assertThat(createTaskAction.getOutcome()).isEqualTo("contacted");
+          assertThat(createTaskAction.getTaskType()).isEqualTo(2L);
+          assertThat(createTaskAction.getStatus()).isEqualTo(3L);
+          assertThat(createTaskAction.getAssignedTo()).isEqualTo(4L);
+          assertThat(createTaskAction.getDueDate().getDays()).isEqualTo(12);
+          assertThat(createTaskAction.getDueDate().getHours()).isEqualTo(2);
+
+          assertThat(workflow.getWorkflowCondition().getType()).isEqualTo(ConditionType.FOR_ALL);
+
+          assertThat(workflow.getWorkflowExecutedEvent().getLastTriggeredAt()).isNull();
+          assertThat(workflow.getWorkflowExecutedEvent().getId()).isGreaterThan(0);
+
+          assertThat(workflow.isActive()).isTrue();
+          return true;
+        })
+        .verifyComplete();
+  }
+
 
   @Transactional
   @Test
@@ -973,7 +1352,7 @@ class WorkflowFacadeTest {
         .withName("user 1");
     given(authService.getLoggedInUser()).willReturn(aUser);
     //when
-    List<Workflow> workflows = workflowFacade.findActiveBy(tenantId, EntityType.LEAD, TriggerFrequency.UPDATED);
+    List<Workflow> workflows = workflowFacade.findActiveBy(tenantId, EntityType.LEAD, UPDATED);
     //then
 
     assertThat(workflows.size()).isEqualTo(1);

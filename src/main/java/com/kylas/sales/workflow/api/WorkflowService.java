@@ -108,7 +108,7 @@ public class WorkflowService {
         .collect(toList());
 
     return Flux.fromIterable(actionResponses)
-        .flatMap(actionResponse -> getResolvedAction(actionResponse, authenticationToken))
+        .flatMap(actionResponse -> getResolvedAction(actionResponse, authenticationToken, workflow.getEntityType()))
         .collectList()
         .zipWith(conditionMono)
         .map(objects -> new WorkflowDetail(
@@ -118,7 +118,7 @@ public class WorkflowService {
             executedEvent.getTriggerCount(), workflow.getAllowedActions(), workflow.isActive()));
   }
 
-  private Mono<ActionResponse> getResolvedAction(ActionResponse action, String authenticationToken) {
+  private Mono<ActionResponse> getResolvedAction(ActionResponse action, String authenticationToken, EntityType entityType) {
     if (action.getType().equals(ActionType.REASSIGN)) {
       var actionDetail = (ReassignAction) action.getPayload();
       return valueResolver
@@ -129,7 +129,7 @@ public class WorkflowService {
                   action.getType(),
                   new ReassignAction(actionDetail.getId(), name)));
     }
-    if (action.getType().equals(ActionType.EDIT_PROPERTY)) {
+    if (action.getType().equals(ActionType.EDIT_PROPERTY) && entityType.equals(EntityType.LEAD)) {
       var actionDetail = (EditPropertyAction) action.getPayload();
       if (actionDetail.getName().equals(LeadAttribute.PIPELINE.getName())) {
         return valueResolver

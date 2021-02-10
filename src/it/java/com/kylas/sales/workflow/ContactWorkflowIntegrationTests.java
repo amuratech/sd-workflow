@@ -163,6 +163,114 @@ public class ContactWorkflowIntegrationTests {
         .verifyComplete();
   }
 
+  @Test
+  public void givenContactWorkflowRequest_withCreateTaskAction_shouldCreate() throws IOException {
+    // given
+    stubFor(
+        get("/iam/v1/users/12")
+            .withHeader(AUTHORIZATION, matching("Bearer " + authenticationToken))
+            .willReturn(
+                aResponse()
+                    .withHeader("Content-Type", "application/json")
+                    .withStatus(200)
+                    .withBody(
+                        getResourceAsString("/contracts/user/responses/user-details-by-id.json"))));
+    var workflowRequest =
+        getResourceAsString("/contracts/workflow/api/task/contact-create-workflow-with-create-task-action-request.json");
+    // when
+    var workflowResponse =
+        buildWebClient()
+            .post()
+            .uri("/v1/workflows")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(workflowRequest)
+            .retrieve()
+            .bodyToMono(String.class);
+    // then
+    var expectedResponse =
+        getResourceAsString("/contracts/workflow/api/create-workflow-response.json");
+    StepVerifier.create(workflowResponse)
+        .assertNext(
+            json -> {
+              try {
+                WorkflowSummary workflowSummary = objectMapper.readValue(json, WorkflowSummary.class);
+                Assertions.assertThat(workflowSummary.getId()).isGreaterThan(0);
+              } catch (IOException e) {
+                fail(e.getMessage());
+              }
+            })
+        .verifyComplete();
+  }
+
+  @Test
+  @Sql("/test-scripts/integration/insert-contact-workflow-for-integration-test.sql")
+  public void givenContactWorkflowUpdateRequest_withNewTaskAction_shouldUpdateWorkflow() throws IOException {
+    // given
+    stubFor(
+        get("/iam/v1/users/12")
+            .withHeader(AUTHORIZATION, matching("Bearer " + authenticationToken))
+            .willReturn(
+                aResponse()
+                    .withHeader("Content-Type", "application/json")
+                    .withStatus(200)
+                    .withBody(
+                        getResourceAsString("/contracts/user/responses/user-details-by-id.json"))));
+    stubFor(
+        get("/iam/v1/users/20003")
+            .withHeader(AUTHORIZATION, matching("Bearer " + authenticationToken))
+            .willReturn(
+                aResponse()
+                    .withHeader(CONTENT_TYPE, APPLICATION_JSON_VALUE)
+                    .withStatus(200)
+                    .withBody(
+                        getResourceAsString("/contracts/user/responses/user-details-by-id.json"))));
+
+    var workflowRequest =
+        getResourceAsString("/contracts/workflow/api/task/contact-update-workflow-with-create-task-action-request.json");
+    // when
+    var workflowResponse =
+        buildWebClient()
+            .put()
+            .uri("/v1/workflows/301")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(workflowRequest)
+            .retrieve()
+            .bodyToMono(String.class);
+    // then
+    var expectedResponse =
+        getResourceAsString("/contracts/workflow/api/task/contact-update-workflow-with-create-task-action-response.json");
+    StepVerifier.create(workflowResponse)
+        .assertNext(
+            json -> {
+              try {
+                JSONAssert.assertEquals(
+                    expectedResponse,
+                    json,
+                    new CustomComparator(
+                        JSONCompareMode.STRICT,
+                        new Customization("actions[0].id", (o1, o2) -> true),
+                        new Customization("actions[0].type", (o1, o2) -> true),
+                        new Customization("actions[1].id", (o1, o2) -> true),
+                        new Customization("actions[2].id", (o1, o2) -> true),
+                        new Customization("actions[3].id", (o1, o2) -> true),
+                        new Customization("actions[0].payload", (o1, o2) -> true),
+                        new Customization("actions[1].payload", (o1, o2) -> true),
+                        new Customization("actions[2].payload", (o1, o2) -> true),
+                        new Customization("actions[3].payload", (o1, o2) -> true),
+                        new Customization("actions[3].type", (o1, o2) -> true),
+                        new Customization("lastTriggeredAt", (o1, o2) -> true),
+                        new Customization("updatedAt", (o1, o2) -> true),
+                        new Customization("createdAt", (o1, o2) -> true),
+                        new Customization("actions[1].type", (o1, o2) -> true),
+                        new Customization("actions[2].type", (o1, o2) -> true)));
+              } catch (JSONException e) {
+                fail(e.getMessage());
+              }
+            })
+        .verifyComplete();
+  }
+
+
   @NotNull
   private WebClient buildWebClient() {
     var port = environment.getProperty("local.server.port");
