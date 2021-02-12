@@ -67,6 +67,7 @@ podTemplate(
                   "appConfig.postgres.username=${POSTGRES_USERNAME}," +
                   "appConfig.postgres.password=${POSTGRES_PASSWORD}," +
                   "appConfig.security.crypto.key=${CRYPTO_KEY}," +
+                  "appConfig.activeProfile=prod," +
                   "image.tag=${params.dockerImageTag}," +
                   "namespace=${APP_NAMESPACE}," +
                   "deployment.annotations.buildNumber=${currentBuild.number} " +

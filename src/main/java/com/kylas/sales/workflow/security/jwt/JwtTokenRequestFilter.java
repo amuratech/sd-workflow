@@ -31,7 +31,6 @@ public class JwtTokenRequestFilter extends OncePerRequestFilter {
       throws ServletException, IOException {
     String jwtToken = null;
     if (request.getParameter("token") != null) {
-      log.debug("token is present in query parameter");
       jwtToken = request.getParameter("token");
     }
 
@@ -39,7 +38,6 @@ public class JwtTokenRequestFilter extends OncePerRequestFilter {
     if (authorizationHeader != null && authorizationHeader.length() > 0) {
       try {
         jwtToken = authorizationHeader.split("Bearer ")[1];
-        log.debug("token is present in header");
       } catch (Exception e) {
         log.warn("got error while parsing token in header", e);
       }

@@ -2,6 +2,33 @@
 <configuration scan="true" scanPeriod="60 seconds">
 
   <!-- PROPERTIES -->
+  <springProfile name="prod">
+    <property name="logFile" value="app"/>
+    <property name="serviceName" value="workflow-service"/>
+
+    <appender name="json" class="ch.qos.logback.core.ConsoleAppender">
+      <layout class="ch.qos.logback.contrib.json.classic.JsonLayout">
+        <jsonFormatter
+          class="ch.qos.logback.contrib.jackson.JacksonJsonFormatter">
+        </jsonFormatter>
+        <timestampFormat>yyyy-MM-dd' 'HH:mm:ss.SSS</timestampFormat>
+        <appendLineSeparator>true</appendLineSeparator>
+      </layout>
+    </appender>
+
+    <logger name="jsonLogger" level="INFO">
+      <appender-ref ref="json"/>
+    </logger>
+
+    <root level="INFO">
+      <appender-ref ref="json"/>
+    </root>
+
+    <logger name="org.springframework" level="INFO"/>
+    <logger name="com.kylas" level="DEBUG"/>
+    <logger name="io.netty.util" level="ERROR"/>
+  </springProfile>
+
   <springProfile name="stage">
     <property name="logFile" value="app"/>
     <property name="serviceName" value="workflow-service"/>
@@ -25,7 +52,7 @@
     </root>
 
     <logger name="org.springframework" level="INFO"/>
-    <logger name="com.kylas" level="WARN"/>
+    <logger name="com.kylas" level="DEBUG"/>
     <logger name="io.netty.util" level="ERROR"/>
   </springProfile>
 

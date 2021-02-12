@@ -38,6 +38,7 @@ podTemplate(
                 "--set appConfig.postgres.password=${POSTGRES_PASSWORD}," +
                 "image.tag=${params.dockerImageTag}," +
                 "appConfig.rabbitmq.password=${RABBITMQ_PASSWORD}," +
+                "appConfig.activeProfile=qa," +
                 "deployment.annotations.buildNumber=${currentBuild.number} " +
                 "--wait",
                 label: 'Install helm release'
