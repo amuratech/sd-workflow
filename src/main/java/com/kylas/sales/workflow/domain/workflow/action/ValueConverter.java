@@ -128,7 +128,6 @@ public class ValueConverter implements AttributeConverter<Object, String> {
     try {
       return objectMapper.readTree(dbData);
     } catch (JsonProcessingException e) {
-      log.error("{} is not a valid json", dbData);
       return isParsable(dbData) ? createNumber(dbData)
           : convertEntityAttributeToBoolean(dbData);
     }
