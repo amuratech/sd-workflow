@@ -14,6 +14,7 @@ import static com.kylas.sales.workflow.common.dto.condition.Operator.IS_NOT_NULL
 import static com.kylas.sales.workflow.common.dto.condition.Operator.IS_NULL;
 import static com.kylas.sales.workflow.common.dto.condition.Operator.LESS;
 import static com.kylas.sales.workflow.common.dto.condition.Operator.NOT_BETWEEN;
+import static com.kylas.sales.workflow.common.dto.condition.Operator.NOT_CONTAINS;
 import static com.kylas.sales.workflow.common.dto.condition.Operator.NOT_EQUAL;
 import static com.kylas.sales.workflow.common.dto.condition.Operator.NOT_IN;
 import static com.kylas.sales.workflow.common.dto.condition.Operator.OR;
@@ -24,6 +25,10 @@ import com.kylas.sales.workflow.config.TestDatabaseInitializer;
 import com.kylas.sales.workflow.domain.ConditionFacade;
 import com.kylas.sales.workflow.domain.processor.lead.IdName;
 import com.kylas.sales.workflow.domain.processor.lead.LeadDetail;
+import com.kylas.sales.workflow.domain.processor.lead.Product;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -525,6 +530,119 @@ class WorkflowConditionTest {
 
       assertThat(conditionFacade.satisfies(expression, entity)).isTrue();
     }
+
+    @Test
+    public void givenValidProductExpression_tryToCompareUsingContainsOperatorOnListOfProducts_shouldReturnTrue() {
+      Object product = new IdName(101L, "Product1");
+      ConditionExpression expression = new ConditionExpression(CONTAINS, "products", product, NEW_VALUE);
+      var entity = stubLeadDetail();
+      entity.setProducts(Arrays.asList(new Product(101,"Product1"),new Product(102,"Product2")));
+
+      assertThat(conditionFacade.satisfies(expression, entity)).isTrue();
+    }
+
+    @Test
+    public void givenValidProductExpressionUsingHashMap_tryToCompareUsingContainsOperatorOnListOfProducts_shouldReturnTrue() {
+      Map<String,Object> product = new HashMap<>();
+      product.put("id",101);
+      product.put("name","product222");
+
+      ConditionExpression expression = new ConditionExpression(CONTAINS, "products", product, NEW_VALUE);
+      var entity = stubLeadDetail();
+      entity.setProducts(Arrays.asList(new Product(101,"Product1"),new Product(102,"Product2")));
+
+      assertThat(conditionFacade.satisfies(expression, entity)).isTrue();
+    }
+
+    @Test
+    public void givenValidMultipleProductExpression_tryToCompareUsingContainsOperatorOnListOfProductsWithAndOperator_shouldReturnTrue() {
+      Object product101 = new IdName(101L, "Product101");
+      ConditionExpression expression101 = new ConditionExpression(CONTAINS, "products", product101, NEW_VALUE);
+
+      Object product102 = new IdName(102L, "Product102");
+      ConditionExpression expression102 = new ConditionExpression(CONTAINS, "products", product102, NEW_VALUE);
+
+      ConditionExpression expressions = new ConditionExpression(expression101,expression102,AND);
+      var entity = stubLeadDetail();
+      entity.setProducts(Arrays.asList(new Product(101,"Product1"),new Product(102,"Product2"),new Product(103,"Product3")));
+
+      assertThat(conditionFacade.satisfies(expressions, entity)).isTrue();
+    }
+
+    @Test
+    public void givenNonExistingProductCondition_tryToCompareUsingContainsOperatorOnListOfProductsWithAndOperator_shouldReturnFalse() {
+      Object product101 = new IdName(101L, "Product101");
+      ConditionExpression expression101 = new ConditionExpression(CONTAINS, "products", product101, NEW_VALUE);
+
+      Object nonExistProduct = new IdName(105L, "Product102");
+      ConditionExpression expression102 = new ConditionExpression(CONTAINS, "products", nonExistProduct, NEW_VALUE);
+
+      ConditionExpression expressions = new ConditionExpression(expression101,expression102,AND);
+      var entity = stubLeadDetail();
+      entity.setProducts(Arrays.asList(new Product(101,"Product1"),new Product(102,"Product2"),new Product(103,"Product3")));
+
+      assertThat(conditionFacade.satisfies(expressions, entity)).isFalse();
+    }
+
+    @Test
+    public void givenNonExistingProductCondition_tryToCompareUsingContainsOperatorOnListOfProductsWithOrOperator_shouldReturnTrue() {
+      Object product101 = new IdName(101L, "Product101");
+      ConditionExpression expression101 = new ConditionExpression(CONTAINS, "products", product101, NEW_VALUE);
+
+      Object nonExistProduct = new IdName(105L, "Product102");
+      ConditionExpression expression102 = new ConditionExpression(CONTAINS, "products", nonExistProduct, NEW_VALUE);
+
+      ConditionExpression expressions = new ConditionExpression(expression101,expression102,OR);
+      var entity = stubLeadDetail();
+      entity.setProducts(Arrays.asList(new Product(101,"Product1"),new Product(102,"Product2"),new Product(103,"Product3")));
+
+      assertThat(conditionFacade.satisfies(expressions, entity)).isTrue();
+    }
+
+    @Test
+    public void givenInValidProductExpression_tryToCompareUsingContainsOperatorOnListOfProducts_shouldReturnFalse() {
+      Object product = new IdName(99L, "Product1");
+      ConditionExpression expression = new ConditionExpression(CONTAINS, "products", product, NEW_VALUE);
+      var entity = stubLeadDetail();
+      entity.setProducts(Arrays.asList(new Product(101,"Product1"),new Product(102,"Product2")));
+
+      assertThat(conditionFacade.satisfies(expression, entity)).isFalse();
+    }
+
+    @Test
+    public void givenValidProductExpression_tryToCompareUsingNotContainsOperatorOnListOfProducts_shouldReturnTrue() {
+      Object product = new IdName(99L, "Product1");
+      ConditionExpression expression = new ConditionExpression(NOT_CONTAINS, "products", product, NEW_VALUE);
+      var entity = stubLeadDetail();
+      entity.setProducts(Arrays.asList(new Product(101,"Product1"),new Product(102,"Product2")));
+
+      assertThat(conditionFacade.satisfies(expression, entity)).isTrue();
+    }
+    @Test
+    public void givenInValidProductExpression_tryToCompareUsingNotContainsOperatorOnListOfProducts_shouldReturnFalse() {
+      Object product = new IdName(101L, "Product1");
+      ConditionExpression expression = new ConditionExpression(NOT_CONTAINS, "products", product, NEW_VALUE);
+      var entity = stubLeadDetail();
+      entity.setProducts(Arrays.asList(new Product(101,"Product1"),new Product(102,"Product2")));
+
+      assertThat(conditionFacade.satisfies(expression, entity)).isFalse();
+    }
+
+    @Test
+    public void givenProductExpression_tryToCompareUsingIsEmptyOperator_shouldReturnTrue() {
+      ConditionExpression expression = new ConditionExpression(IS_EMPTY, "products", null, NEW_VALUE);
+      var entity = stubLeadDetail();
+      assertThat(conditionFacade.satisfies(expression, entity)).isTrue();
+    }
+    @Test
+    public void givenProductExpression_tryToCompareUsingIsNotEmptyOperator_shouldReturnTrue() {
+      ConditionExpression expression = new ConditionExpression(IS_NOT_EMPTY, "products", null, NEW_VALUE);
+      var entity = stubLeadDetail();
+      entity.setProducts(Arrays.asList(new Product(101,"Product1"),new Product(102,"Product2")));
+
+      assertThat(conditionFacade.satisfies(expression, entity)).isTrue();
+    }
+
   }
 
   private LeadDetail stubLeadDetail() {

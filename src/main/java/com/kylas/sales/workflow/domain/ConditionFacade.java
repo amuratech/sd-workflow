@@ -26,6 +26,7 @@ import static org.apache.commons.lang3.StringUtils.isEmpty;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.apache.commons.lang3.StringUtils.startsWith;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kylas.sales.workflow.api.request.Condition;
 import com.kylas.sales.workflow.api.request.Condition.ExpressionElement;
 import com.kylas.sales.workflow.common.dto.condition.Operator;
@@ -39,13 +40,19 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.stream.Collectors;
 import javax.validation.constraints.NotNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.beanutils.NestedNullException;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.Range;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.expression.EvaluationContext;
+import org.springframework.expression.ExpressionParser;
+import org.springframework.expression.spel.standard.SpelExpressionParser;
+import org.springframework.expression.spel.support.SimpleEvaluationContext;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
@@ -54,16 +61,21 @@ import reactor.core.publisher.Mono;
 public class ConditionFacade {
 
   private final ValueResolver valueResolver;
+  private final ObjectMapper objectMapper;
 
   private final List<String> ID_NAME_PROPERTIES = List
-      .of("pipeline", "pipelineStage", "products", "createdBy", "updatedBy", "convertedBy", "ownerId");
+      .of("pipeline", "pipelineStage", "createdBy", "updatedBy", "convertedBy", "ownerId");
+
+  private final List<String> LIST_OF_ID_NAME_PROPERTIES = List
+      .of("products");
 
   private final List<String> USER_FIELDS =
       List.of("createdBy", "updatedBy", "convertedBy", "ownerId");
 
   @Autowired
-  public ConditionFacade(ValueResolver valueResolver) {
+  public ConditionFacade(ValueResolver valueResolver, ObjectMapper objectMapper) {
     this.valueResolver = valueResolver;
+    this.objectMapper = objectMapper;
   }
 
   public void validate(Condition condition) {
@@ -142,6 +154,10 @@ public class ConditionFacade {
 
   public boolean satisfies(ConditionExpression expression, Object entity) {
 
+    if (isNotBlank(expression.getName()) && LIST_OF_ID_NAME_PROPERTIES.contains(expression.getName())) {
+      List<String> actualValues = getActualValueOfList(expression, entity);
+      return idNameSatisfiedForList(expression, actualValues);
+    }
     String actualValue = getActualValue(expression, entity);
     if (isNotBlank(expression.getName()) && ID_NAME_PROPERTIES.contains(expression.getName())) {
       return idNameSatisfiedBy(expression, actualValue);
@@ -226,6 +242,21 @@ public class ConditionFacade {
     throw new InvalidConditionException();
   }
 
+  private boolean idNameSatisfiedForList(ConditionExpression expression, List<String> actualValues) {
+    IdName expressionValue = new ObjectMapper().convertValue(expression.getValue(), IdName.class);
+    switch (expression.getOperator()) {
+      case CONTAINS:
+        return actualValues.contains(expressionValue.getId().toString());
+      case NOT_CONTAINS:
+        return !actualValues.contains(expressionValue.getId().toString());
+      case IS_EMPTY:
+        return CollectionUtils.isEmpty(actualValues);
+      case IS_NOT_EMPTY:
+        return CollectionUtils.isNotEmpty(actualValues);
+    }
+    throw new InvalidConditionException();
+  }
+
   private String getActualValue(ConditionExpression expression, Object entity) {
     String actualValue = null;
     if (nonNull(expression.getName())) {
@@ -237,6 +268,24 @@ public class ConditionFacade {
       }
     }
     return actualValue;
+  }
+
+  private List<String> getActualValueOfList(ConditionExpression expression, Object entity) {
+    List<String> values = new ArrayList<>();
+    if (nonNull(expression.getName())) {
+        EvaluationContext context = SimpleEvaluationContext.forReadOnlyDataBinding().build();
+        ExpressionParser parser = new SpelExpressionParser();
+
+        Optional<Object> value = Optional.ofNullable(parser.parseExpression(expression.getName()).getValue(context,entity));
+        value.ifPresent(list -> ((List)list).stream().forEach(o -> {
+          try {
+            values.add(getNestedProperty(o, getFieldByName(expression.getName())));
+          } catch (Exception e) {
+            log.error("Exception occurred while getting actual value for {}", expression.getName());
+          }
+        }));
+    }
+    return values;
   }
 
   public Mono<ConditionExpression> nameResolved(ConditionExpression expression, String authenticationToken) {

@@ -10,6 +10,7 @@ public enum ExpressionField {
   PIPELINE("pipeline", "pipeline.id"),
   PIPELINE_STAGE("pipelineStage", "pipelineStage.id"),
   PRODUCT("product", "product.id"),
+  PRODUCTS("products", "id"),
   SOURCE("source","source.id"),
   CAMPAIGN("campaign","campaign.id"),
   SALUTATION("salutation","salutation.id"),

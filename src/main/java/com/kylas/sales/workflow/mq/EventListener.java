@@ -7,8 +7,8 @@ import static com.kylas.sales.workflow.mq.RabbitMqConfig.SALES_CONTACT_UPDATED_Q
 import static com.kylas.sales.workflow.mq.RabbitMqConfig.SALES_LEAD_CREATED_QUEUE;
 import static com.kylas.sales.workflow.mq.RabbitMqConfig.SALES_LEAD_UPDATED_QUEUE;
 import static com.kylas.sales.workflow.mq.RabbitMqConfig.USAGE_QUEUE;
+import static java.lang.String.valueOf;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kylas.sales.workflow.domain.WorkflowFacade;
 import com.kylas.sales.workflow.domain.processor.WorkflowProcessor;
@@ -17,6 +17,7 @@ import com.kylas.sales.workflow.mq.event.DealEvent;
 import com.kylas.sales.workflow.mq.event.LeadEvent;
 import com.kylas.sales.workflow.security.InternalAuthProvider;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MDC;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -100,11 +101,19 @@ public class EventListener {
     try {
       var leadEvent = objectMapper.readValue(new String(message.getBody()), LeadEvent.class);
       var metadata = leadEvent.getMetadata();
+      setMdcValues(metadata);
       internalAuthProvider.loginWith(metadata.getUserId(), metadata.getTenantId());
       workflowProcessor.process(leadEvent);
-    } catch (JsonProcessingException e) {
-      log.error(e.getMessage());
+    } catch (Exception e) {
+      log.error(e.getMessage(), e);
     }
+  }
+
+  private void setMdcValues(com.kylas.sales.workflow.mq.event.Metadata metadata) {
+    MDC.put("user.tenant.id", valueOf(metadata.getTenantId()));
+    MDC.put("user.id", valueOf(metadata.getUserId()));
+    MDC.put("entity.type", metadata.getEntityType().name());
+    MDC.put("entity.id", valueOf(metadata.getEntityId()));
   }
 
   private void processDealEvent(Message message) {
@@ -112,9 +121,10 @@ public class EventListener {
       var dealEvent = objectMapper.readValue(new String(message.getBody()), DealEvent.class);
       var metadata = dealEvent.getMetadata();
       internalAuthProvider.loginWith(metadata.getUserId(), metadata.getTenantId());
+      setMdcValues(metadata);
       workflowProcessor.process(dealEvent);
-    } catch (JsonProcessingException e) {
-      log.error(e.getMessage());
+    } catch (Exception e) {
+      log.error(e.getMessage(),e);
     }
   }
 
@@ -123,9 +133,10 @@ public class EventListener {
       var contactCreatedEvent = objectMapper.readValue(new String(message.getBody()), ContactEvent.class);
       var metadata = contactCreatedEvent.getMetadata();
       internalAuthProvider.loginWith(metadata.getUserId(), metadata.getTenantId());
+      setMdcValues(metadata);
       workflowProcessor.process(contactCreatedEvent);
-    } catch (JsonProcessingException e) {
-      log.error(e.getMessage());
+    } catch (Exception e) {
+      log.error(e.getMessage(), e);
     }
   }
 }
