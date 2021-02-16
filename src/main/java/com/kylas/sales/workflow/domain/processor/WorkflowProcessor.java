@@ -14,6 +14,8 @@ import com.kylas.sales.workflow.domain.workflow.action.ValueConverter;
 import com.kylas.sales.workflow.domain.workflow.action.WorkflowAction.ActionType;
 import com.kylas.sales.workflow.domain.workflow.action.reassign.ReassignAction;
 import com.kylas.sales.workflow.domain.workflow.action.reassign.ReassignDetail;
+import com.kylas.sales.workflow.domain.workflow.action.task.CreateTaskAction;
+import com.kylas.sales.workflow.domain.workflow.action.task.CreateTaskService;
 import com.kylas.sales.workflow.domain.workflow.action.webhook.WebhookAction;
 import com.kylas.sales.workflow.domain.workflow.action.webhook.WebhookService;
 import com.kylas.sales.workflow.error.ErrorCode;
@@ -41,6 +43,7 @@ public class WorkflowProcessor {
   private final WebhookService webhookService;
   private final ValueConverter valueConverter;
   private final ConditionFacade conditionFacade;
+  private final CreateTaskService createTaskService;
 
   @Autowired
   public WorkflowProcessor(
@@ -48,12 +51,14 @@ public class WorkflowProcessor {
       EntityUpdatedCommandPublisher entityUpdatedCommandPublisher,
       WebhookService webhookService,
       ValueConverter valueConverter,
-      ConditionFacade conditionFacade) {
+      ConditionFacade conditionFacade,
+      CreateTaskService createTaskService) {
     this.workflowService = workflowService;
     this.entityUpdatedCommandPublisher = entityUpdatedCommandPublisher;
     this.webhookService = webhookService;
     this.valueConverter = valueConverter;
     this.conditionFacade = conditionFacade;
+    this.createTaskService = createTaskService;
   }
 
   public void process(EntityEvent event) {
@@ -98,12 +103,20 @@ public class WorkflowProcessor {
 
     workflowActions.stream().filter(workflowAction -> workflowAction.getType().equals(ActionType.WEBHOOK))
         .map(workflowAction -> (WebhookAction) workflowAction).forEach(webhookAction ->
-        webhookService.execute(webhookAction, event.getEntity(),event.getMetadata().getEntityType()));
+        webhookService.execute(webhookAction, event.getEntity(), event.getMetadata().getEntityType()));
 
     workflowActions.stream().filter(workflowAction -> workflowAction.getType().equals(ActionType.REASSIGN))
         .map(workflowAction -> (ReassignAction) workflowAction).findFirst().ifPresent(
         reassignAction -> entityUpdatedCommandPublisher
             .execute(metadata, new ReassignDetail(event.getEntityId(), reassignAction.getOwnerId(), metadata.getEntityType())));
+
+    workflowActions.stream().filter(workflowAction -> workflowAction.getType().equals(ActionType.CREATE_TASK))
+        .map(workflowAction -> (CreateTaskAction) workflowAction)
+        .forEach(createTaskAction -> {
+          com.kylas.sales.workflow.domain.processor.task.Metadata createTaskMetadata = new com.kylas.sales.workflow.domain.processor.task.Metadata(
+              metadata.getUserId(), metadata.getTenantId());
+          createTaskService.processCreateTaskAction(createTaskAction, metadata.getEntityType(), event.getEntityId(), createTaskMetadata);
+        });
   }
 
   private void processEditPropertyActions(Set<EditPropertyAction> editPropertyActions, Metadata metadata, Actionable entity) {

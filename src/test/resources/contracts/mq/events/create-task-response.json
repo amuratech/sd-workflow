@@ -1,0 +1,20 @@
+{
+  "name": "New Task",
+  "description": "My description",
+  "priority": 1,
+  "outcome": "called",
+  "type": 2,
+  "status": 3,
+  "assignedTo": 1,
+  "relation": [
+    {
+      "targetEntityId": "5100",
+      "targetEntityType": "LEAD"
+    }
+  ],
+  "dueDate": "2021-02-11T03:00:00.000Z",
+  "metadata": {
+    "userId": 10,
+    "tenantId": 20
+  }
+}

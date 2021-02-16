@@ -6,11 +6,13 @@ import static com.kylas.sales.workflow.domain.workflow.EntityType.LEAD;
 import static com.kylas.sales.workflow.domain.workflow.EntityType.USER;
 import static com.kylas.sales.workflow.domain.workflow.TriggerFrequency.CREATED;
 import static com.kylas.sales.workflow.domain.workflow.TriggerFrequency.UPDATED;
+import static com.kylas.sales.workflow.domain.workflow.action.WorkflowAction.ActionType.CREATE_TASK;
 import static com.kylas.sales.workflow.domain.workflow.action.WorkflowAction.ActionType.EDIT_PROPERTY;
 import static com.kylas.sales.workflow.domain.workflow.action.WorkflowAction.ActionType.REASSIGN;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
@@ -49,6 +51,9 @@ import com.kylas.sales.workflow.domain.workflow.action.ValueConverter;
 import com.kylas.sales.workflow.domain.workflow.action.WorkflowAction.ActionType;
 import com.kylas.sales.workflow.domain.workflow.action.reassign.ReassignAction;
 import com.kylas.sales.workflow.domain.workflow.action.reassign.ReassignDetail;
+import com.kylas.sales.workflow.domain.workflow.action.task.CreateTaskAction;
+import com.kylas.sales.workflow.domain.workflow.action.task.CreateTaskService;
+import com.kylas.sales.workflow.domain.workflow.action.task.DueDate;
 import com.kylas.sales.workflow.mq.command.EntityUpdatedCommandPublisher;
 import com.kylas.sales.workflow.mq.event.ContactEvent;
 import com.kylas.sales.workflow.mq.event.DealEvent;
@@ -84,6 +89,8 @@ class WorkflowProcessorTest {
   private WorkflowProcessor workflowProcessor;
   @Mock
   private ConditionFacade conditionFacade;
+  @Mock
+  private CreateTaskService createTaskService;
 
   @Test
   public void givenLeadEvent_shouldPublishPatchCommand() {
@@ -1009,6 +1016,312 @@ class WorkflowProcessorTest {
     //then
     verify(entityUpdatedCommandPublisher, times(1))
         .execute(any(Metadata.class), any(Actionable.class));
+  }
+
+  @Test
+  public void givenLeadCreatedEvent_withCreateTaskAction_shouldPublishEvent() {
+    // given
+    long tenantId = 101;
+    long userId = 10L;
+    long workflowId = 99L;
+
+    var lead = new LeadDetail();
+    lead.setFirstName("Tony");
+    lead.setLastName("Stark");
+    lead.setId(55L);
+    Metadata metadata = new Metadata(tenantId, userId, LEAD, null, null, EntityAction.CREATED);
+
+    var leadEvent = new LeadEvent(lead, null, metadata);
+
+    Workflow workflowMock = mock(Workflow.class);
+    given(workflowMock.getId()).willReturn(workflowId);
+
+    Set<AbstractWorkflowAction> actions = new HashSet<>();
+
+    CreateTaskAction createTaskAction = mock(CreateTaskAction.class);
+    given(createTaskAction.getName()).willReturn("new task");
+    given(createTaskAction.getDescription()).willReturn("new description");
+    given(createTaskAction.getPriority()).willReturn(1L);
+    given(createTaskAction.getOutcome()).willReturn("did not respond");
+    given(createTaskAction.getAssignedTo()).willReturn(2L);
+    given(createTaskAction.getStatus()).willReturn(3L);
+    given(createTaskAction.getTaskType()).willReturn(4L);
+    given(createTaskAction.getType()).willReturn(CREATE_TASK);
+    given(createTaskAction.getDueDate()).willReturn(new DueDate(2, 4));
+    actions.add(createTaskAction);
+
+    given(workflowMock.getWorkflowActions()).willReturn(actions);
+    WorkflowTrigger workflowTriggerMock = mock(WorkflowTrigger.class);
+    given(workflowTriggerMock.getTriggerType()).willReturn(TriggerType.EVENT);
+    given(workflowTriggerMock.getTriggerFrequency()).willReturn(CREATED);
+    given(workflowMock.getWorkflowTrigger()).willReturn(workflowTriggerMock);
+
+    List<Workflow> workflows = Arrays.asList(workflowMock);
+
+    given(workflowService.findActiveBy(tenantId, LEAD, CREATED)).willReturn(workflows);
+    // when
+    workflowProcessor.process(leadEvent);
+    //then
+    verify(createTaskService, times(1))
+        .processCreateTaskAction(any(CreateTaskAction.class), eq(LEAD), eq(55L), any(
+            com.kylas.sales.workflow.domain.processor.task.Metadata.class));
+  }
+
+  @Test
+  public void givenDealCreatedEvent_withCreateTaskAction_shouldPublishEvent() {
+    // given
+    long tenantId = 101;
+    long userId = 10L;
+    long workflowId = 99L;
+
+    var dealDetail = new DealDetail();
+    dealDetail.setName("new deal");
+    dealDetail.setOwnedBy(new IdName(1L, "James Bond"));
+    dealDetail.setProduct(new IdName(2L, "CRM"));
+    dealDetail.setCompany(new IdName(3L, "Dell enterprises"));
+    dealDetail.setPipeline(new Pipeline(1L, "test", new IdName(2L, "Open")));
+    dealDetail.setEstimatedClosureOn(new Date());
+    dealDetail.setEstimatedValue(new Money(1L, 3000d));
+    dealDetail.setAssociatedContacts(List.of(new IdName(2L, "Tony")));
+    dealDetail.setId(55L);
+    Metadata metadata = new Metadata(tenantId, userId, DEAL, null, null, EntityAction.CREATED);
+
+    var dealEvent = new DealEvent(dealDetail, null, metadata);
+
+    Workflow workflowMock = mock(Workflow.class);
+    given(workflowMock.getId()).willReturn(workflowId);
+
+    Set<AbstractWorkflowAction> actions = new HashSet<>();
+
+    CreateTaskAction createTaskAction = mock(CreateTaskAction.class);
+    given(createTaskAction.getName()).willReturn("new task");
+    given(createTaskAction.getDescription()).willReturn("new description");
+    given(createTaskAction.getPriority()).willReturn(1L);
+    given(createTaskAction.getOutcome()).willReturn("did not respond");
+    given(createTaskAction.getAssignedTo()).willReturn(2L);
+    given(createTaskAction.getStatus()).willReturn(3L);
+    given(createTaskAction.getTaskType()).willReturn(4L);
+    given(createTaskAction.getType()).willReturn(CREATE_TASK);
+    given(createTaskAction.getDueDate()).willReturn(new DueDate(2, 4));
+    actions.add(createTaskAction);
+
+    given(workflowMock.getWorkflowActions()).willReturn(actions);
+    WorkflowTrigger workflowTriggerMock = mock(WorkflowTrigger.class);
+    given(workflowTriggerMock.getTriggerType()).willReturn(TriggerType.EVENT);
+    given(workflowTriggerMock.getTriggerFrequency()).willReturn(CREATED);
+    given(workflowMock.getWorkflowTrigger()).willReturn(workflowTriggerMock);
+
+    List<Workflow> workflows = Arrays.asList(workflowMock);
+
+    given(workflowService.findActiveBy(tenantId, DEAL, CREATED)).willReturn(workflows);
+    // when
+    workflowProcessor.process(dealEvent);
+    //then
+    verify(createTaskService, times(1))
+        .processCreateTaskAction(any(CreateTaskAction.class), eq(DEAL), eq(55L), any(
+            com.kylas.sales.workflow.domain.processor.task.Metadata.class));
+  }
+
+  @Test
+  public void givenContactCreatedEvent_withCreateTaskAction_shouldPublishEvent() {
+    // given
+    long tenantId = 101;
+    long userId = 10L;
+    long workflowId = 99L;
+
+    var contactDetail = new ContactDetail();
+    contactDetail.setFirstName("Tony");
+    contactDetail.setLastName("Stark");
+    contactDetail.setId(55L);
+    Metadata metadata = new Metadata(tenantId, userId, CONTACT, null, null, EntityAction.CREATED);
+
+    var contactEvent = new ContactEvent(contactDetail, null, metadata);
+
+    Workflow workflowMock = mock(Workflow.class);
+    given(workflowMock.getId()).willReturn(workflowId);
+
+    Set<AbstractWorkflowAction> actions = new HashSet<>();
+
+    CreateTaskAction createTaskAction = mock(CreateTaskAction.class);
+    given(createTaskAction.getName()).willReturn("new task");
+    given(createTaskAction.getDescription()).willReturn("new description");
+    given(createTaskAction.getPriority()).willReturn(1L);
+    given(createTaskAction.getOutcome()).willReturn("did not respond");
+    given(createTaskAction.getAssignedTo()).willReturn(2L);
+    given(createTaskAction.getStatus()).willReturn(3L);
+    given(createTaskAction.getTaskType()).willReturn(4L);
+    given(createTaskAction.getType()).willReturn(CREATE_TASK);
+    given(createTaskAction.getDueDate()).willReturn(new DueDate(2, 4));
+    actions.add(createTaskAction);
+
+    given(workflowMock.getWorkflowActions()).willReturn(actions);
+    WorkflowTrigger workflowTriggerMock = mock(WorkflowTrigger.class);
+    given(workflowTriggerMock.getTriggerType()).willReturn(TriggerType.EVENT);
+    given(workflowTriggerMock.getTriggerFrequency()).willReturn(CREATED);
+    given(workflowMock.getWorkflowTrigger()).willReturn(workflowTriggerMock);
+
+    List<Workflow> workflows = Arrays.asList(workflowMock);
+
+    given(workflowService.findActiveBy(tenantId, CONTACT, CREATED)).willReturn(workflows);
+    // when
+    workflowProcessor.process(contactEvent);
+    //then
+    verify(createTaskService, times(1))
+        .processCreateTaskAction(any(CreateTaskAction.class), eq(CONTACT), eq(55L), any(
+            com.kylas.sales.workflow.domain.processor.task.Metadata.class));
+  }
+
+  @Test
+  public void givenLeadUpdatedEvent_withCreateTaskAction_shouldPublishEvent() {
+    // given
+    long tenantId = 101;
+    long userId = 10L;
+    long workflowId = 99L;
+
+    var lead = new LeadDetail();
+    lead.setFirstName("Tony");
+    lead.setLastName("Stark");
+    lead.setId(55L);
+    Metadata metadata = new Metadata(tenantId, userId, LEAD, null, null, EntityAction.UPDATED);
+
+    var leadEvent = new LeadEvent(lead, null, metadata);
+
+    Workflow workflowMock = mock(Workflow.class);
+    given(workflowMock.getId()).willReturn(workflowId);
+
+    Set<AbstractWorkflowAction> actions = new HashSet<>();
+
+    CreateTaskAction createTaskAction = mock(CreateTaskAction.class);
+    given(createTaskAction.getName()).willReturn("new task");
+    given(createTaskAction.getDescription()).willReturn("new description");
+    given(createTaskAction.getPriority()).willReturn(1L);
+    given(createTaskAction.getOutcome()).willReturn("did not respond");
+    given(createTaskAction.getAssignedTo()).willReturn(2L);
+    given(createTaskAction.getStatus()).willReturn(3L);
+    given(createTaskAction.getTaskType()).willReturn(4L);
+    given(createTaskAction.getType()).willReturn(CREATE_TASK);
+    given(createTaskAction.getDueDate()).willReturn(new DueDate(2, 4));
+    actions.add(createTaskAction);
+
+    given(workflowMock.getWorkflowActions()).willReturn(actions);
+    WorkflowTrigger workflowTriggerMock = mock(WorkflowTrigger.class);
+    given(workflowTriggerMock.getTriggerType()).willReturn(TriggerType.EVENT);
+    given(workflowTriggerMock.getTriggerFrequency()).willReturn(UPDATED);
+    given(workflowMock.getWorkflowTrigger()).willReturn(workflowTriggerMock);
+
+    List<Workflow> workflows = Arrays.asList(workflowMock);
+
+    given(workflowService.findActiveBy(tenantId, LEAD, UPDATED)).willReturn(workflows);
+    // when
+    workflowProcessor.process(leadEvent);
+    //then
+    verify(createTaskService, times(1))
+        .processCreateTaskAction(any(CreateTaskAction.class), eq(LEAD), eq(55L), any(
+            com.kylas.sales.workflow.domain.processor.task.Metadata.class));
+  }
+
+  @Test
+  public void givenDealUpdatedEvent_withCreateTaskAction_shouldPublishEvent() {
+    // given
+    long tenantId = 101;
+    long userId = 10L;
+    long workflowId = 99L;
+
+    var dealDetail = new DealDetail();
+    dealDetail.setName("new deal");
+    dealDetail.setOwnedBy(new IdName(1L, "James Bond"));
+    dealDetail.setProduct(new IdName(2L, "CRM"));
+    dealDetail.setCompany(new IdName(3L, "Dell enterprises"));
+    dealDetail.setPipeline(new Pipeline(1L, "test", new IdName(2L, "Open")));
+    dealDetail.setEstimatedClosureOn(new Date());
+    dealDetail.setEstimatedValue(new Money(1L, 3000d));
+    dealDetail.setAssociatedContacts(List.of(new IdName(2L, "Tony")));
+    dealDetail.setId(55L);
+    Metadata metadata = new Metadata(tenantId, userId, DEAL, null, null, EntityAction.UPDATED);
+
+    var dealEvent = new DealEvent(dealDetail, null, metadata);
+
+    Workflow workflowMock = mock(Workflow.class);
+    given(workflowMock.getId()).willReturn(workflowId);
+
+    Set<AbstractWorkflowAction> actions = new HashSet<>();
+
+    CreateTaskAction createTaskAction = mock(CreateTaskAction.class);
+    given(createTaskAction.getName()).willReturn("new task");
+    given(createTaskAction.getDescription()).willReturn("new description");
+    given(createTaskAction.getPriority()).willReturn(1L);
+    given(createTaskAction.getOutcome()).willReturn("did not respond");
+    given(createTaskAction.getAssignedTo()).willReturn(2L);
+    given(createTaskAction.getStatus()).willReturn(3L);
+    given(createTaskAction.getTaskType()).willReturn(4L);
+    given(createTaskAction.getType()).willReturn(CREATE_TASK);
+    given(createTaskAction.getDueDate()).willReturn(new DueDate(2, 4));
+    actions.add(createTaskAction);
+
+    given(workflowMock.getWorkflowActions()).willReturn(actions);
+    WorkflowTrigger workflowTriggerMock = mock(WorkflowTrigger.class);
+    given(workflowTriggerMock.getTriggerType()).willReturn(TriggerType.EVENT);
+    given(workflowTriggerMock.getTriggerFrequency()).willReturn(UPDATED);
+    given(workflowMock.getWorkflowTrigger()).willReturn(workflowTriggerMock);
+
+    List<Workflow> workflows = Arrays.asList(workflowMock);
+
+    given(workflowService.findActiveBy(tenantId, DEAL, UPDATED)).willReturn(workflows);
+    // when
+    workflowProcessor.process(dealEvent);
+    //then
+    verify(createTaskService, times(1))
+        .processCreateTaskAction(any(CreateTaskAction.class), eq(DEAL), eq(55L), any(
+            com.kylas.sales.workflow.domain.processor.task.Metadata.class));
+  }
+
+  @Test
+  public void givenContactUpdatedEvent_withCreateTaskAction_shouldPublishEvent() {
+    // given
+    long tenantId = 101;
+    long userId = 10L;
+    long workflowId = 99L;
+
+    var contactDetail = new ContactDetail();
+    contactDetail.setFirstName("Tony");
+    contactDetail.setLastName("Stark");
+    contactDetail.setId(55L);
+    Metadata metadata = new Metadata(tenantId, userId, CONTACT, null, null, EntityAction.UPDATED);
+
+    var contactEvent = new ContactEvent(contactDetail, null, metadata);
+
+    Workflow workflowMock = mock(Workflow.class);
+    given(workflowMock.getId()).willReturn(workflowId);
+
+    Set<AbstractWorkflowAction> actions = new HashSet<>();
+
+    CreateTaskAction createTaskAction = mock(CreateTaskAction.class);
+    given(createTaskAction.getName()).willReturn("new task");
+    given(createTaskAction.getDescription()).willReturn("new description");
+    given(createTaskAction.getPriority()).willReturn(1L);
+    given(createTaskAction.getOutcome()).willReturn("did not respond");
+    given(createTaskAction.getAssignedTo()).willReturn(2L);
+    given(createTaskAction.getStatus()).willReturn(3L);
+    given(createTaskAction.getTaskType()).willReturn(4L);
+    given(createTaskAction.getType()).willReturn(CREATE_TASK);
+    given(createTaskAction.getDueDate()).willReturn(new DueDate(2, 4));
+    actions.add(createTaskAction);
+
+    given(workflowMock.getWorkflowActions()).willReturn(actions);
+    WorkflowTrigger workflowTriggerMock = mock(WorkflowTrigger.class);
+    given(workflowTriggerMock.getTriggerType()).willReturn(TriggerType.EVENT);
+    given(workflowTriggerMock.getTriggerFrequency()).willReturn(UPDATED);
+    given(workflowMock.getWorkflowTrigger()).willReturn(workflowTriggerMock);
+
+    List<Workflow> workflows = Arrays.asList(workflowMock);
+
+    given(workflowService.findActiveBy(tenantId, CONTACT, UPDATED)).willReturn(workflows);
+    // when
+    workflowProcessor.process(contactEvent);
+    //then
+    verify(createTaskService, times(1))
+        .processCreateTaskAction(any(CreateTaskAction.class), eq(CONTACT), eq(55L), any(
+            com.kylas.sales.workflow.domain.processor.task.Metadata.class));
   }
 
 
