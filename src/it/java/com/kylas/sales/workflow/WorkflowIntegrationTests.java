@@ -344,6 +344,29 @@ public class WorkflowIntegrationTests {
   }
 
   @Test
+  @Sql("/test-scripts/integration/lead-workflow-with-condition-expression-and-old-value-trigger.sql")
+  public void givenLeadWorkflowId_withConditionExpressionAndOldValueTriggerType_shouldGetIt() throws IOException, JSONException {
+    // given
+    stubFor(
+        get("/iam/v1/users/12")
+            .withHeader(AUTHORIZATION, matching("Bearer " + authenticationToken))
+            .willReturn(
+                aResponse()
+                    .withHeader("Content-Type", "application/json")
+                    .withStatus(200)
+                    .withBody(
+                        getResourceAsString("/contracts/user/responses/user-details-by-id.json"))));
+    // when
+    var workflowResponse =
+        buildWebClient().get().uri("/v1/workflows/301").retrieve().bodyToMono(String.class).block();
+    // then
+    var expectedResponse =
+        getResourceAsString("/contracts/workflow/api/integration/workflow-with-condition-old-value-response.json");
+    JSONAssert.assertEquals(expectedResponse, workflowResponse, JSONCompareMode.LENIENT);
+  }
+
+
+  @Test
   @Sql("/test-scripts/integration/lead-workflow-with-pipeline-edit-property.sql")
   public void givenWorkflowId_havingPipelineEditProperty_shouldGetIt() throws IOException {
     // given

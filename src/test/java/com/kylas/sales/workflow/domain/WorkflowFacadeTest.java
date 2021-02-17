@@ -372,6 +372,43 @@ class WorkflowFacadeTest {
   @Transactional
   @Test
   @Sql("/test-scripts/insert-users.sql")
+  public void givenLeadWorkflowRequest_withConditionExpressionAndOldValueTriggerType_shouldCreateIt() {
+    //given
+    User aUser = UserStub.aUser(11L, 99L, true, true, true, true, true)
+        .withName("user 1");
+    given(authService.getLoggedInUser()).willReturn(aUser);
+
+    given(userService.getUserDetails(11L, authService.getAuthenticationToken()))
+        .willReturn(Mono.just(aUser));
+    var action = new ActionResponse(EDIT_PROPERTY, new ActionDetail.EditPropertyAction("firstName", "Tony", PLAIN));
+
+    List<ExpressionElement> conditions = List
+        .of(new ExpressionElement("EQUAL", "firstName", "Tony", "OLD_VALUE"));
+    var workflowRequest = WorkflowStub.anConditionBasedEditPropertyWorkflowRequest(
+        "SomeRandomName", "desc", EntityType.LEAD, conditions, Set.of(action));
+    //when
+    var workflowMono = workflowFacade.create(workflowRequest);
+    //then
+    StepVerifier.create(workflowMono)
+        .expectNextMatches(workflow -> {
+          assertThat(workflow.getId())
+              .isNotNull()
+              .isGreaterThan(0L);
+
+          WorkflowCondition condition = workflow.getWorkflowCondition();
+          assertThat(condition.getType()).isEqualTo(ConditionType.CONDITION_BASED);
+          assertThat(condition.getExpression()).isNotNull();
+          assertThat(condition.getExpression().getOperator()).isEqualTo(Operator.EQUAL);
+          assertThat(condition.getExpression().getName()).isEqualTo("firstName");
+          assertThat(condition.getExpression().getValue()).isEqualTo("Tony");
+          return true;
+        })
+        .verifyComplete();
+  }
+
+  @Transactional
+  @Test
+  @Sql("/test-scripts/insert-users.sql")
   public void givenWorkflowRequest_withMultipleActions_shouldCreateIt() {
     //given
     User aUser = UserStub.aUser(11L, 99L, true, true, true, true, true)

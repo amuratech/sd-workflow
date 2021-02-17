@@ -1254,6 +1254,37 @@ class WorkflowControllerTest {
   }
 
   @Test
+  public void givenLeadWorkflowRequest_withIdNameConditionandOldValueTrigger_shouldCreateIt() throws IOException, JSONException {
+    //given
+    var requestPayload =
+        getResourceAsString("classpath:contracts/workflow/api/lead-workflow-request-with-old-value-trigger-type.json");
+    given(workflowService.create(argThat(workflowRequest ->
+        {
+          ExpressionElement expressionElement = workflowRequest.getCondition().getConditions().get(0);
+          return workflowRequest.getName().equalsIgnoreCase("Lead Workflow with Old value trigger")
+              && workflowRequest.getDescription().equalsIgnoreCase("Workflow Description trigger with old value")
+              && workflowRequest.getCondition().getConditionType().equals(ConditionType.CONDITION_BASED)
+              && expressionElement.getName().equals("pipeline")
+              && expressionElement.getOperator().equals(Operator.EQUAL)
+              && ((LinkedHashMap) expressionElement.getValue()).get("id").equals(242);
+        })
+    )).willReturn(Mono.just(new WorkflowSummary(1L)));
+    //when
+    var workflowResponse = buildWebClient()
+        .post()
+        .uri("/v1/workflows")
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(requestPayload)
+        .retrieve()
+        .bodyToMono(String.class).block();
+    //then
+    var expectedResponse =
+        getResourceAsString("classpath:contracts/workflow/api/create-workflow-response.json");
+    JSONAssert.assertEquals(expectedResponse, workflowResponse, false);
+
+  }
+
+  @Test
   public void givenWorkflowRequest_withEntityContact_shouldCreateIt() throws IOException {
     //given
     var requestPayload = getResourceAsString("classpath:contracts/workflow/api/create-workflow-request-with-entity-contact.json");

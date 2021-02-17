@@ -59,6 +59,6 @@ public class Condition {
   @Getter
   @AllArgsConstructor
   public enum TriggerType {
-    NEW_VALUE
+    NEW_VALUE, OLD_VALUE
   }
 }

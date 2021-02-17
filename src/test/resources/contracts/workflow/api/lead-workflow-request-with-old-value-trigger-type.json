@@ -1,0 +1,35 @@
+{
+  "name": "Lead Workflow with Old value trigger",
+  "description": "Workflow Description trigger with old value",
+  "entityType": "LEAD",
+  "trigger": {
+    "name": "EVENT",
+    "triggerFrequency": "UPDATED",
+    "payload": {
+    }
+  },
+  "condition": {
+    "conditionType": "CONDITION_BASED",
+    "conditions": [
+      {
+        "triggerOn": "OLD_VALUE",
+        "name": "pipeline",
+        "operator": "EQUAL",
+        "value": {
+          "id": 242,
+          "name": "Lead Routing Pipeline"
+        }
+      }
+    ]
+  },
+  "actions": [
+    {
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "salutation",
+        "value": 1319,
+        "valueType": "PLAIN"
+      }
+    }
+  ]
+}
