@@ -48,6 +48,7 @@ public class AttributeFactory {
                 .map(attribute -> new Attribute(attribute.name, getDisplayName(entityDefinitions, attribute.name)))
                 .collect(Collectors.toList()));
   }
+
   public Mono<List<Attribute>> getContactAttributes() {
     var authenticationToken = authService.getAuthenticationToken();
     return configService
@@ -58,7 +59,18 @@ public class AttributeFactory {
                 .map(attribute -> new Attribute(attribute.name, getDisplayName(entityDefinitions, attribute.name)))
                 .collect(Collectors.toList()));
   }
-  
+
+  public Mono<List<Attribute>> getDealAttributes() {
+    var authenticationToken = authService.getAuthenticationToken();
+    return configService
+        .getFields("deal", authenticationToken)
+        .collectList()
+        .map(entityDefinitions ->
+            stream(DealAttribute.values())
+                .map(attribute -> new Attribute(attribute.name, getDisplayName(entityDefinitions, attribute.name)))
+                .collect(Collectors.toList()));
+  }
+
   private String getDisplayName(List<com.kylas.sales.workflow.domain.entity.EntityDefinition> entityDefinitions, String attributeName) {
     return entityDefinitions.stream()
         .filter(entityDefinition -> entityDefinition.getName().equals(attributeName))
@@ -73,6 +85,10 @@ public class AttributeFactory {
 
   public ContactWebhookEntity[] getEntitiesContact() {
     return ContactWebhookEntity.values();
+  }
+
+  public DealWebhookEntity[] getEntitiesDeal() {
+    return DealWebhookEntity.values();
   }
 
   @AllArgsConstructor
@@ -125,6 +141,22 @@ public class AttributeFactory {
     private final EntityAttribute[] entityAttributes;
   }
 
+  @AllArgsConstructor
+  @Getter
+  public enum DealWebhookEntity {
+    CUSTOM("Custom Parameter", EntityType.CUSTOM, null),
+    DEAL("Deal", EntityType.DEAL, ContactAttribute.values()),
+    DEAL_OWNER("Deal Owner", EntityType.USER, UserAttribute.values()),
+    CREATED_BY("Created By", EntityType.USER, UserAttribute.values()),
+    UPDATED_BY("Updated By", EntityType.USER, UserAttribute.values()),
+    TENANT("Tenant", EntityType.TENANT, TenantAttribute.values());
+
+
+    private final String displayName;
+    private final EntityType type;
+    private final EntityAttribute[] entityAttributes;
+  }
+
 
   @AllArgsConstructor
   @Getter
@@ -136,6 +168,7 @@ public class AttributeFactory {
     PHONE_NUMBERS("phoneNumbers", "phoneNumbers"),
     DESIGNATION("designation", "designation"),
     DEPARTMENT("department", "department"),
+    ACTIVE("active", "active"),
     CURRENCY("currency", "currency"),
     TIMEZONE("timezone", "timezone"),
     SIGNATURE("signature", "signature"),
@@ -219,6 +252,29 @@ public class AttributeFactory {
     UPDATED_AT("updatedAt", "updatedAt"),
     STAKEHOLDER("stakeholder", "stakeholder"),
     DO_NOT_DISTURB("dnd", "dnd");
+
+    private final String name;
+    private final String pathToField;
+  }
+
+  @AllArgsConstructor
+  @Getter
+  public enum DealAttribute implements EntityAttribute {
+    ID("id", "id"),
+    NAME("name", "name"),
+    OWNED_BY("ownedBy", "ownedBy.name"),
+    ASSOCIATED_CONTACTS("associatedContacts", "associatedContacts.name"),
+    ESTIMATED_CLOSURE("estimatedClosureOn", "estimatedClosureOn"),
+    ESTIMATED_VALUE("estimatedValue", "estimatedValue"),
+    ACTUAL_VALUE("actualValue", "actualValue"),
+    PIPELINE("pipeline", "pipeline.name"),
+    STATUS("pipelineStage", "pipelineStage.name"),
+    PRODUCT("product", "product.name"),
+    COMPANY("company", "company.name"),
+    CREATED_BY("createdBy", "createdBy.name"),
+    CREATED_AT("createdAt", "createdAt"),
+    UPDATED_BY("updatedBy", "updatedBy.name"),
+    UPDATED_AT("updatedAt", "updatedAt");
 
     private final String name;
     private final String pathToField;

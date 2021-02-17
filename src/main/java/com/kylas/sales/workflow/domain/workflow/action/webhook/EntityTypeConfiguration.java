@@ -1,6 +1,7 @@
 package com.kylas.sales.workflow.domain.workflow.action.webhook;
 
 import static com.kylas.sales.workflow.domain.workflow.EntityType.CONTACT;
+import static com.kylas.sales.workflow.domain.workflow.EntityType.DEAL;
 import static com.kylas.sales.workflow.domain.workflow.EntityType.LEAD;
 import static com.kylas.sales.workflow.domain.workflow.EntityType.USER;
 import static java.util.Arrays.stream;
@@ -11,6 +12,7 @@ import com.kylas.sales.workflow.domain.workflow.EntityType;
 import com.kylas.sales.workflow.domain.workflow.action.webhook.attribute.Attribute;
 import com.kylas.sales.workflow.domain.workflow.action.webhook.attribute.AttributeFactory;
 import com.kylas.sales.workflow.domain.workflow.action.webhook.attribute.AttributeFactory.ContactWebhookEntity;
+import com.kylas.sales.workflow.domain.workflow.action.webhook.attribute.AttributeFactory.DealWebhookEntity;
 import com.kylas.sales.workflow.domain.workflow.action.webhook.attribute.AttributeFactory.LeadWebhookEntity;
 import com.kylas.sales.workflow.domain.workflow.action.webhook.attribute.TenantAttribute;
 import java.util.List;
@@ -52,6 +54,16 @@ public class EntityTypeConfiguration {
                         getAttributesForContact(tuples, contactWebhookEntity)))
                     .collect(toList()))
             .flatMapMany(Flux::fromIterable);
+
+      case DEAL:
+        return Mono
+            .zip(attributeFactory.getUserAttributes(), attributeFactory.getDealAttributes())
+            .map(tuples ->
+                stream(attributeFactory.getEntitiesDeal())
+                    .map(dealWebhookEntity -> new EntityConfig(dealWebhookEntity.name(), dealWebhookEntity.getDisplayName(),
+                        getAttributesForDeal(tuples, dealWebhookEntity)))
+                    .collect(toList()))
+            .flatMapMany(Flux::fromIterable);
     }
     return null;
   }
@@ -59,6 +71,12 @@ public class EntityTypeConfiguration {
   private List<Attribute> getAttributesForContact(Tuple2<List<Attribute>, List<Attribute>> tuples, ContactWebhookEntity webhookEntity) {
     return webhookEntity.getType().equals(USER) ? tuples.getT1() :
         webhookEntity.getType().equals(CONTACT) ? tuples.getT2() :
+            webhookEntity.getType().equals(EntityType.TENANT) ? TenantAttribute.getAttributes() : emptyList();
+  }
+
+  private List<Attribute> getAttributesForDeal(Tuple2<List<Attribute>, List<Attribute>> tuples, DealWebhookEntity webhookEntity) {
+    return webhookEntity.getType().equals(USER) ? tuples.getT1() :
+        webhookEntity.getType().equals(DEAL) ? tuples.getT2() :
             webhookEntity.getType().equals(EntityType.TENANT) ? TenantAttribute.getAttributes() : emptyList();
   }
 

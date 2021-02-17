@@ -187,6 +187,10 @@
         "displayName": "Department"
       },
       {
+        "name": "active",
+        "displayName": "Active"
+      },
+      {
         "name": "currency",
         "displayName": "Currency"
       },
@@ -245,6 +249,10 @@
         "displayName": "Department"
       },
       {
+        "name": "active",
+        "displayName": "Active"
+      },
+      {
         "name": "currency",
         "displayName": "Currency"
       },
@@ -301,6 +309,10 @@
       {
         "name": "department",
         "displayName": "Department"
+      },
+      {
+        "name": "active",
+        "displayName": "Active"
       },
       {
         "name": "currency",

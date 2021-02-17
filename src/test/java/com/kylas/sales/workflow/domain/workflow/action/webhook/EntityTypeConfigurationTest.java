@@ -118,4 +118,39 @@ class EntityTypeConfigurationTest {
         .containsExactly("accountName", "industry", "address", "city", "state", "country", "zipcode",
             "language", "currency", "timezone", "companyName", "website");
   }
+
+  @Test
+  public void webhookConfigDeal_shouldReturnConfiguration() {
+    //given
+    var userAttributes = List.of(new Attribute("firstName", "First Name"), new Attribute("lastName", "Last Name"));
+    var dealAttribute = List.of(new Attribute("id", "Id"), new Attribute("name", "Name"));
+    given(attributeFactory.getUserAttributes()).willReturn(Mono.just(userAttributes));
+    given(attributeFactory.getDealAttributes()).willReturn(Mono.just(dealAttribute));
+    given(attributeFactory.getEntitiesDeal()).willCallRealMethod();
+    //when
+    List<EntityConfig> configurations = entityTypeConfiguration.getConfigurations(EntityType.DEAL).collectList().block();
+
+    //then
+    assertThat(configurations).isNotNull().hasSize(6);
+    assertThat(configurations.stream().map(EntityConfig::getEntityDisplayName))
+        .containsExactly("Custom Parameter", "Deal", "Deal Owner", "Created By", "Updated By", "Tenant");
+
+    assertThat(configurations.stream().map(EntityConfig::getEntity))
+        .containsExactly("CUSTOM", "DEAL", "DEAL_OWNER", "CREATED_BY", "UPDATED_BY", "TENANT");
+
+    var dealConfig = configurations.stream()
+        .filter(config -> config.getEntityDisplayName().equals("Deal")).findFirst();
+    assertThat(dealConfig).isPresent();
+    assertThat(dealConfig.get().getFields()).isNotEmpty();
+    assertThat(dealConfig.get().getFields().stream().map(Attribute::getName))
+        .containsExactly("id", "name");
+
+    var tenantConfig = configurations.stream()
+        .filter(config -> config.getEntityDisplayName().equals("Tenant")).findFirst();
+    assertThat(tenantConfig).isPresent();
+    assertThat(tenantConfig.get().getFields()).isNotEmpty();
+    assertThat(tenantConfig.get().getFields().stream().map(Attribute::getName))
+        .containsExactly("accountName", "industry", "address", "city", "state", "country", "zipcode",
+            "language", "currency", "timezone", "companyName", "website");
+  }
 }
