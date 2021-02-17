@@ -4,6 +4,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import com.kylas.sales.workflow.config.TestDatabaseInitializer;
+import com.kylas.sales.workflow.domain.workflow.EntityType;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -51,13 +52,13 @@ class WebhookControllerTest {
     //when
     Flux<String> response = buildWebClient()
         .get()
-        .uri("/v1/workflows/webhook/config")
+        .uri("/v1/workflows/webhook/LEAD/config")
         .retrieve()
         .bodyToFlux(String.class);
     //then
     StepVerifier.create(response)
         .verifyComplete();
-    verify(webhookService, times(1)).getConfigurations();
+    verify(webhookService, times(1)).getConfigurations(EntityType.LEAD);
   }
 
 }

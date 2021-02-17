@@ -594,7 +594,7 @@ public class WorkflowIntegrationTests {
     //when
     String response = buildWebClient()
         .get()
-        .uri("/v1/workflows/webhook/config")
+        .uri("/v1/workflows/webhook/LEAD/config")
         .retrieve()
         .bodyToMono(String.class)
         .block();

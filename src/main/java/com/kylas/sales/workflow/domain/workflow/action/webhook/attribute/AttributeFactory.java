@@ -58,11 +58,7 @@ public class AttributeFactory {
                 .map(attribute -> new Attribute(attribute.name, getDisplayName(entityDefinitions, attribute.name)))
                 .collect(Collectors.toList()));
   }
-
-  public WebhookEntity[] getEntities() {
-    return WebhookEntity.values();
-  }
-
+  
   private String getDisplayName(List<com.kylas.sales.workflow.domain.entity.EntityDefinition> entityDefinitions, String attributeName) {
     return entityDefinitions.stream()
         .filter(entityDefinition -> entityDefinition.getName().equals(attributeName))
@@ -71,22 +67,64 @@ public class AttributeFactory {
         .orElse(StringUtils.capitalize(attributeName));
   }
 
+  public LeadWebhookEntity[] getEntitiesLead() {
+    return LeadWebhookEntity.values();
+  }
+
+  public ContactWebhookEntity[] getEntitiesContact() {
+    return ContactWebhookEntity.values();
+  }
+
   @AllArgsConstructor
   @Getter
   public enum WebhookEntity {
-    CUSTOM("Custom Parameter", EntityType.CUSTOM,null),
-    LEAD("Lead", EntityType.LEAD,LeadAttribute.values()),
-    CONTACT("Contact", EntityType.CONTACT,ContactAttribute.values()),
-    CONTACT_OWNER("Contact Owner", EntityType.USER,UserAttribute.values()),
-    LEAD_OWNER("Lead Owner", EntityType.USER,UserAttribute.values()),
-    CREATED_BY("Created By", EntityType.USER,UserAttribute.values()),
-    UPDATED_BY("Updated By", EntityType.USER,UserAttribute.values()),
-    TENANT("Tenant", EntityType.TENANT,TenantAttribute.values());
+    CUSTOM("Custom Parameter", EntityType.CUSTOM, null),
+    LEAD("Lead", EntityType.LEAD, LeadAttribute.values()),
+    LEAD_OWNER("Lead Owner", EntityType.USER, UserAttribute.values()),
+    CONTACT("Contact", EntityType.CONTACT, ContactAttribute.values()),
+    CONTACT_OWNER("Contact Owner", EntityType.USER, UserAttribute.values()),
+    CREATED_BY("Created By", EntityType.USER, UserAttribute.values()),
+    UPDATED_BY("Updated By", EntityType.USER, UserAttribute.values()),
+    TENANT("Tenant", EntityType.TENANT, TenantAttribute.values());
+
 
     private final String displayName;
     private final EntityType type;
     private final EntityAttribute[] entityAttributes;
   }
+
+  @AllArgsConstructor
+  @Getter
+  public enum LeadWebhookEntity {
+    CUSTOM("Custom Parameter", EntityType.CUSTOM, null),
+    LEAD("Lead", EntityType.LEAD, LeadAttribute.values()),
+    LEAD_OWNER("Lead Owner", EntityType.USER, UserAttribute.values()),
+    CREATED_BY("Created By", EntityType.USER, UserAttribute.values()),
+    UPDATED_BY("Updated By", EntityType.USER, UserAttribute.values()),
+    TENANT("Tenant", EntityType.TENANT, TenantAttribute.values());
+
+
+    private final String displayName;
+    private final EntityType type;
+    private final EntityAttribute[] entityAttributes;
+  }
+
+  @AllArgsConstructor
+  @Getter
+  public enum ContactWebhookEntity {
+    CUSTOM("Custom Parameter", EntityType.CUSTOM, null),
+    CONTACT("Contact", EntityType.CONTACT, ContactAttribute.values()),
+    CONTACT_OWNER("Contact Owner", EntityType.USER, UserAttribute.values()),
+    CREATED_BY("Created By", EntityType.USER, UserAttribute.values()),
+    UPDATED_BY("Updated By", EntityType.USER, UserAttribute.values()),
+    TENANT("Tenant", EntityType.TENANT, TenantAttribute.values());
+
+
+    private final String displayName;
+    private final EntityType type;
+    private final EntityAttribute[] entityAttributes;
+  }
+
 
   @AllArgsConstructor
   @Getter

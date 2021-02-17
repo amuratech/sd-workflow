@@ -1,12 +1,7 @@
 package com.kylas.sales.workflow.domain.workflow.action.webhook;
 
 import static com.kylas.sales.workflow.common.dto.ActionDetail.WebhookAction.AuthorizationType.NONE;
-import static com.kylas.sales.workflow.domain.workflow.EntityType.LEAD;
-import static com.kylas.sales.workflow.domain.workflow.EntityType.USER;
-import static java.util.Arrays.stream;
-import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
-import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 import static org.apache.commons.collections.CollectionUtils.isNotEmpty;
 import static org.springframework.http.HttpMethod.GET;
@@ -14,12 +9,7 @@ import static org.springframework.http.HttpMethod.GET;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kylas.sales.workflow.domain.processor.EntityDetail;
 import com.kylas.sales.workflow.domain.processor.exception.WorkflowExecutionException;
-import com.kylas.sales.workflow.domain.service.UserService;
 import com.kylas.sales.workflow.domain.workflow.EntityType;
-import com.kylas.sales.workflow.domain.workflow.action.webhook.attribute.Attribute;
-import com.kylas.sales.workflow.domain.workflow.action.webhook.attribute.AttributeFactory;
-import com.kylas.sales.workflow.domain.workflow.action.webhook.attribute.AttributeFactory.WebhookEntity;
-import com.kylas.sales.workflow.domain.workflow.action.webhook.attribute.TenantAttribute;
 import com.kylas.sales.workflow.domain.workflow.action.webhook.parameter.ParameterBuilder;
 import com.kylas.sales.workflow.error.ErrorCode;
 import com.kylas.sales.workflow.security.AuthService;
@@ -41,8 +31,6 @@ import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.util.UriComponentsBuilder;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
-import reactor.util.function.Tuple3;
 
 @Service
 @Slf4j
@@ -51,7 +39,7 @@ public class WebhookService {
   private static final Consumer<HttpHeaders> NO_HEADER_CONSUMER = headers -> {
   };
 
-  private final AttributeFactory attributeFactory;
+  private final EntityTypeConfiguration entityTypeConfiguration;
   private final AuthService authService;
   private final WebClient webClient;
   private final CryptoService cryptoService;
@@ -59,10 +47,10 @@ public class WebhookService {
   private final List<ParameterBuilder> parameterBuilders;
 
   @Autowired
-  public WebhookService(AttributeFactory attributeFactory, AuthService authService,
+  public WebhookService(EntityTypeConfiguration entityTypeConfiguration, AuthService authService,
       WebClient webClient, CryptoService cryptoService, ObjectMapper objectMapper,
       List<ParameterBuilder> parameterBuilders) {
-    this.attributeFactory = attributeFactory;
+    this.entityTypeConfiguration = entityTypeConfiguration;
     this.authService = authService;
     this.webClient = webClient;
     this.cryptoService = cryptoService;
@@ -95,22 +83,11 @@ public class WebhookService {
     log.info("Executed webhook action with name {} & Id {}", webhookAction.getName(), webhookAction.getId());
   }
 
-  public Flux<EntityConfig> getConfigurations() {
-    return Mono
-        .zip(attributeFactory.getUserAttributes(), attributeFactory.getLeadAttributes(), attributeFactory.getContactAttributes())
-        .map(tuples ->
-            stream(attributeFactory.getEntities())
-                .map(webhookEntity -> new EntityConfig(webhookEntity.name(), webhookEntity.getDisplayName(), getAttributesFor(tuples, webhookEntity)))
-                .collect(toList()))
-        .flatMapMany(Flux::fromIterable);
-  }
+  public Flux<EntityConfig> getConfigurations(EntityType entityType) {
+    return entityTypeConfiguration.getConfigurations(entityType);
 
-  private List<Attribute> getAttributesFor(Tuple3<List<Attribute>, List<Attribute>, List<Attribute>> tuples, WebhookEntity webhookEntity) {
-    return webhookEntity.getType().equals(USER) ? tuples.getT1() :
-        webhookEntity.getType().equals(LEAD) ? tuples.getT2() :
-            webhookEntity.getType().equals(EntityType.CONTACT) ?tuples.getT3():
-            webhookEntity.getType().equals(EntityType.TENANT) ? TenantAttribute.getAttributes() : emptyList();
   }
+  
 
   private BodyInserter<?, ? super ClientHttpRequest> buildRequestBody(HttpMethod method, Map<String, List<String>> parameters) {
     if (method.equals(GET)) {

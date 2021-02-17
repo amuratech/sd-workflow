@@ -2,7 +2,6 @@ package com.kylas.sales.workflow.domain.workflow.action.webhook;
 
 import static com.kylas.sales.workflow.common.dto.ActionDetail.WebhookAction.AuthorizationType.NONE;
 import static java.util.Collections.emptyList;
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
@@ -13,8 +12,6 @@ import com.kylas.sales.workflow.domain.processor.lead.IdName;
 import com.kylas.sales.workflow.domain.processor.lead.LeadDetail;
 import com.kylas.sales.workflow.domain.service.UserService;
 import com.kylas.sales.workflow.domain.workflow.EntityType;
-import com.kylas.sales.workflow.domain.workflow.action.webhook.attribute.Attribute;
-import com.kylas.sales.workflow.domain.workflow.action.webhook.attribute.AttributeFactory;
 import com.kylas.sales.workflow.domain.workflow.action.webhook.parameter.ContactParameterBuilder;
 import com.kylas.sales.workflow.domain.workflow.action.webhook.parameter.LeadParameterBuilder;
 import com.kylas.sales.workflow.domain.workflow.action.webhook.parameter.ParameterBuilder;
@@ -40,7 +37,7 @@ class WebhookServiceTest {
   @InjectMocks
   private WebhookService webhookService;
   @Mock
-  private AttributeFactory attributeFactory;
+  private EntityTypeConfiguration entityTypeConfiguration;
   @Mock
   private AuthService authService;
   @Mock
@@ -59,59 +56,9 @@ class WebhookServiceTest {
     parameterBuilders.add(new ContactParameterBuilder(userService));
     WebClient webClient =
         WebClient.builder().exchangeFunction(exchangeFunction).build();
-    webhookService = new WebhookService(attributeFactory, authService, webClient, cryptoService, objectMapper, parameterBuilders);
+    webhookService = new WebhookService(entityTypeConfiguration, authService, webClient, cryptoService, objectMapper, parameterBuilders);
   }
 
-  @Test
-  public void webhookConfig_shouldReturnConfiguration() {
-    //given
-    var userAttributes = List.of(new Attribute("firstName", "First Name"), new Attribute("lastName", "Last Name"));
-    var leadAttributes = List.of(new Attribute("id", "Id"), new Attribute("pipeline", "Pipeline"));
-    var contactAttributes=List.of(new Attribute("id", "Id"),new Attribute("address", "Address"));
-    given(attributeFactory.getUserAttributes()).willReturn(Mono.just(userAttributes));
-    given(attributeFactory.getLeadAttributes()).willReturn(Mono.just(leadAttributes));
-    given(attributeFactory.getContactAttributes()).willReturn(Mono.just(contactAttributes));
-    given(attributeFactory.getEntities()).willCallRealMethod();
-    //when
-    List<EntityConfig> configurations = webhookService.getConfigurations().collectList().block();
-
-    //then
-    assertThat(configurations).isNotNull().hasSize(8);
-    assertThat(configurations.stream().map(EntityConfig::getEntityDisplayName))
-        .containsExactly("Custom Parameter", "Lead", "Contact", "Contact Owner", "Lead Owner", "Created By", "Updated By", "Tenant");
-
-    assertThat(configurations.stream().map(EntityConfig::getEntity))
-        .containsExactly("CUSTOM", "LEAD", "CONTACT", "CONTACT_OWNER", "LEAD_OWNER", "CREATED_BY", "UPDATED_BY", "TENANT");
-
-    var leadConfig = configurations.stream()
-        .filter(config -> config.getEntityDisplayName().equals("Lead")).findFirst();
-    assertThat(leadConfig).isPresent();
-    assertThat(leadConfig.get().getFields()).isNotEmpty();
-    assertThat(leadConfig.get().getFields().stream().map(Attribute::getName))
-        .containsExactly("id", "pipeline");
-
-    var contactConfig = configurations.stream()
-        .filter(config -> config.getEntityDisplayName().equals("Contact")).findFirst();
-    assertThat(contactConfig).isPresent();
-    assertThat(contactConfig.get().getFields()).isNotEmpty();
-    assertThat(contactConfig.get().getFields().stream().map(Attribute::getName))
-        .containsExactly("id", "address");
-
-    var userConfig = configurations.stream()
-        .filter(config -> config.getEntityDisplayName().equals("Lead Owner")).findFirst();
-    assertThat(userConfig).isPresent();
-    assertThat(userConfig.get().getFields()).isNotEmpty();
-    assertThat(userConfig.get().getFields().stream().map(Attribute::getName))
-        .containsExactly("firstName", "lastName");
-
-    var tenantConfig = configurations.stream()
-        .filter(config -> config.getEntityDisplayName().equals("Tenant")).findFirst();
-    assertThat(tenantConfig).isPresent();
-    assertThat(tenantConfig.get().getFields()).isNotEmpty();
-    assertThat(tenantConfig.get().getFields().stream().map(Attribute::getName))
-        .containsExactly("accountName", "industry", "address", "city", "state", "country", "zipcode",
-            "language", "currency", "timezone", "companyName", "website");
-  }
 
   @Test
   public void webhookAction_withoutParameters_shouldBeExecuted() {
@@ -133,5 +80,6 @@ class WebhookServiceTest {
     //then
     assertDoesNotThrow(() -> webhookService.execute(action, lead, EntityType.LEAD));
   }
+
 
 }

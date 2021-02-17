@@ -27,7 +27,6 @@ import com.kylas.sales.workflow.domain.service.UserService;
 import com.kylas.sales.workflow.domain.user.User;
 import com.kylas.sales.workflow.domain.user.User.Metadata;
 import com.kylas.sales.workflow.domain.workflow.EntityType;
-import com.kylas.sales.workflow.domain.workflow.action.webhook.attribute.AttributeFactory;
 import com.kylas.sales.workflow.domain.workflow.action.webhook.attribute.AttributeFactory.ContactAttribute;
 import com.kylas.sales.workflow.domain.workflow.action.webhook.attribute.AttributeFactory.UserAttribute;
 import com.kylas.sales.workflow.domain.workflow.action.webhook.attribute.AttributeFactory.WebhookEntity;
@@ -76,7 +75,7 @@ class WebhookContactServiceTest {
   @Mock
   private ExchangeFunction exchangeFunction;
   @MockBean
-  private AttributeFactory attributeFactory;
+  private EntityTypeConfiguration entityTypeConfiguration;
   @Autowired
   private CryptoService cryptoService;
   @Autowired
@@ -85,11 +84,12 @@ class WebhookContactServiceTest {
   ResourceLoader resourceLoader;
   @Autowired
   List<ParameterBuilder> parameterBuilders;
+
   @BeforeEach
   void init() {
     WebClient webClient =
         WebClient.builder().exchangeFunction(exchangeFunction).build();
-    webhookService = new WebhookService(attributeFactory, authService, webClient, cryptoService, objectMapper, parameterBuilders);
+    webhookService = new WebhookService(entityTypeConfiguration, authService, webClient, cryptoService, objectMapper, parameterBuilders);
   }
 
   @Test
