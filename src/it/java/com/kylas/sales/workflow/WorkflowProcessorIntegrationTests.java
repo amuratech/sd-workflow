@@ -4,8 +4,6 @@ import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.matching;
 import static com.github.tomakehurst.wiremock.client.WireMock.okForContentType;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
-import static com.kylas.sales.workflow.mq.event.DealEvent.getDealCreatedEventName;
-import static com.kylas.sales.workflow.mq.event.DealEvent.getDealUpdatedEventName;
 import static org.mockito.BDDMockito.given;
 import static org.springframework.http.HttpHeaders.AUTHORIZATION;
 import static org.springframework.test.context.support.TestPropertySourceUtils.addInlinedPropertiesToEnvironment;
@@ -489,68 +487,6 @@ public class WorkflowProcessorIntegrationTests {
       mockMqListener.latch.await(3, TimeUnit.SECONDS);
       JSONAssert.assertEquals(
           getResourceAsString("/contracts/mq/command/deal-reassign-patch-command-2.json"),
-          mockMqListener.actualMessage,
-          JSONCompareMode.STRICT);
-
-      Workflow workflow = workflowFacade.get(301);
-      Assertions.assertThat(workflow.getWorkflowExecutedEvent().getLastTriggeredAt()).isNotNull();
-      Assertions.assertThat(workflow.getWorkflowExecutedEvent().getTriggerCount()).isEqualTo(152);
-    }
-  }
-
-  @Nested
-  @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
-  @AutoConfigureTestDatabase(replace = Replace.NONE)
-  @ContextConfiguration(initializers = {TestMqSetup.class, TestDatabaseInitializer.class})
-  @DisplayName("Tests that publish event when deal created/updated")
-  class DealWorkflowProcessorIntegrationTests {
-
-    @Test
-    @Sql("/test-scripts/integration/insert-deal-workflow-for-integration-test.sql")
-    public void givenDealCreatedEvent_shouldUpdatePropertiesAndPublishCommand()
-        throws IOException, InterruptedException, JSONException {
-      // given
-      String authenticationToken = "some-token";
-      User aUser = UserStub.aUser(12L, 55L, true, true, true, true, true).withName("user 1");
-      given(authService.getLoggedInUser()).willReturn(aUser);
-      given(authService.getAuthenticationToken()).willReturn(authenticationToken);
-
-      String resourceAsString = getResourceAsString("/contracts/mq/events/deal-created-event.json");
-      DealEvent dealEvent = objectMapper.readValue(resourceAsString, DealEvent.class);
-      initializeRabbitMqListener(DEAL_UPDATE_COMMAND, DEAL_UPDATE_QUEUE);
-      // when
-      rabbitTemplate.convertAndSend(DEAL_EXCHANGE, getDealCreatedEventName(), dealEvent);
-      // then
-      mockMqListener.latch.await(3, TimeUnit.SECONDS);
-      JSONAssert.assertEquals(
-          getResourceAsString("/contracts/mq/command/deal-create-patch-command.json"),
-          mockMqListener.actualMessage,
-          JSONCompareMode.STRICT);
-
-      Workflow workflow = workflowFacade.get(301);
-      Assertions.assertThat(workflow.getWorkflowExecutedEvent().getLastTriggeredAt()).isNotNull();
-      Assertions.assertThat(workflow.getWorkflowExecutedEvent().getTriggerCount()).isEqualTo(152);
-    }
-
-    @Test
-    @Sql("/test-scripts/insert-deal-update-workflow.sql")
-    public void givenDealUpdatedEvent_shouldUpdatePropertiesAndPublishCommand()
-        throws IOException, InterruptedException, JSONException {
-      // given
-      String authenticationToken = "some-token";
-      User aUser = UserStub.aUser(12L, 55L, true, true, true, true, true).withName("user 1");
-      given(authService.getLoggedInUser()).willReturn(aUser);
-      given(authService.getAuthenticationToken()).willReturn(authenticationToken);
-
-      String resourceAsString = getResourceAsString("/contracts/mq/events/deal-updated-event.json");
-      DealEvent dealEvent = objectMapper.readValue(resourceAsString, DealEvent.class);
-      initializeRabbitMqListener(DEAL_UPDATE_COMMAND, DEAL_UPDATE_QUEUE_NEW);
-      // when
-      rabbitTemplate.convertAndSend(DEAL_EXCHANGE, getDealUpdatedEventName(), dealEvent);
-      // then
-      mockMqListener.latch.await(3, TimeUnit.SECONDS);
-      JSONAssert.assertEquals(
-          getResourceAsString("/contracts/mq/command/deal-update-patch-command.json"),
           mockMqListener.actualMessage,
           JSONCompareMode.STRICT);
 

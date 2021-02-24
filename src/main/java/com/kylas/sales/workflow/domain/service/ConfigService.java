@@ -1,6 +1,8 @@
 package com.kylas.sales.workflow.domain.service;
 
 import com.kylas.sales.workflow.domain.entity.EntityDefinition;
+import com.kylas.sales.workflow.domain.processor.lead.IdName;
+import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
@@ -30,5 +32,18 @@ public class ConfigService {
         .accept(MediaType.APPLICATION_JSON)
         .retrieve()
         .bodyToFlux(EntityDefinition.class);
+  }
+
+  public Flux<IdName> getCurrency(List<Long> currencyIds, String authenticationToken) {
+    return WebClient.builder()
+        .baseUrl(clientBasePath)
+        .defaultHeader(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE)
+        .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + authenticationToken)
+        .build()
+        .get()
+        .uri(uriBuilder -> uriBuilder.path("/v1/currencies").queryParam("id", currencyIds).build())
+        .accept(MediaType.APPLICATION_JSON)
+        .retrieve()
+        .bodyToFlux(IdName.class);
   }
 }

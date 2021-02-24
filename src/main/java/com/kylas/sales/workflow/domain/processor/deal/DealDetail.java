@@ -30,7 +30,11 @@ public class DealDetail implements Actionable, EntityDetail {
   private IdName product;
   private Pipeline pipeline;
   private IdName company;
-  
+  private IdName createdBy;
+  private IdName updatedBy;
+  private Date createdAt;
+  private Date updatedAt;
+
   @Override
   @JsonIgnore
   public String getEventName() {

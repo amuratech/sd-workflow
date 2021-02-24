@@ -10,9 +10,11 @@ import static org.springframework.http.HttpMethod.GET;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kylas.sales.workflow.domain.processor.lead.IdName;
 import com.kylas.sales.workflow.domain.processor.lead.LeadDetail;
+import com.kylas.sales.workflow.domain.service.ConfigService;
 import com.kylas.sales.workflow.domain.service.UserService;
 import com.kylas.sales.workflow.domain.workflow.EntityType;
 import com.kylas.sales.workflow.domain.workflow.action.webhook.parameter.ContactParameterBuilder;
+import com.kylas.sales.workflow.domain.workflow.action.webhook.parameter.DealParameterBuilder;
 import com.kylas.sales.workflow.domain.workflow.action.webhook.parameter.LeadParameterBuilder;
 import com.kylas.sales.workflow.domain.workflow.action.webhook.parameter.ParameterBuilder;
 import com.kylas.sales.workflow.security.AuthService;
@@ -43,6 +45,8 @@ class WebhookServiceTest {
   @Mock
   private UserService userService;
   @Mock
+  private ConfigService configService;
+  @Mock
   private ExchangeFunction exchangeFunction;
   @Mock
   private CryptoService cryptoService;
@@ -52,9 +56,8 @@ class WebhookServiceTest {
   @BeforeEach
   void init() {
     List<ParameterBuilder> parameterBuilders = new ArrayList<>();
-    parameterBuilders.add(new LeadParameterBuilder(userService));
-    parameterBuilders.add(new ContactParameterBuilder(userService));
-    WebClient webClient =
+    parameterBuilders.add(new LeadParameterBuilder(userService,configService));
+       WebClient webClient =
         WebClient.builder().exchangeFunction(exchangeFunction).build();
     webhookService = new WebhookService(entityTypeConfiguration, authService, webClient, cryptoService, objectMapper, parameterBuilders);
   }

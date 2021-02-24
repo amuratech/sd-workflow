@@ -1,0 +1,12 @@
+[
+  {
+    "id": 400,
+    "name": "USD",
+    "displayName": "United States Dollars"
+  },
+  {
+    "id": 431,
+    "name": "INR",
+    "displayName": "India Rupees"
+  }
+]

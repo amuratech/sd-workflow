@@ -8,6 +8,7 @@ import static org.apache.commons.collections.CollectionUtils.isNotEmpty;
 
 import com.kylas.sales.workflow.domain.processor.EntityDetail;
 import com.kylas.sales.workflow.domain.processor.lead.LeadDetail;
+import com.kylas.sales.workflow.domain.service.ConfigService;
 import com.kylas.sales.workflow.domain.service.UserService;
 import com.kylas.sales.workflow.domain.user.UserDetails;
 import com.kylas.sales.workflow.domain.workflow.EntityType;
@@ -24,8 +25,8 @@ import reactor.core.publisher.Mono;
 public class LeadParameterBuilder extends ParameterBuilder{
 
   @Autowired
-  public LeadParameterBuilder(UserService userService) {
-    super(userService);
+  public LeadParameterBuilder(UserService userService, ConfigService configService) {
+    super(userService,configService);
   }
 
   @Override
