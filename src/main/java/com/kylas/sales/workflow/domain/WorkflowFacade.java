@@ -135,6 +135,10 @@ public class WorkflowFacade {
                         getSpecificationByUpdatePrivileges(loggedInUser).and(withId(workflowId)))
                     .map(
                         workflow -> {
+                          if (workflow.isSystemDefault()) {
+                            log.error("User cannot update system-default workflow.");
+                            throw new InvalidWorkflowRequestException();
+                          }
                           var condition = conditionFacade.update(request.getCondition(), workflow);
 
                           var trigger = workflow.getWorkflowTrigger().update(request.getTrigger());

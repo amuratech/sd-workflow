@@ -1301,6 +1301,22 @@ class WorkflowFacadeTest {
 
   @Transactional
   @Test
+  @Sql("/test-scripts/insert-system-default-workflow.sql")
+  public void getSystemDefaultWorkflow_shouldNotHaveUpdateAction() {
+    //given
+    long tenantId = 99L;
+    long userId = 12L;
+    User aUser = UserStub.aUser(userId, tenantId, false, true, true, false, false)
+        .withName("user 1");
+    given(authService.getLoggedInUser()).willReturn(aUser);
+    //when
+    var workflow = workflowFacade.get(4000L);
+    //then
+    assertThat(workflow.getAllowedActions().canUpdate()).isFalse();
+  }
+
+  @Transactional
+  @Test
   @Sql("/test-scripts/insert-create-lead-workflow.sql")
   public void givenNonExistingWorkflowId_tryToGet_shouldThrow() {
     //given
@@ -1404,6 +1420,29 @@ class WorkflowFacadeTest {
 
     assertThat(workflows.size()).isEqualTo(1);
     assertThat(workflows.get(0).getId()).isEqualTo(304);
+  }
+
+  @Transactional
+  @Test
+  @Sql("/test-scripts/insert-system-default-workflow.sql")
+  public void givenUpdateOnSystemDefaultWorkflow_shouldThrow() {
+    //given
+    long tenantId = 99L;
+    User aUser = UserStub
+        .aUser(12, tenantId, false, true, true, true, true)
+        .withName("Mason");
+    given(authService.getLoggedInUser()).willReturn(aUser);
+
+    given(userService.getUserDetails(12L, authService.getAuthenticationToken()))
+        .willReturn(Mono.just(aUser));
+
+    var workflowRequest = WorkflowStub
+        .anEditPropertyWorkflowRequest("Edit Lead Property", "Edit Lead Property", EntityType.LEAD, TriggerType.EVENT, CREATED,
+            ConditionType.FOR_ALL, EDIT_PROPERTY, "lastName", "Stark", PLAIN, true);
+
+    //when | then
+    assertThatExceptionOfType(InvalidWorkflowRequestException.class)
+        .isThrownBy(() -> workflowFacade.update(4000L, workflowRequest).block());
   }
 
   @Transactional

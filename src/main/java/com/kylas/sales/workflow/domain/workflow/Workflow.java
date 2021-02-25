@@ -66,6 +66,8 @@ public class Workflow {
 
   private boolean active;
 
+  private boolean systemDefault;
+
   @ManyToOne(fetch = FetchType.EAGER)
   @JoinColumn(name = "created_by")
   private User createdBy;
@@ -172,6 +174,9 @@ public class Workflow {
     }
     if (user.canQueryAllWorkflow() || user.canQueryHisWorkflow() && isCreator(user)) {
       action.setRead(true);
+    }
+    if (isSystemDefault()) {
+      return action;
     }
     if (user.canUpdateAllWorkflow() || user.canUpdateHisWorkflow() && isCreator(user)) {
       action.setUpdate(true);
