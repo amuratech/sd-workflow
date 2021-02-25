@@ -10,6 +10,7 @@ import com.kylas.sales.workflow.api.request.WorkflowRequest;
 import com.kylas.sales.workflow.api.response.WorkflowDetail;
 import com.kylas.sales.workflow.api.response.WorkflowEntry;
 import com.kylas.sales.workflow.api.response.WorkflowSummary;
+import com.kylas.sales.workflow.common.dto.ActionDetail.CreateTaskAction;
 import com.kylas.sales.workflow.common.dto.ActionDetail.EditPropertyAction;
 import com.kylas.sales.workflow.common.dto.ActionDetail.ReassignAction;
 import com.kylas.sales.workflow.common.dto.ActionResponse;
@@ -18,6 +19,7 @@ import com.kylas.sales.workflow.common.dto.WorkflowTrigger;
 import com.kylas.sales.workflow.domain.ConditionFacade;
 import com.kylas.sales.workflow.domain.WorkflowFacade;
 import com.kylas.sales.workflow.domain.WorkflowFilter;
+import com.kylas.sales.workflow.domain.processor.task.AssignedToType;
 import com.kylas.sales.workflow.domain.service.ValueResolver;
 import com.kylas.sales.workflow.domain.workflow.ConditionType;
 import com.kylas.sales.workflow.domain.workflow.EntityType;
@@ -25,6 +27,7 @@ import com.kylas.sales.workflow.domain.workflow.TriggerFrequency;
 import com.kylas.sales.workflow.domain.workflow.Workflow;
 import com.kylas.sales.workflow.domain.workflow.WorkflowExecutedEvent;
 import com.kylas.sales.workflow.domain.workflow.action.WorkflowAction.ActionType;
+import com.kylas.sales.workflow.domain.workflow.action.task.AssignedTo;
 import com.kylas.sales.workflow.domain.workflow.action.webhook.attribute.AttributeFactory.LeadAttribute;
 import com.kylas.sales.workflow.security.AuthService;
 import java.util.List;
@@ -139,6 +142,16 @@ public class WorkflowService {
                     action.getId(),
                     action.getType(),
                     new EditPropertyAction(actionDetail.getName(), idName, actionDetail.getValueType())));
+      }
+    }
+    if (action.getType().equals(ActionType.CREATE_TASK)) {
+      var actionDetail = (CreateTaskAction) action.getPayload();
+      if (actionDetail.getAssignedTo().getType().equals(AssignedToType.USER)) {
+        return valueResolver.getUserName(actionDetail.getAssignedTo().getId(), authenticationToken)
+            .map(name -> new ActionResponse(action.getId(), action.getType(),
+                new CreateTaskAction(actionDetail.getName(), actionDetail.getDescription(), actionDetail.getPriority(), actionDetail.getOutcome(),
+                    actionDetail.getType(), actionDetail.getStatus(),
+                    new AssignedTo(actionDetail.getAssignedTo().getType(), actionDetail.getAssignedTo().getId(), name), actionDetail.getDueDate())));
       }
     }
     return Mono.just(action);

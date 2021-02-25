@@ -12,6 +12,7 @@ import static com.kylas.sales.workflow.domain.workflow.action.WorkflowAction.Act
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doNothing;
@@ -38,6 +39,7 @@ import com.kylas.sales.workflow.domain.processor.exception.WorkflowExecutionExce
 import com.kylas.sales.workflow.domain.processor.lead.IdName;
 import com.kylas.sales.workflow.domain.processor.lead.Lead;
 import com.kylas.sales.workflow.domain.processor.lead.LeadDetail;
+import com.kylas.sales.workflow.domain.processor.task.AssignedToType;
 import com.kylas.sales.workflow.domain.workflow.ConditionType;
 import com.kylas.sales.workflow.domain.workflow.EntityType;
 import com.kylas.sales.workflow.domain.workflow.TriggerFrequency;
@@ -51,6 +53,7 @@ import com.kylas.sales.workflow.domain.workflow.action.ValueConverter;
 import com.kylas.sales.workflow.domain.workflow.action.WorkflowAction.ActionType;
 import com.kylas.sales.workflow.domain.workflow.action.reassign.ReassignAction;
 import com.kylas.sales.workflow.domain.workflow.action.reassign.ReassignDetail;
+import com.kylas.sales.workflow.domain.workflow.action.task.AssignedTo;
 import com.kylas.sales.workflow.domain.workflow.action.task.CreateTaskAction;
 import com.kylas.sales.workflow.domain.workflow.action.task.CreateTaskService;
 import com.kylas.sales.workflow.domain.workflow.action.task.DueDate;
@@ -1043,7 +1046,7 @@ class WorkflowProcessorTest {
     given(createTaskAction.getDescription()).willReturn("new description");
     given(createTaskAction.getPriority()).willReturn(1L);
     given(createTaskAction.getOutcome()).willReturn("did not respond");
-    given(createTaskAction.getAssignedTo()).willReturn(2L);
+    given(createTaskAction.getAssignedTo()).willReturn(new AssignedTo(AssignedToType.USER, 2L, "James Bond"));
     given(createTaskAction.getStatus()).willReturn(3L);
     given(createTaskAction.getTaskType()).willReturn(4L);
     given(createTaskAction.getType()).willReturn(CREATE_TASK);
@@ -1063,8 +1066,13 @@ class WorkflowProcessorTest {
     workflowProcessor.process(leadEvent);
     //then
     verify(createTaskService, times(1))
-        .processCreateTaskAction(any(CreateTaskAction.class), eq(LEAD), eq(55L), any(
-            com.kylas.sales.workflow.domain.processor.task.Metadata.class));
+        .processCreateTaskAction(any(CreateTaskAction.class), eq(LEAD),
+            argThat(entityDetail -> {
+              LeadDetail leadDetail = (LeadDetail) entityDetail;
+              return leadDetail.getId().equals(55L);
+            }),
+            any(
+                com.kylas.sales.workflow.domain.processor.task.Metadata.class));
   }
 
   @Test
@@ -1098,7 +1106,7 @@ class WorkflowProcessorTest {
     given(createTaskAction.getDescription()).willReturn("new description");
     given(createTaskAction.getPriority()).willReturn(1L);
     given(createTaskAction.getOutcome()).willReturn("did not respond");
-    given(createTaskAction.getAssignedTo()).willReturn(2L);
+    given(createTaskAction.getAssignedTo()).willReturn(new AssignedTo(AssignedToType.USER, 2L, "James Bond"));
     given(createTaskAction.getStatus()).willReturn(3L);
     given(createTaskAction.getTaskType()).willReturn(4L);
     given(createTaskAction.getType()).willReturn(CREATE_TASK);
@@ -1118,8 +1126,13 @@ class WorkflowProcessorTest {
     workflowProcessor.process(dealEvent);
     //then
     verify(createTaskService, times(1))
-        .processCreateTaskAction(any(CreateTaskAction.class), eq(DEAL), eq(55L), any(
-            com.kylas.sales.workflow.domain.processor.task.Metadata.class));
+        .processCreateTaskAction(any(CreateTaskAction.class), eq(DEAL),
+            argThat(entityDetail -> {
+              DealDetail dealDetail1 = (DealDetail) entityDetail;
+              return dealDetail1.getId().equals(55L);
+            }),
+            any(
+                com.kylas.sales.workflow.domain.processor.task.Metadata.class));
   }
 
   @Test
@@ -1147,7 +1160,7 @@ class WorkflowProcessorTest {
     given(createTaskAction.getDescription()).willReturn("new description");
     given(createTaskAction.getPriority()).willReturn(1L);
     given(createTaskAction.getOutcome()).willReturn("did not respond");
-    given(createTaskAction.getAssignedTo()).willReturn(2L);
+    given(createTaskAction.getAssignedTo()).willReturn(new AssignedTo(AssignedToType.USER, 2L, "James Bond"));
     given(createTaskAction.getStatus()).willReturn(3L);
     given(createTaskAction.getTaskType()).willReturn(4L);
     given(createTaskAction.getType()).willReturn(CREATE_TASK);
@@ -1167,8 +1180,13 @@ class WorkflowProcessorTest {
     workflowProcessor.process(contactEvent);
     //then
     verify(createTaskService, times(1))
-        .processCreateTaskAction(any(CreateTaskAction.class), eq(CONTACT), eq(55L), any(
-            com.kylas.sales.workflow.domain.processor.task.Metadata.class));
+        .processCreateTaskAction(any(CreateTaskAction.class), eq(CONTACT),
+            argThat(entityDetail -> {
+              ContactDetail contactDetail1 = (ContactDetail) entityDetail;
+              return contactDetail1.getId().equals(55L);
+            }),
+            any(
+                com.kylas.sales.workflow.domain.processor.task.Metadata.class));
   }
 
   @Test
@@ -1196,7 +1214,7 @@ class WorkflowProcessorTest {
     given(createTaskAction.getDescription()).willReturn("new description");
     given(createTaskAction.getPriority()).willReturn(1L);
     given(createTaskAction.getOutcome()).willReturn("did not respond");
-    given(createTaskAction.getAssignedTo()).willReturn(2L);
+    given(createTaskAction.getAssignedTo()).willReturn(new AssignedTo(AssignedToType.USER, 2L, "James Bond"));
     given(createTaskAction.getStatus()).willReturn(3L);
     given(createTaskAction.getTaskType()).willReturn(4L);
     given(createTaskAction.getType()).willReturn(CREATE_TASK);
@@ -1216,8 +1234,13 @@ class WorkflowProcessorTest {
     workflowProcessor.process(leadEvent);
     //then
     verify(createTaskService, times(1))
-        .processCreateTaskAction(any(CreateTaskAction.class), eq(LEAD), eq(55L), any(
-            com.kylas.sales.workflow.domain.processor.task.Metadata.class));
+        .processCreateTaskAction(any(CreateTaskAction.class), eq(LEAD),
+            argThat(entityDetail -> {
+              LeadDetail leadDetail = (LeadDetail) entityDetail;
+              return leadDetail.getId().equals(55L);
+            }),
+            any(
+                com.kylas.sales.workflow.domain.processor.task.Metadata.class));
   }
 
   @Test
@@ -1251,7 +1274,7 @@ class WorkflowProcessorTest {
     given(createTaskAction.getDescription()).willReturn("new description");
     given(createTaskAction.getPriority()).willReturn(1L);
     given(createTaskAction.getOutcome()).willReturn("did not respond");
-    given(createTaskAction.getAssignedTo()).willReturn(2L);
+    given(createTaskAction.getAssignedTo()).willReturn(new AssignedTo(AssignedToType.USER, 2L, "James Bond"));
     given(createTaskAction.getStatus()).willReturn(3L);
     given(createTaskAction.getTaskType()).willReturn(4L);
     given(createTaskAction.getType()).willReturn(CREATE_TASK);
@@ -1271,8 +1294,13 @@ class WorkflowProcessorTest {
     workflowProcessor.process(dealEvent);
     //then
     verify(createTaskService, times(1))
-        .processCreateTaskAction(any(CreateTaskAction.class), eq(DEAL), eq(55L), any(
-            com.kylas.sales.workflow.domain.processor.task.Metadata.class));
+        .processCreateTaskAction(any(CreateTaskAction.class), eq(DEAL),
+            argThat(entityDetail -> {
+              DealDetail dealDetail1 = (DealDetail) entityDetail;
+              return dealDetail1.getId().equals(55L);
+            }),
+            any(
+                com.kylas.sales.workflow.domain.processor.task.Metadata.class));
   }
 
   @Test
@@ -1300,7 +1328,7 @@ class WorkflowProcessorTest {
     given(createTaskAction.getDescription()).willReturn("new description");
     given(createTaskAction.getPriority()).willReturn(1L);
     given(createTaskAction.getOutcome()).willReturn("did not respond");
-    given(createTaskAction.getAssignedTo()).willReturn(2L);
+    given(createTaskAction.getAssignedTo()).willReturn(new AssignedTo(AssignedToType.USER, 2L, "James Bond"));
     given(createTaskAction.getStatus()).willReturn(3L);
     given(createTaskAction.getTaskType()).willReturn(4L);
     given(createTaskAction.getType()).willReturn(CREATE_TASK);
@@ -1320,8 +1348,13 @@ class WorkflowProcessorTest {
     workflowProcessor.process(contactEvent);
     //then
     verify(createTaskService, times(1))
-        .processCreateTaskAction(any(CreateTaskAction.class), eq(CONTACT), eq(55L), any(
-            com.kylas.sales.workflow.domain.processor.task.Metadata.class));
+        .processCreateTaskAction(any(CreateTaskAction.class), eq(CONTACT),
+            argThat(entityDetail -> {
+              ContactDetail contactDetail1 = (ContactDetail) entityDetail;
+              return contactDetail1.getId().equals(55L);
+            }),
+            any(
+                com.kylas.sales.workflow.domain.processor.task.Metadata.class));
   }
 
 

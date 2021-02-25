@@ -115,7 +115,7 @@ public class WorkflowProcessor {
         .forEach(createTaskAction -> {
           com.kylas.sales.workflow.domain.processor.task.Metadata createTaskMetadata = new com.kylas.sales.workflow.domain.processor.task.Metadata(
               metadata.getUserId(), metadata.getTenantId());
-          createTaskService.processCreateTaskAction(createTaskAction, metadata.getEntityType(), event.getEntityId(), createTaskMetadata);
+          createTaskService.processCreateTaskAction(createTaskAction, metadata.getEntityType(), event.getEntity(), createTaskMetadata);
         });
   }
 

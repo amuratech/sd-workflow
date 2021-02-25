@@ -39,7 +39,19 @@ public class CreateTaskAction extends AbstractWorkflowAction implements Workflow
   @Column(name = "type")
   private long taskType;
   private long status;
-  private long assignedTo;
+
+  @Embedded
+  @NotNull
+  @Valid
+  @AttributeOverrides(
+      value = {
+          @AttributeOverride(
+              name = "type",
+              column = @Column(name = "assigned_to_type")),
+          @AttributeOverride(name = "id", column = @Column(name = "assigned_to_id")),
+          @AttributeOverride(name = "name", column = @Column(name = "assigned_to_name"))
+      })
+  private AssignedTo assignedTo;
 
   @Embedded
   @NotNull
@@ -53,7 +65,7 @@ public class CreateTaskAction extends AbstractWorkflowAction implements Workflow
       })
   private DueDate dueDate;
 
-  public CreateTaskAction(@NotBlank String name, String description, Long priority, String outcome, long taskType, long status, long assignedTo,
+  public CreateTaskAction(@NotBlank String name, String description, Long priority, String outcome, long taskType, long status, AssignedTo assignedTo,
       @NotNull DueDate dueDate) {
     this.name = name;
     this.description = description;

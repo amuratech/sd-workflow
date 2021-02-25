@@ -213,6 +213,16 @@ public class WorkflowIntegrationTests {
                         getResourceAsString("/contracts/user/responses/user-details-by-id.json"))));
 
     stubFor(
+        get("/iam/v1/users/5")
+            .withHeader(AUTHORIZATION, matching("Bearer " + authenticationToken))
+            .willReturn(
+                aResponse()
+                    .withHeader(CONTENT_TYPE, APPLICATION_JSON_VALUE)
+                    .withStatus(200)
+                    .withBody(
+                        getResourceAsString("/contracts/user/responses/user-details-by-id.json"))));
+
+    stubFor(
         get("/iam/v1/users/20003")
             .withHeader(AUTHORIZATION, matching("Bearer " + authenticationToken))
             .willReturn(

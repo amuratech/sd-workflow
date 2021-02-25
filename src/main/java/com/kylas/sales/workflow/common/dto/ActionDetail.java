@@ -1,6 +1,7 @@
 package com.kylas.sales.workflow.common.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.kylas.sales.workflow.domain.workflow.action.task.AssignedTo;
 import com.kylas.sales.workflow.domain.workflow.action.task.DueDate;
 import com.kylas.sales.workflow.domain.workflow.action.webhook.Parameter;
 import java.util.List;
@@ -62,7 +63,7 @@ public interface ActionDetail {
     private final String outcome;
     private final Long type;
     private final Long status;
-    private final Long assignedTo;
+    private final AssignedTo assignedTo;
     private final DueDate dueDate;
 
   }

@@ -32,6 +32,7 @@ import com.kylas.sales.workflow.domain.exception.InsufficientPrivilegeException;
 import com.kylas.sales.workflow.domain.exception.InvalidActionException;
 import com.kylas.sales.workflow.domain.exception.InvalidWorkflowRequestException;
 import com.kylas.sales.workflow.domain.exception.WorkflowNotFoundException;
+import com.kylas.sales.workflow.domain.processor.task.AssignedToType;
 import com.kylas.sales.workflow.domain.service.UserService;
 import com.kylas.sales.workflow.domain.user.User;
 import com.kylas.sales.workflow.domain.workflow.ConditionType;
@@ -41,6 +42,7 @@ import com.kylas.sales.workflow.domain.workflow.Workflow;
 import com.kylas.sales.workflow.domain.workflow.WorkflowCondition;
 import com.kylas.sales.workflow.domain.workflow.action.EditPropertyAction;
 import com.kylas.sales.workflow.domain.workflow.action.reassign.ReassignAction;
+import com.kylas.sales.workflow.domain.workflow.action.task.AssignedTo;
 import com.kylas.sales.workflow.domain.workflow.action.task.DueDate;
 import com.kylas.sales.workflow.domain.workflow.action.webhook.Parameter;
 import com.kylas.sales.workflow.domain.workflow.action.webhook.attribute.AttributeFactory.WebhookEntity;
@@ -148,7 +150,7 @@ class WorkflowFacadeTest {
             Mono.just(
                 aUser));
     var actions = Set.of(new ActionResponse(CREATE_TASK,
-        new CreateTaskAction("new Task", "new task description", 1L, "contacted", 2L, 3L, 4L,
+        new CreateTaskAction("new Task", "new task description", 1L, "contacted", 2L, 3L, new AssignedTo(AssignedToType.USER, 4L, "Tony Stark"),
             new DueDate(12, 2))));
 
     var workflowRequest = WorkflowStub.aWorkflowRequestWithActions("Workflow 1", "Workflow 1", LEAD, EVENT, CREATED, FOR_ALL, actions);
@@ -175,7 +177,7 @@ class WorkflowFacadeTest {
           assertThat(createTaskAction.getOutcome()).isEqualTo("contacted");
           assertThat(createTaskAction.getTaskType()).isEqualTo(2L);
           assertThat(createTaskAction.getStatus()).isEqualTo(3L);
-          assertThat(createTaskAction.getAssignedTo()).isEqualTo(4L);
+          assertThat(createTaskAction.getAssignedTo().getId()).isEqualTo(4L);
           assertThat(createTaskAction.getDueDate().getDays()).isEqualTo(12);
           assertThat(createTaskAction.getDueDate().getHours()).isEqualTo(2);
 
@@ -206,7 +208,7 @@ class WorkflowFacadeTest {
             Mono.just(
                 aUser));
     var actions = Set.of(new ActionResponse(CREATE_TASK,
-        new CreateTaskAction("new Task", "new task description", 1L, "contacted", 2L, 3L, 4L,
+        new CreateTaskAction("new Task", "new task description", 1L, "contacted", 2L, 3L, new AssignedTo(AssignedToType.USER, 4L, "Tony"),
             new DueDate(12, 2))));
 
     var workflowRequest = WorkflowStub.aWorkflowRequestWithActions("Workflow 1", "Workflow 1", DEAL, EVENT, CREATED, FOR_ALL, actions);
@@ -233,7 +235,7 @@ class WorkflowFacadeTest {
           assertThat(createTaskAction.getOutcome()).isEqualTo("contacted");
           assertThat(createTaskAction.getTaskType()).isEqualTo(2L);
           assertThat(createTaskAction.getStatus()).isEqualTo(3L);
-          assertThat(createTaskAction.getAssignedTo()).isEqualTo(4L);
+          assertThat(createTaskAction.getAssignedTo().getId()).isEqualTo(4L);
           assertThat(createTaskAction.getDueDate().getDays()).isEqualTo(12);
           assertThat(createTaskAction.getDueDate().getHours()).isEqualTo(2);
 
@@ -263,7 +265,7 @@ class WorkflowFacadeTest {
             Mono.just(
                 aUser));
     var actions = Set.of(new ActionResponse(CREATE_TASK,
-        new CreateTaskAction("new Task", "new task description", 1L, "contacted", 2L, 3L, 4L,
+        new CreateTaskAction("new Task", "new task description", 1L, "contacted", 2L, 3L, new AssignedTo(AssignedToType.USER, 4L, "Tony"),
             new DueDate(12, 2))));
 
     var workflowRequest = WorkflowStub.aWorkflowRequestWithActions("Workflow 1", "Workflow 1", CONTACT, EVENT, CREATED, FOR_ALL, actions);
@@ -290,7 +292,7 @@ class WorkflowFacadeTest {
           assertThat(createTaskAction.getOutcome()).isEqualTo("contacted");
           assertThat(createTaskAction.getTaskType()).isEqualTo(2L);
           assertThat(createTaskAction.getStatus()).isEqualTo(3L);
-          assertThat(createTaskAction.getAssignedTo()).isEqualTo(4L);
+          assertThat(createTaskAction.getAssignedTo().getId()).isEqualTo(4L);
           assertThat(createTaskAction.getDueDate().getDays()).isEqualTo(12);
           assertThat(createTaskAction.getDueDate().getHours()).isEqualTo(2);
 
@@ -558,7 +560,7 @@ class WorkflowFacadeTest {
             Mono.just(
                 aUser));
     var actions = Set.of(new ActionResponse(CREATE_TASK,
-        new CreateTaskAction("new Task", "new task description", 1L, "contacted", 2L, 3L, 4L,
+        new CreateTaskAction("new Task", "new task description", 1L, "contacted", 2L, 3L, new AssignedTo(AssignedToType.USER, 4L, "Tony"),
             new DueDate(12, 2))));
 
     var workflowRequest = WorkflowStub.aWorkflowRequestWithActions("Workflow 1", "Workflow 1", LEAD, EVENT, UPDATED, FOR_ALL, actions);
@@ -585,7 +587,7 @@ class WorkflowFacadeTest {
           assertThat(createTaskAction.getOutcome()).isEqualTo("contacted");
           assertThat(createTaskAction.getTaskType()).isEqualTo(2L);
           assertThat(createTaskAction.getStatus()).isEqualTo(3L);
-          assertThat(createTaskAction.getAssignedTo()).isEqualTo(4L);
+          assertThat(createTaskAction.getAssignedTo().getId()).isEqualTo(4L);
           assertThat(createTaskAction.getDueDate().getDays()).isEqualTo(12);
           assertThat(createTaskAction.getDueDate().getHours()).isEqualTo(2);
 
@@ -615,7 +617,7 @@ class WorkflowFacadeTest {
                 aUser));
     String dueDate = "{\"days\":12,\"hours\":2}";
     var actions = Set.of(new ActionResponse(CREATE_TASK,
-        new CreateTaskAction("new Task", "new task description", 1L, "contacted", 2L, 3L, 4L,
+        new CreateTaskAction("new Task", "new task description", 1L, "contacted", 2L, 3L, new AssignedTo(AssignedToType.USER, 4L, "Tony"),
             new DueDate(12, 2))));
 
     var workflowRequest = WorkflowStub.aWorkflowRequestWithActions("Workflow 1", "Workflow 1", DEAL, EVENT, UPDATED, FOR_ALL, actions);
@@ -642,7 +644,7 @@ class WorkflowFacadeTest {
           assertThat(createTaskAction.getOutcome()).isEqualTo("contacted");
           assertThat(createTaskAction.getTaskType()).isEqualTo(2L);
           assertThat(createTaskAction.getStatus()).isEqualTo(3L);
-          assertThat(createTaskAction.getAssignedTo()).isEqualTo(4L);
+          assertThat(createTaskAction.getAssignedTo().getId()).isEqualTo(4L);
           assertThat(createTaskAction.getDueDate().getDays()).isEqualTo(12);
           assertThat(createTaskAction.getDueDate().getHours()).isEqualTo(2);
 
@@ -671,7 +673,7 @@ class WorkflowFacadeTest {
             Mono.just(
                 aUser));
     var actions = Set.of(new ActionResponse(CREATE_TASK,
-        new CreateTaskAction("new Task", "new task description", 1L, "contacted", 2L, 3L, 4L,
+        new CreateTaskAction("new Task", "new task description", 1L, "contacted", 2L, 3L, new AssignedTo(AssignedToType.USER, 4L, "Tony"),
             new DueDate(12, 2))));
 
     var workflowRequest = WorkflowStub.aWorkflowRequestWithActions("Workflow 1", "Workflow 1", CONTACT, EVENT, UPDATED, FOR_ALL, actions);
@@ -698,7 +700,7 @@ class WorkflowFacadeTest {
           assertThat(createTaskAction.getOutcome()).isEqualTo("contacted");
           assertThat(createTaskAction.getTaskType()).isEqualTo(2L);
           assertThat(createTaskAction.getStatus()).isEqualTo(3L);
-          assertThat(createTaskAction.getAssignedTo()).isEqualTo(4L);
+          assertThat(createTaskAction.getAssignedTo().getId()).isEqualTo(4L);
           assertThat(createTaskAction.getDueDate().getDays()).isEqualTo(12);
           assertThat(createTaskAction.getDueDate().getHours()).isEqualTo(2);
 

@@ -38,7 +38,11 @@
         "outcome": "contacted",
         "type": 12,
         "status": 13,
-        "assignedTo": 5,
+        "assignedTo": {
+          "type": "USER",
+          "id": 5,
+          "name": "Tony Stark"
+        },
         "dueDate": {
           "days": 4,
           "hours": 3

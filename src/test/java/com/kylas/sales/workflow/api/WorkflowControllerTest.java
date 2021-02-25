@@ -32,11 +32,13 @@ import com.kylas.sales.workflow.domain.exception.InsufficientPrivilegeException;
 import com.kylas.sales.workflow.domain.exception.InvalidActionException;
 import com.kylas.sales.workflow.domain.exception.InvalidFilterException;
 import com.kylas.sales.workflow.domain.exception.WorkflowNotFoundException;
+import com.kylas.sales.workflow.domain.processor.task.AssignedToType;
 import com.kylas.sales.workflow.domain.workflow.ConditionType;
 import com.kylas.sales.workflow.domain.workflow.EntityType;
 import com.kylas.sales.workflow.domain.workflow.TriggerFrequency;
 import com.kylas.sales.workflow.domain.workflow.TriggerType;
 import com.kylas.sales.workflow.domain.workflow.action.WorkflowAction.ActionType;
+import com.kylas.sales.workflow.domain.workflow.action.task.AssignedTo;
 import com.kylas.sales.workflow.domain.workflow.action.task.DueDate;
 import com.kylas.sales.workflow.matchers.FilterRequestMatcher;
 import com.kylas.sales.workflow.matchers.PageableMatcher;
@@ -1107,7 +1109,8 @@ class WorkflowControllerTest {
         List.of(new ActionResponse(ActionType.REASSIGN, new ReassignAction(20003L, "Tony Stark")),
             new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("salutation", 1319, PLAIN)),
             new ActionResponse(CREATE_TASK,
-                new CreateTaskAction("new task", "new task description", 11L, "contacted", 12L, 13L, 5L,
+                new CreateTaskAction("new task", "new task description", 11L, "contacted", 12L, 13L,
+                    new AssignedTo(AssignedToType.USER, 5L, "Tony Stark"),
                     new DueDate(4, 3))));
     User user = new User(12L, "Steve");
     WorkflowDetail workflowDetail = new WorkflowDetail(301L, "Workflow 1", "Workflow Description", EntityType.LEAD, trigger, condition, actions,
@@ -1149,7 +1152,8 @@ class WorkflowControllerTest {
         List.of(new ActionResponse(ActionType.REASSIGN, new ReassignAction(20003L, "Tony Stark")),
             new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("salutation", 1319, PLAIN)),
             new ActionResponse(CREATE_TASK,
-                new CreateTaskAction("new task", "new task description", 11L, "contacted", 12L, 13L, 5L,
+                new CreateTaskAction("new task", "new task description", 11L, "contacted", 12L, 13L,
+                    new AssignedTo(AssignedToType.USER, 5L, "Tony Stark"),
                     new DueDate(4, 3))));
     User user = new User(12L, "Steve");
     WorkflowDetail workflowDetail = new WorkflowDetail(301L, "Workflow 1", "Workflow Description", EntityType.DEAL, trigger, condition, actions,
@@ -1191,7 +1195,8 @@ class WorkflowControllerTest {
         List.of(new ActionResponse(ActionType.REASSIGN, new ReassignAction(20003L, "Tony Stark")),
             new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("salutation", 1319, PLAIN)),
             new ActionResponse(CREATE_TASK,
-                new CreateTaskAction("new task", "new task description", 11L, "contacted", 12L, 13L, 5L,
+                new CreateTaskAction("new task", "new task description", 11L, "contacted", 12L, 13L,
+                    new AssignedTo(AssignedToType.USER, 5L, "Tony Stark"),
                     new DueDate(4, 3))));
     User user = new User(12L, "Steve");
     WorkflowDetail workflowDetail = new WorkflowDetail(301L, "Workflow 1", "Workflow Description", EntityType.CONTACT, trigger, condition, actions,
@@ -1692,7 +1697,7 @@ class WorkflowControllerTest {
         && createTaskAction.getName().equals("new task")
         && createTaskAction.getDescription().equals("new task description")
         && createTaskAction.getPriority().equals(11L)
-        && createTaskAction.getAssignedTo().equals(5L)
+        && createTaskAction.getAssignedTo().getId().equals(5L)
         && createTaskAction.getOutcome().equals("contacted")
         && createTaskAction.getType().equals(12L)
         && createTaskAction.getStatus().equals(13L)

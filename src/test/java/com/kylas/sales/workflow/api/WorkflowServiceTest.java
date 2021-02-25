@@ -27,6 +27,8 @@ import com.kylas.sales.workflow.common.dto.ActionDetail;
 import com.kylas.sales.workflow.common.dto.ActionDetail.CreateTaskAction;
 import com.kylas.sales.workflow.common.dto.ActionResponse;
 import com.kylas.sales.workflow.domain.WorkflowFacade;
+import com.kylas.sales.workflow.domain.processor.task.AssignedToType;
+import com.kylas.sales.workflow.domain.service.ValueResolver;
 import com.kylas.sales.workflow.domain.user.User;
 import com.kylas.sales.workflow.domain.workflow.Workflow;
 import com.kylas.sales.workflow.domain.workflow.WorkflowCondition;
@@ -35,6 +37,7 @@ import com.kylas.sales.workflow.domain.workflow.WorkflowTrigger;
 import com.kylas.sales.workflow.domain.workflow.action.AbstractWorkflowAction;
 import com.kylas.sales.workflow.domain.workflow.action.EditPropertyAction;
 import com.kylas.sales.workflow.domain.workflow.action.WorkflowAction.ActionType;
+import com.kylas.sales.workflow.domain.workflow.action.task.AssignedTo;
 import com.kylas.sales.workflow.domain.workflow.action.task.DueDate;
 import com.kylas.sales.workflow.matchers.PageableMatcher;
 import com.kylas.sales.workflow.security.AuthService;
@@ -79,6 +82,9 @@ class WorkflowServiceTest {
 
   @Mock
   private AuthService authService;
+
+  @Mock
+  private ValueResolver valueResolver;
   @Autowired
   ObjectMapper objectMapper;
 
@@ -103,7 +109,7 @@ class WorkflowServiceTest {
   public void givenLeadWorkflowRequest_withCreateTaskAction_shouldCreateIt() throws IOException {
     // given
     var actions = Set.of(new ActionResponse(CREATE_TASK,
-        new CreateTaskAction("new Task", "new Task description", 1L, "contacted", 2L, 3L, 4L,
+        new CreateTaskAction("new Task", "new Task description", 1L, "contacted", 2L, 3L, new AssignedTo(AssignedToType.USER, 4L, "Tony Stark"),
             new DueDate(12, 2))));
 
     var workflowRequest = WorkflowStub.aWorkflowRequestWithActions("Workflow 1", "Workflow 1", LEAD, EVENT, CREATED, FOR_ALL, actions);
@@ -127,7 +133,7 @@ class WorkflowServiceTest {
   public void givenDealWorkflowRequest_withCreateTaskAction_shouldCreateIt() throws IOException {
     // given
     var actions = Set.of(new ActionResponse(CREATE_TASK,
-        new CreateTaskAction("new Task", "new Task description", 1L, "contacted", 2L, 3L, 4L,
+        new CreateTaskAction("new Task", "new Task description", 1L, "contacted", 2L, 3L, new AssignedTo(AssignedToType.USER, 4L, "Tony Stark"),
             new DueDate(12, 2))));
 
     var workflowRequest = WorkflowStub.aWorkflowRequestWithActions("Workflow 1", "Workflow 1", DEAL, EVENT, CREATED, FOR_ALL, actions);
@@ -151,10 +157,59 @@ class WorkflowServiceTest {
   public void givenContactWorkflowRequest_withCreateTaskAction_shouldCreateIt() throws IOException {
     // given
     var actions = Set.of(new ActionResponse(CREATE_TASK,
-        new CreateTaskAction("new Task", "new Task description", 1L, "contacted", 2L, 3L, 4L,
+        new CreateTaskAction("new Task", "new Task description", 1L, "contacted", 2L, 3L, new AssignedTo(AssignedToType.USER, 4L, "Tony Stark"),
             new DueDate(12, 2))));
 
     var workflowRequest = WorkflowStub.aWorkflowRequestWithActions("Workflow 1", "Workflow 1", CONTACT, EVENT, CREATED, FOR_ALL, actions);
+
+    var workflowMock = mock(Workflow.class);
+    given(workflowMock.getId()).willReturn(1L);
+    given(workflowFacade.create(argThat(request -> {
+      return request.getActions().stream().anyMatch(action -> action.getType().equals(ActionType.CREATE_TASK));
+    }))).willReturn(Mono.just(workflowMock));
+    doNothing().when(workflowFacade).validate(workflowRequest);
+    // when
+    Mono<WorkflowSummary> workflowSummaryMono = workflowService.create(workflowRequest);
+    // then
+    verify(workflowFacade, times(1)).validate(workflowRequest);
+    StepVerifier.create(workflowSummaryMono)
+        .assertNext(workflowSummary -> assertThat(workflowSummary.getId()).isEqualTo(1L))
+        .verifyComplete();
+  }
+
+  @Test
+  public void givenWorkflowRequest_withCreateTaskActionAndAssignedToOwner_shouldCreateIt() throws IOException {
+    // given
+    var actions = Set.of(new ActionResponse(CREATE_TASK,
+        new CreateTaskAction("new Task", "new Task description", 1L, "contacted", 2L, 3L, new AssignedTo(AssignedToType.OWNER, null, "Tony Stark"),
+            new DueDate(12, 2))));
+
+    var workflowRequest = WorkflowStub.aWorkflowRequestWithActions("Workflow 1", "Workflow 1", LEAD, EVENT, CREATED, FOR_ALL, actions);
+
+    var workflowMock = mock(Workflow.class);
+    given(workflowMock.getId()).willReturn(1L);
+    given(workflowFacade.create(argThat(request -> {
+      return request.getActions().stream().anyMatch(action -> action.getType().equals(ActionType.CREATE_TASK));
+    }))).willReturn(Mono.just(workflowMock));
+    doNothing().when(workflowFacade).validate(workflowRequest);
+    // when
+    Mono<WorkflowSummary> workflowSummaryMono = workflowService.create(workflowRequest);
+    // then
+    verify(workflowFacade, times(1)).validate(workflowRequest);
+    StepVerifier.create(workflowSummaryMono)
+        .assertNext(workflowSummary -> assertThat(workflowSummary.getId()).isEqualTo(1L))
+        .verifyComplete();
+  }
+
+  @Test
+  public void givenWorkflowRequest_withCreateTaskActionAndAssignedToCreatedBy_shouldCreateIt() throws IOException {
+    // given
+    var actions = Set.of(new ActionResponse(CREATE_TASK,
+        new CreateTaskAction("new Task", "new Task description", 1L, "contacted", 2L, 3L,
+            new AssignedTo(AssignedToType.CREATED_BY, null, "Tony Stark"),
+            new DueDate(12, 2))));
+
+    var workflowRequest = WorkflowStub.aWorkflowRequestWithActions("Workflow 1", "Workflow 1", LEAD, EVENT, CREATED, FOR_ALL, actions);
 
     var workflowMock = mock(Workflow.class);
     given(workflowMock.getId()).willReturn(1L);
@@ -227,7 +282,64 @@ class WorkflowServiceTest {
     var condition = new WorkflowCondition(FOR_ALL, null);
     Set<AbstractWorkflowAction> actions = new HashSet<>();
     var createTaskActionMock = new com.kylas.sales.workflow.domain.workflow.action.task.CreateTaskAction("new Task", "new task description", 1L,
-        "contacted", 2L, 3L, 4L,
+        "contacted", 2L, 3L, new AssignedTo(AssignedToType.USER, 4L, "Tony Stark"),
+        new DueDate(12, 2));
+    UUID id = UUID.randomUUID();
+    createTaskActionMock.setId(id);
+    actions.add(createTaskActionMock);
+
+    Workflow workflow =
+        Workflow.createNew(
+            "Workflow 1", "Workflow 1", LEAD, trigger, aUser, actions, condition, true);
+    workflow.setId(1L);
+    given(valueResolver.getUserName(any(), any())).willReturn(Mono.just("James Bond"));
+    given(workflowFacade.update(1l, workflowRequestMock)).willReturn(Mono.just(workflow));
+    doNothing().when(workflowFacade).validate(workflowRequestMock);
+    // when
+    Mono<WorkflowDetail> workflowDetailMono = workflowService.update(1L, workflowRequestMock);
+    // then
+    verify(workflowFacade, times(1)).validate(workflowRequestMock);
+    StepVerifier.create(workflowDetailMono)
+        .assertNext(workflowDetail -> {
+          assertThat(workflowDetail.getId()).isEqualTo(workflow.getId());
+          assertThat(workflowDetail.getActions()).hasSize(workflow.getWorkflowActions().size());
+          assertThat(workflowDetail.getName()).isEqualTo("Workflow 1");
+          assertThat(workflowDetail.getDescription()).isEqualTo("Workflow 1");
+          assertThat(workflowDetail.getEntityType()).isEqualTo(workflow.getEntityType());
+          assertThat(workflowDetail.getTrigger().getTriggerFrequency()).isEqualTo(workflow.getWorkflowTrigger().getTriggerFrequency());
+          assertThat(workflowDetail.getCondition().getConditionType()).isEqualTo(workflow.getWorkflowCondition().getType());
+          com.kylas.sales.workflow.domain.workflow.action.task.CreateTaskAction createTaskAction = (com.kylas.sales.workflow.domain.workflow.action.task.CreateTaskAction) workflow
+              .getWorkflowActions().iterator().next();
+
+          assertThat(createTaskAction.getType()).isEqualTo(CREATE_TASK);
+          assertThat(createTaskAction.getName()).isEqualTo("new Task");
+          assertThat(createTaskAction.getDescription()).isEqualTo("new task description");
+          assertThat(createTaskAction.getPriority()).isEqualTo(1L);
+          assertThat(createTaskAction.getOutcome()).isEqualTo("contacted");
+          assertThat(createTaskAction.getTaskType()).isEqualTo(2L);
+          assertThat(createTaskAction.getStatus()).isEqualTo(3L);
+          assertThat(createTaskAction.getAssignedTo().getId()).isEqualTo(4L);
+          assertThat(createTaskAction.getDueDate().getDays()).isEqualTo(12);
+          assertThat(createTaskAction.getDueDate().getHours()).isEqualTo(2);
+          assertThat(workflowDetail.isActive()).isTrue();
+        })
+        .verifyComplete();
+  }
+
+  @Test
+  public void givenWorkflowUpdateRequest_withCreateTaskActionAndAssignedToOwner_shouldUpdateIt() {
+    // given
+    var workflowRequestMock = mock(WorkflowRequest.class);
+    User aUser = UserStub.aUser(11L, 99L, true, true, true, false, false).withName("user 1");
+    WorkflowTrigger trigger =
+        WorkflowTrigger.createNew(
+            new com.kylas.sales.workflow.common.dto.WorkflowTrigger(
+                EVENT, CREATED));
+
+    var condition = new WorkflowCondition(FOR_ALL, null);
+    Set<AbstractWorkflowAction> actions = new HashSet<>();
+    var createTaskActionMock = new com.kylas.sales.workflow.domain.workflow.action.task.CreateTaskAction("new Task", "new task description", 1L,
+        "contacted", 2L, 3L, new AssignedTo(AssignedToType.OWNER, null, "Tony Stark"),
         new DueDate(12, 2));
     UUID id = UUID.randomUUID();
     createTaskActionMock.setId(id);
@@ -262,7 +374,7 @@ class WorkflowServiceTest {
           assertThat(createTaskAction.getOutcome()).isEqualTo("contacted");
           assertThat(createTaskAction.getTaskType()).isEqualTo(2L);
           assertThat(createTaskAction.getStatus()).isEqualTo(3L);
-          assertThat(createTaskAction.getAssignedTo()).isEqualTo(4L);
+          assertThat(createTaskAction.getAssignedTo().getId()).isNull();
           assertThat(createTaskAction.getDueDate().getDays()).isEqualTo(12);
           assertThat(createTaskAction.getDueDate().getHours()).isEqualTo(2);
           assertThat(workflowDetail.isActive()).isTrue();
@@ -271,7 +383,7 @@ class WorkflowServiceTest {
   }
 
   @Test
-  public void givenDealWorkflowUpdateRequest_withCreateTaskAction_shouldUpdateIt() {
+  public void givenWorkflowUpdateRequest_withCreateTaskActionAndAssignedToCreatedBy_shouldUpdateIt() {
     // given
     var workflowRequestMock = mock(WorkflowRequest.class);
     User aUser = UserStub.aUser(11L, 99L, true, true, true, false, false).withName("user 1");
@@ -283,7 +395,7 @@ class WorkflowServiceTest {
     var condition = new WorkflowCondition(FOR_ALL, null);
     Set<AbstractWorkflowAction> actions = new HashSet<>();
     var createTaskActionMock = new com.kylas.sales.workflow.domain.workflow.action.task.CreateTaskAction("new Task", "new task description", 1L,
-        "contacted", 2L, 3L, 4L,
+        "contacted", 2L, 3L, new AssignedTo(AssignedToType.CREATED_BY, null, "Tony Stark"),
         new DueDate(12, 2));
     UUID id = UUID.randomUUID();
     createTaskActionMock.setId(id);
@@ -291,7 +403,7 @@ class WorkflowServiceTest {
 
     Workflow workflow =
         Workflow.createNew(
-            "Workflow 1", "Workflow 1", DEAL, trigger, aUser, actions, condition, true);
+            "Workflow 1", "Workflow 1", LEAD, trigger, aUser, actions, condition, true);
     workflow.setId(1L);
     given(workflowFacade.update(1l, workflowRequestMock)).willReturn(Mono.just(workflow));
     doNothing().when(workflowFacade).validate(workflowRequestMock);
@@ -318,7 +430,65 @@ class WorkflowServiceTest {
           assertThat(createTaskAction.getOutcome()).isEqualTo("contacted");
           assertThat(createTaskAction.getTaskType()).isEqualTo(2L);
           assertThat(createTaskAction.getStatus()).isEqualTo(3L);
-          assertThat(createTaskAction.getAssignedTo()).isEqualTo(4L);
+          assertThat(createTaskAction.getAssignedTo().getId()).isNull();
+          assertThat(createTaskAction.getDueDate().getDays()).isEqualTo(12);
+          assertThat(createTaskAction.getDueDate().getHours()).isEqualTo(2);
+          assertThat(workflowDetail.isActive()).isTrue();
+        })
+        .verifyComplete();
+  }
+
+
+  @Test
+  public void givenDealWorkflowUpdateRequest_withCreateTaskAction_shouldUpdateIt() {
+    // given
+    var workflowRequestMock = mock(WorkflowRequest.class);
+    User aUser = UserStub.aUser(11L, 99L, true, true, true, false, false).withName("user 1");
+    WorkflowTrigger trigger =
+        WorkflowTrigger.createNew(
+            new com.kylas.sales.workflow.common.dto.WorkflowTrigger(
+                EVENT, CREATED));
+
+    var condition = new WorkflowCondition(FOR_ALL, null);
+    Set<AbstractWorkflowAction> actions = new HashSet<>();
+    var createTaskActionMock = new com.kylas.sales.workflow.domain.workflow.action.task.CreateTaskAction("new Task", "new task description", 1L,
+        "contacted", 2L, 3L, new AssignedTo(AssignedToType.USER, 4L, "Tony Stark"),
+        new DueDate(12, 2));
+    UUID id = UUID.randomUUID();
+    createTaskActionMock.setId(id);
+    actions.add(createTaskActionMock);
+
+    Workflow workflow =
+        Workflow.createNew(
+            "Workflow 1", "Workflow 1", DEAL, trigger, aUser, actions, condition, true);
+    workflow.setId(1L);
+    given(valueResolver.getUserName(any(), any())).willReturn(Mono.just("James Bond"));
+    given(workflowFacade.update(1l, workflowRequestMock)).willReturn(Mono.just(workflow));
+    doNothing().when(workflowFacade).validate(workflowRequestMock);
+    // when
+    Mono<WorkflowDetail> workflowDetailMono = workflowService.update(1L, workflowRequestMock);
+    // then
+    verify(workflowFacade, times(1)).validate(workflowRequestMock);
+    StepVerifier.create(workflowDetailMono)
+        .assertNext(workflowDetail -> {
+          assertThat(workflowDetail.getId()).isEqualTo(workflow.getId());
+          assertThat(workflowDetail.getActions()).hasSize(workflow.getWorkflowActions().size());
+          assertThat(workflowDetail.getName()).isEqualTo("Workflow 1");
+          assertThat(workflowDetail.getDescription()).isEqualTo("Workflow 1");
+          assertThat(workflowDetail.getEntityType()).isEqualTo(workflow.getEntityType());
+          assertThat(workflowDetail.getTrigger().getTriggerFrequency()).isEqualTo(workflow.getWorkflowTrigger().getTriggerFrequency());
+          assertThat(workflowDetail.getCondition().getConditionType()).isEqualTo(workflow.getWorkflowCondition().getType());
+          com.kylas.sales.workflow.domain.workflow.action.task.CreateTaskAction createTaskAction = (com.kylas.sales.workflow.domain.workflow.action.task.CreateTaskAction) workflow
+              .getWorkflowActions().iterator().next();
+
+          assertThat(createTaskAction.getType()).isEqualTo(CREATE_TASK);
+          assertThat(createTaskAction.getName()).isEqualTo("new Task");
+          assertThat(createTaskAction.getDescription()).isEqualTo("new task description");
+          assertThat(createTaskAction.getPriority()).isEqualTo(1L);
+          assertThat(createTaskAction.getOutcome()).isEqualTo("contacted");
+          assertThat(createTaskAction.getTaskType()).isEqualTo(2L);
+          assertThat(createTaskAction.getStatus()).isEqualTo(3L);
+          assertThat(createTaskAction.getAssignedTo().getId()).isEqualTo(4L);
           assertThat(createTaskAction.getDueDate().getDays()).isEqualTo(12);
           assertThat(createTaskAction.getDueDate().getHours()).isEqualTo(2);
           assertThat(workflowDetail.isActive()).isTrue();
@@ -339,7 +509,7 @@ class WorkflowServiceTest {
     var condition = new WorkflowCondition(FOR_ALL, null);
     Set<AbstractWorkflowAction> actions = new HashSet<>();
     var createTaskActionMock = new com.kylas.sales.workflow.domain.workflow.action.task.CreateTaskAction("new Task", "new task description", 1L,
-        "contacted", 2L, 3L, 4L,
+        "contacted", 2L, 3L, new AssignedTo(AssignedToType.USER, 4L, "Tony Stark"),
         new DueDate(12, 2));
     UUID id = UUID.randomUUID();
     createTaskActionMock.setId(id);
@@ -349,6 +519,7 @@ class WorkflowServiceTest {
         Workflow.createNew(
             "Workflow 1", "Workflow 1", CONTACT, trigger, aUser, actions, condition, true);
     workflow.setId(1L);
+    given(valueResolver.getUserName(any(), any())).willReturn(Mono.just("James Bond"));
     given(workflowFacade.update(1l, workflowRequestMock)).willReturn(Mono.just(workflow));
     doNothing().when(workflowFacade).validate(workflowRequestMock);
     // when
@@ -374,7 +545,7 @@ class WorkflowServiceTest {
           assertThat(createTaskAction.getOutcome()).isEqualTo("contacted");
           assertThat(createTaskAction.getTaskType()).isEqualTo(2L);
           assertThat(createTaskAction.getStatus()).isEqualTo(3L);
-          assertThat(createTaskAction.getAssignedTo()).isEqualTo(4L);
+          assertThat(createTaskAction.getAssignedTo().getId()).isEqualTo(4L);
           assertThat(createTaskAction.getDueDate().getDays()).isEqualTo(12);
           assertThat(createTaskAction.getDueDate().getHours()).isEqualTo(2);
           assertThat(workflowDetail.isActive()).isTrue();
