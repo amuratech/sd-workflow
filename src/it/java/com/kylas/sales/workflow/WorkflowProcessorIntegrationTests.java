@@ -4,6 +4,8 @@ import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.matching;
 import static com.github.tomakehurst.wiremock.client.WireMock.okForContentType;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
+import static com.kylas.sales.workflow.mq.event.DealEvent.getDealCreatedEventName;
+import static com.kylas.sales.workflow.mq.event.DealEvent.getDealUpdatedEventName;
 import static org.mockito.BDDMockito.given;
 import static org.springframework.http.HttpHeaders.AUTHORIZATION;
 import static org.springframework.test.context.support.TestPropertySourceUtils.addInlinedPropertiesToEnvironment;
@@ -67,6 +69,7 @@ public class WorkflowProcessorIntegrationTests {
   static final String SALES_LEAD_UPDATE_QUEUE = "q.workflow.lead.update.sales";
   static final String SALES_LEAD_UPDATE_QUEUE_NEW = "q.workflow.lead.update.sales_new";
   static final String LEAD_UPDATE_COMMAND_QUEUE = "workflow.lead.update";
+  static final String LEAD_UPDATE_COMMAND_QUEUE_1 = "workflow.lead.update_1";
   static final String SALES_LEAD_REASSIGN_QUEUE = "workflow.lead.reassign.sales";
   static final String SALES_LEAD_REASSIGN_QUEUE_NEW = "workflow.lead.reassign.sales_new";
   static final String LEAD_REASSIGN_COMMAND_QUEUE = "workflow.lead.reassign";
@@ -129,7 +132,7 @@ public class WorkflowProcessorIntegrationTests {
   @Test
   @Sql("/test-scripts/insert-workflow.sql")
   public void givenLeadCreateEvent_shouldExecuteTwoWorkflowAndUpdateExecutedEvents()
-      throws IOException, InterruptedException, JSONException {
+      throws IOException, InterruptedException {
     // given
     User aUser = UserStub.aUser(12L, 99L, true, true, true, true, true).withName("user 1");
     given(authService.getLoggedInUser()).willReturn(aUser);
@@ -179,7 +182,7 @@ public class WorkflowProcessorIntegrationTests {
   @Test
   @Sql("/test-scripts/insert-update-lead-workflow.sql")
   public void givenLeadUpdatedEvent_tryToReProcessSameWorkflow_shouldNotProcess()
-      throws IOException, InterruptedException, JSONException {
+      throws IOException, InterruptedException {
     // given
     User aUser = UserStub.aUser(12L, 99L, true, true, true, true, true).withName("user 1");
     given(authService.getLoggedInUser()).willReturn(aUser);
@@ -209,7 +212,7 @@ public class WorkflowProcessorIntegrationTests {
     @Test
     @Sql("/test-scripts/integration/insert-workflows-with-condition.sql")
     public void givenLeadUpdatedEvent_shouldTriggerWorkflowsConditionally()
-        throws IOException, InterruptedException, JSONException {
+        throws IOException, InterruptedException {
       // given
       User aUser = UserStub.aUser(12L, 99L, true, true, true, true, true).withName("user 1");
       given(authService.getLoggedInUser()).willReturn(aUser);
@@ -230,6 +233,76 @@ public class WorkflowProcessorIntegrationTests {
       Workflow workflow302 = workflowFacade.get(302);
       Assertions.assertThat(workflow302.getWorkflowExecutedEvent().getTriggerCount()).isEqualTo(1);
     }
+
+
+    @Test
+    @Sql("/test-scripts/integration/insert-lead-workflow-with-condition-and-old-value-trigger.sql")
+    public void givenLeadUpdatedEvent_withOldValueTriggerOn_shouldTriggerWorkflowsConditionally()
+        throws IOException, InterruptedException {
+      // given
+      User aUser = UserStub.aUser(12L, 99L, true, true, true, true, true).withName("user 1");
+      given(authService.getLoggedInUser()).willReturn(aUser);
+
+      String resourceAsString =
+          getResourceAsString(
+              "/contracts/mq/events/lead-created-triggering-conditional-workflows.json");
+      LeadEvent leadEvent = objectMapper.readValue(resourceAsString, LeadEvent.class);
+      initializeRabbitMqListener(LEAD_UPDATE_COMMAND_QUEUE, SALES_LEAD_UPDATE_QUEUE);
+      // when
+      rabbitTemplate.convertAndSend(SALES_EXCHANGE, LeadEvent.getLeadUpdatedEventName(), leadEvent);
+      // then
+      mockMqListener.latch.await(3, TimeUnit.SECONDS);
+
+      Workflow workflow301 = workflowFacade.get(301);
+      Assertions.assertThat(workflow301.getWorkflowExecutedEvent().getTriggerCount()).isEqualTo(1);
+
+    }
+
+
+    @Test
+    @Sql("/test-scripts/integration/insert-lead-workflow-with-condition-and-is-changed-trigger.sql")
+    public void givenLeadUpdatedEvent_withIsChangedTriggerOn_shouldTriggerWorkflowsConditionally()
+        throws IOException, InterruptedException {
+      // given
+      User aUser = UserStub.aUser(12L, 99L, true, true, true, true, true).withName("user 1");
+      given(authService.getLoggedInUser()).willReturn(aUser);
+
+      String resourceAsString =
+          getResourceAsString(
+              "/contracts/mq/events/lead-created-triggering-conditional-workflows.json");
+      LeadEvent leadEvent = objectMapper.readValue(resourceAsString, LeadEvent.class);
+      initializeRabbitMqListener(LEAD_UPDATE_COMMAND_QUEUE, SALES_LEAD_UPDATE_QUEUE);
+      // when
+      rabbitTemplate.convertAndSend(SALES_EXCHANGE, LeadEvent.getLeadUpdatedEventName(), leadEvent);
+      // then
+      mockMqListener.latch.await(3, TimeUnit.SECONDS);
+
+      Workflow workflow301 = workflowFacade.get(301);
+      Assertions.assertThat(workflow301.getWorkflowExecutedEvent().getTriggerCount()).isEqualTo(1);
+    }
+
+    @Test
+    @Sql("/test-scripts/integration/insert-lead-workflow-with-condition-and-is-changed-trigger-idname-field.sql")
+    public void givenLeadUpdatedEvent_withIsChangedTriggerOnIdNameField_shouldTriggerWorkflowsConditionally()
+        throws IOException, InterruptedException {
+      // given
+      User aUser = UserStub.aUser(12L, 99L, true, true, true, true, true).withName("user 1");
+      given(authService.getLoggedInUser()).willReturn(aUser);
+
+      String resourceAsString =
+          getResourceAsString(
+              "/contracts/mq/events/lead-created-triggering-conditional-workflows-id-name-field.json");
+      LeadEvent leadEvent = objectMapper.readValue(resourceAsString, LeadEvent.class);
+      initializeRabbitMqListener(LEAD_UPDATE_COMMAND_QUEUE_1, SALES_LEAD_UPDATE_QUEUE);
+      // when
+      rabbitTemplate.convertAndSend(SALES_EXCHANGE, LeadEvent.getLeadUpdatedEventName(), leadEvent);
+      // then
+      mockMqListener.latch.await(3, TimeUnit.SECONDS);
+
+      Workflow workflow301 = workflowFacade.get(301);
+      Assertions.assertThat(workflow301.getWorkflowExecutedEvent().getTriggerCount()).isEqualTo(1);
+    }
+
 
     @Test
     @Sql("/test-scripts/integration/insert-workflow-with-multiple-condition.sql")
@@ -254,6 +327,31 @@ public class WorkflowProcessorIntegrationTests {
 
       Workflow workflow302 = workflowFacade.get(302);
       Assertions.assertThat(workflow302.getWorkflowExecutedEvent().getTriggerCount()).isEqualTo(1);
+    }
+
+    @Test
+    @Sql("/test-scripts/integration/insert-lead-workflow-with-old-value-trigger-and-multiple-conditions.sql")
+    public void givenLeadUpdatedEvent_withOldValueTriggerOnAndMultipleConditions_shouldTriggerWorkflowsConditionally()
+        throws IOException, InterruptedException {
+      // given
+      User aUser = UserStub.aUser(12L, 99L, true, true, true, true, true).withName("user 1");
+      given(authService.getLoggedInUser()).willReturn(aUser);
+
+      String resourceAsString =
+          getResourceAsString(
+              "/contracts/mq/events/lead-created-triggering-conditional-workflows.json");
+      LeadEvent leadEvent = objectMapper.readValue(resourceAsString, LeadEvent.class);
+      initializeRabbitMqListener(LEAD_UPDATE_COMMAND_QUEUE, SALES_LEAD_UPDATE_QUEUE);
+      // when
+      rabbitTemplate.convertAndSend(SALES_EXCHANGE, LeadEvent.getLeadUpdatedEventName(), leadEvent);
+      // then
+      mockMqListener.latch.await(3, TimeUnit.SECONDS);
+
+      Workflow workflow301 = workflowFacade.get(301);
+      Assertions.assertThat(workflow301.getWorkflowExecutedEvent().getTriggerCount()).isEqualTo(1);
+
+      Workflow workflow302 = workflowFacade.get(302);
+      Assertions.assertThat(workflow302.getWorkflowExecutedEvent().getTriggerCount()).isEqualTo(0);
     }
   }
 
@@ -500,6 +598,68 @@ public class WorkflowProcessorIntegrationTests {
   @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
   @AutoConfigureTestDatabase(replace = Replace.NONE)
   @ContextConfiguration(initializers = {TestMqSetup.class, TestDatabaseInitializer.class})
+  @DisplayName("Tests that publish event when deal created/updated")
+  class DealWorkflowProcessorIntegrationTests {
+
+    @Test
+    @Sql("/test-scripts/integration/insert-deal-workflow-for-integration-test.sql")
+    public void givenDealCreatedEvent_shouldUpdatePropertiesAndPublishCommand()
+        throws IOException, InterruptedException, JSONException {
+      // given
+      String authenticationToken = "some-token";
+      User aUser = UserStub.aUser(12L, 55L, true, true, true, true, true).withName("user 1");
+      given(authService.getLoggedInUser()).willReturn(aUser);
+      given(authService.getAuthenticationToken()).willReturn(authenticationToken);
+
+      String resourceAsString = getResourceAsString("/contracts/mq/events/deal-created-event.json");
+      DealEvent dealEvent = objectMapper.readValue(resourceAsString, DealEvent.class);
+      initializeRabbitMqListener(DEAL_UPDATE_COMMAND, DEAL_UPDATE_QUEUE);
+      // when
+      rabbitTemplate.convertAndSend(DEAL_EXCHANGE, getDealCreatedEventName(), dealEvent);
+      // then
+      mockMqListener.latch.await(3, TimeUnit.SECONDS);
+      JSONAssert.assertEquals(
+          getResourceAsString("/contracts/mq/command/deal-create-patch-command.json"),
+          mockMqListener.actualMessage,
+          JSONCompareMode.STRICT);
+
+      Workflow workflow = workflowFacade.get(301);
+      Assertions.assertThat(workflow.getWorkflowExecutedEvent().getLastTriggeredAt()).isNotNull();
+      Assertions.assertThat(workflow.getWorkflowExecutedEvent().getTriggerCount()).isEqualTo(152);
+    }
+
+    @Test
+    @Sql("/test-scripts/insert-deal-update-workflow.sql")
+    public void givenDealUpdatedEvent_shouldUpdatePropertiesAndPublishCommand()
+        throws IOException, InterruptedException, JSONException {
+      // given
+      String authenticationToken = "some-token";
+      User aUser = UserStub.aUser(12L, 55L, true, true, true, true, true).withName("user 1");
+      given(authService.getLoggedInUser()).willReturn(aUser);
+      given(authService.getAuthenticationToken()).willReturn(authenticationToken);
+
+      String resourceAsString = getResourceAsString("/contracts/mq/events/deal-updated-event.json");
+      DealEvent dealEvent = objectMapper.readValue(resourceAsString, DealEvent.class);
+      initializeRabbitMqListener(DEAL_UPDATE_COMMAND, DEAL_UPDATE_QUEUE_NEW);
+      // when
+      rabbitTemplate.convertAndSend(DEAL_EXCHANGE, getDealUpdatedEventName(), dealEvent);
+      // then
+      mockMqListener.latch.await(3, TimeUnit.SECONDS);
+      JSONAssert.assertEquals(
+          getResourceAsString("/contracts/mq/command/deal-update-patch-command.json"),
+          mockMqListener.actualMessage,
+          JSONCompareMode.STRICT);
+
+      Workflow workflow = workflowFacade.get(301);
+      Assertions.assertThat(workflow.getWorkflowExecutedEvent().getLastTriggeredAt()).isNotNull();
+      Assertions.assertThat(workflow.getWorkflowExecutedEvent().getTriggerCount()).isEqualTo(152);
+    }
+  }
+
+  @Nested
+  @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
+  @AutoConfigureTestDatabase(replace = Replace.NONE)
+  @ContextConfiguration(initializers = {TestMqSetup.class, TestDatabaseInitializer.class})
   public class WorkflowProcessorMultiActionIntegrationTests {
 
     @Test
@@ -582,6 +742,9 @@ public class WorkflowProcessorIntegrationTests {
       rabbitMQContainer
           .withExchange(WORKFLOW_EXCHANGE, "topic")
           .withQueue(LEAD_UPDATE_COMMAND_QUEUE);
+      rabbitMQContainer
+          .withExchange(WORKFLOW_EXCHANGE, "topic")
+          .withQueue(LEAD_UPDATE_COMMAND_QUEUE_1);
       rabbitMQContainer
           .withExchange(WORKFLOW_EXCHANGE, "topic")
           .withQueue(LEAD_REASSIGN_COMMAND_QUEUE);

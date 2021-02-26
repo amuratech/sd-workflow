@@ -1,5 +1,6 @@
 package com.kylas.sales.workflow.domain;
 
+import static com.kylas.sales.workflow.api.request.Condition.TriggerType.IS_CHANGED;
 import static com.kylas.sales.workflow.common.dto.condition.ExpressionField.getFieldByName;
 import static com.kylas.sales.workflow.common.dto.condition.Operator.AND;
 import static com.kylas.sales.workflow.common.dto.condition.Operator.BETWEEN;
@@ -96,7 +97,7 @@ public class ConditionFacade {
             log.info("Element at odd array index cannot be AND or OR operator");
             throw new InvalidConditionException();
           }
-          if (i % 2 == 0 && element.hasBinaryOperator()) {
+          if (i % 2 == 0 && !element.getTriggerOn().equals(IS_CHANGED) && element.hasBinaryOperator()) {
             log.info("Element at even array index should be AND or OR operator");
             throw new InvalidConditionException();
           }
@@ -105,6 +106,9 @@ public class ConditionFacade {
   }
 
   private void validate(ExpressionElement element) {
+    if (IS_CHANGED.equals(element.getTriggerOn())) {
+      return;
+    }
     Operator operator = element.getOperator();
     if ((operator.equals(AND) || operator.equals(OR))) {
       if (!anyNotNull(element.getName(), element.getValue(), element.getTriggerOn())) {
@@ -112,7 +116,7 @@ public class ConditionFacade {
       }
       throw new InvalidConditionException();
     }
-    if (!allNotNull(operator, element.getName())) {
+    if (!IS_CHANGED.equals(element.getTriggerOn()) && !allNotNull(operator, element.getName())) {
       log.info("Expecting non-null operator and name");
       throw new InvalidConditionException();
     }
@@ -120,7 +124,7 @@ public class ConditionFacade {
         || operator.equals(IS_EMPTY) || operator.equals(IS_NOT_EMPTY)) {
       return;
     }
-    if (isNull(element.getValue())) {
+    if (!IS_CHANGED.equals(element.getTriggerOn()) && isNull(element.getValue())) {
       log.info("Expecting non-null value for {} operator.", operator);
       throw new InvalidConditionException();
     }
@@ -271,6 +275,7 @@ public class ConditionFacade {
   }
 
   private List<String> getActualValueOfList(ConditionExpression expression, Object entity) {
+
     List<String> values = new ArrayList<>();
     if (nonNull(expression.getName())) {
         EvaluationContext context = SimpleEvaluationContext.forReadOnlyDataBinding().build();
@@ -289,7 +294,7 @@ public class ConditionFacade {
   }
 
   public Mono<ConditionExpression> nameResolved(ConditionExpression expression, String authenticationToken) {
-    if (expression.getOperator().equals(AND) || expression.getOperator().equals(OR)) {
+    if (!IS_CHANGED.equals(expression.getTriggerOn()) && (expression.getOperator().equals(AND) || expression.getOperator().equals(OR))) {
       var resolvedOperand1 = nameResolved(expression.getOperand1(), authenticationToken);
       var resolvedOperand2 = nameResolved(expression.getOperand2(), authenticationToken);
       return Mono
@@ -302,7 +307,6 @@ public class ConditionFacade {
               expression.getValue(),
               isNull(expression.getTriggerOn()) ? null : expression.getTriggerOn().name()));
     }
-
     if (ID_NAME_PROPERTIES.contains(expression.getName())) {
       var idNameMono =
           USER_FIELDS.contains(expression.getName()) ? valueResolver.getUser(expression.getValue(), authenticationToken)
@@ -317,6 +321,13 @@ public class ConditionFacade {
   }
 
   private ConditionExpression getExpressionWithValue(ConditionExpression expression, IdName value) {
+    if (IS_CHANGED.equals(expression.getTriggerOn())) {
+      return new ConditionExpression(expression.getOperand1(),
+          expression.getOperand2(), null,
+          expression.getName(),
+          value,
+          expression.getTriggerOn().name());
+    }
     return new ConditionExpression(
         expression.getOperand1(),
         expression.getOperand2(),
@@ -367,8 +378,11 @@ public class ConditionFacade {
   }
 
   private ExpressionElement conditionElementFrom(ConditionExpression expression) {
-    if (expression.getOperator().equals(AND) || expression.getOperator().equals(OR)) {
-      return new ExpressionElement(expression.getOperator().name(), null, null, null);
+    if (IS_CHANGED.equals(expression.getTriggerOn()) || AND.equals(expression.getOperator()) || OR.equals(expression.getOperator())) {
+      String triggerOn = isNull(expression.getTriggerOn()) ? null : expression.getTriggerOn().name();
+      String operator = isNull(expression.getOperator()) ? null : expression.getOperator().name();
+      String name = isNull(expression.getName()) ? null : expression.getName();
+      return new ExpressionElement(operator, name, null, triggerOn);
     }
     return new ExpressionElement(
         expression.getOperator().name(),
@@ -384,7 +398,11 @@ public class ConditionFacade {
   }
 
   private ConditionExpression conditionExpressionFrom(ExpressionElement element) {
-    return (element.getOperator().equals(AND) || element.getOperator().equals(OR))
+
+    if (IS_CHANGED.equals(element.getTriggerOn())) {
+      return new ConditionExpression(element.getOperator(), element.getName(), element.getValue(), element.getTriggerOn());
+    }
+    return (element.getOperator().equals(AND) || element.getOperator().equals(OR) || element.getTriggerOn().equals(IS_CHANGED))
         ? new ConditionExpression(null, null, element.getOperator())
         : new ConditionExpression(element.getOperator(), element.getName(), element.getValue(), element.getTriggerOn());
   }

@@ -56,7 +56,11 @@ public class WorkflowCondition {
       this.operator = Operator.getByName(operator);
       this.name = name;
       this.value = value;
-      this.triggerOn = (this.operator.equals(AND) || this.operator.equals(OR)) ? null : Condition.TriggerType.valueOf(triggerOn);
+      if (TriggerType.IS_CHANGED.name().equals(triggerOn)) {
+        this.triggerOn = Condition.TriggerType.valueOf(triggerOn);
+      } else {
+        this.triggerOn = (this.operator.equals(AND) || this.operator.equals(OR)) ? null : Condition.TriggerType.valueOf(triggerOn);
+      }
     }
 
     public ConditionExpression(Operator operator, String name, Object value, TriggerType triggerType) {

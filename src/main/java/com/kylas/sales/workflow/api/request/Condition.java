@@ -45,10 +45,15 @@ public class Condition {
         @JsonProperty("name") String name,
         @JsonProperty("value") Object value,
         @JsonProperty("triggerOn") String triggerOn) {
-      this.operator = getByName(operator);
       this.name = name;
-      this.value = value;
       this.triggerOn = isNull(triggerOn) ? null : TriggerType.valueOf(triggerOn);
+      if (TriggerType.IS_CHANGED.name().equals(triggerOn)) {
+        this.operator = null;
+        this.value = null;
+      } else {
+        this.operator = getByName(operator);
+        this.value = value;
+      }
     }
 
     public boolean hasBinaryOperator() {
@@ -56,9 +61,10 @@ public class Condition {
     }
   }
 
+
   @Getter
   @AllArgsConstructor
   public enum TriggerType {
-    NEW_VALUE, OLD_VALUE
+    NEW_VALUE, OLD_VALUE, IS_CHANGED
   }
 }

@@ -1,8 +1,14 @@
 package com.kylas.sales.workflow.domain.processor;
 
+import static com.kylas.sales.workflow.common.dto.condition.ExpressionField.getFieldByName;
 import static java.util.Objects.isNull;
+import static java.util.Objects.nonNull;
+import static org.apache.commons.beanutils.BeanUtils.getNestedProperty;
 
 import com.kylas.sales.workflow.api.WorkflowService;
+import com.kylas.sales.workflow.api.request.Condition.TriggerType;
+import com.kylas.sales.workflow.common.dto.condition.Operator;
+import com.kylas.sales.workflow.common.dto.condition.WorkflowCondition.ConditionExpression;
 import com.kylas.sales.workflow.domain.ConditionFacade;
 import com.kylas.sales.workflow.domain.processor.exception.WorkflowExecutionException;
 import com.kylas.sales.workflow.domain.workflow.ConditionType;
@@ -22,10 +28,12 @@ import com.kylas.sales.workflow.error.ErrorCode;
 import com.kylas.sales.workflow.mq.command.EntityUpdatedCommandPublisher;
 import com.kylas.sales.workflow.mq.event.EntityEvent;
 import com.kylas.sales.workflow.mq.event.Metadata;
+import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.beanutils.NestedNullException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.expression.EvaluationContext;
 import org.springframework.expression.ExpressionParser;
@@ -74,7 +82,7 @@ public class WorkflowProcessor {
 
     var workflowIds = workflows.stream().map(Workflow::getId).collect(Collectors.toSet());
 
-    workflows.stream()
+    workflows
         .forEach(workflow -> {
           Metadata updatedMetadata = metadata.with(workflow.getId()).withAllWorkflowIds(workflowIds)
               .withEntityId(event.getEntityId());
@@ -88,7 +96,40 @@ public class WorkflowProcessor {
   private boolean satisfiesCondition(EntityEvent event, Workflow workflow) {
     return isNull(workflow.getWorkflowCondition()) ||
         workflow.getWorkflowCondition().getType().equals(ConditionType.FOR_ALL) ||
-        conditionFacade.satisfies(workflow.getWorkflowCondition().getExpression(), event.getEntity());
+        satisfies(workflow.getWorkflowCondition().getExpression(), event);
+  }
+
+  private boolean satisfies(ConditionExpression expression, EntityEvent event) {
+    if (!TriggerType.IS_CHANGED.equals(expression.getTriggerOn())) {
+      if (expression.getOperator().equals(Operator.AND)) {
+        return satisfies(expression.getOperand1(), event) && satisfies(expression.getOperand2(), event);
+      } else if (expression.getOperator().equals(Operator.OR)) {
+        return satisfies(expression.getOperand1(), event) || satisfies(expression.getOperand2(), event);
+      }
+    } else if (TriggerType.IS_CHANGED.equals(expression.getTriggerOn()) && !TriggerType.NEW_VALUE.equals(expression.getTriggerOn())
+        && !TriggerType.OLD_VALUE.equals(expression.getTriggerOn())) {
+      return satisfiesValueIsChanged(event, expression);
+    }
+    return expression.getTriggerOn().equals(TriggerType.NEW_VALUE)
+        ? conditionFacade.satisfies(expression, event.getEntity())
+        : conditionFacade.satisfies(expression, event.getOldEntity());
+  }
+
+  private boolean satisfiesValueIsChanged(EntityEvent event, ConditionExpression expression) {
+    ExpressionParser parser = new SpelExpressionParser();
+
+    String actualNewValue = null;
+    String actualOldValue = null;
+    if (nonNull(expression.getName())) {
+      try {
+        actualNewValue = getNestedProperty(event.getEntity(), getFieldByName(expression.getName()));
+        actualOldValue = getNestedProperty(event.getOldEntity(), getFieldByName(expression.getName()));
+      } catch (NestedNullException ignored) {
+      } catch (IllegalAccessException | NoSuchMethodException | InvocationTargetException e) {
+        log.error("Exception occurred while getting actual value for {}", expression.getName());
+      }
+    }
+    return !isNull(actualNewValue) && !actualNewValue.equals(actualOldValue);
   }
 
   private void processActions(Metadata metadata, final Set<AbstractWorkflowAction> workflowActions, EntityEvent event) {

@@ -1,7 +1,6 @@
 package com.kylas.sales.workflow.common.dto.condition;
 
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.kylas.sales.workflow.domain.exception.InvalidConditionException;
 import java.util.Arrays;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -33,7 +32,7 @@ public enum Operator {
     return Arrays.stream(values())
         .filter(operator -> operator.getName().equalsIgnoreCase(operatorName))
         .findAny()
-        .orElseThrow(InvalidConditionException::new);
+        .orElse(null);
   }
 
   @JsonValue
