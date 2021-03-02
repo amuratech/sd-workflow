@@ -29,6 +29,7 @@ import com.kylas.sales.workflow.common.dto.UsageRecord;
 import com.kylas.sales.workflow.common.dto.condition.Operator;
 import com.kylas.sales.workflow.config.TestDatabaseInitializer;
 import com.kylas.sales.workflow.domain.exception.InsufficientPrivilegeException;
+import com.kylas.sales.workflow.domain.exception.IntegrationPermissionException;
 import com.kylas.sales.workflow.domain.exception.InvalidActionException;
 import com.kylas.sales.workflow.domain.exception.InvalidWorkflowRequestException;
 import com.kylas.sales.workflow.domain.exception.WorkflowNotFoundException;
@@ -46,6 +47,8 @@ import com.kylas.sales.workflow.domain.workflow.action.task.AssignedTo;
 import com.kylas.sales.workflow.domain.workflow.action.task.DueDate;
 import com.kylas.sales.workflow.domain.workflow.action.webhook.Parameter;
 import com.kylas.sales.workflow.domain.workflow.action.webhook.attribute.AttributeFactory.WebhookEntity;
+import com.kylas.sales.workflow.integration.IntegrationConfig;
+import com.kylas.sales.workflow.integration.request.IntegrationRequest;
 import com.kylas.sales.workflow.mq.WorkflowEventPublisher;
 import com.kylas.sales.workflow.mq.event.TenantUsageEvent;
 import com.kylas.sales.workflow.security.AuthService;
@@ -88,6 +91,8 @@ class WorkflowFacadeTest {
   UserService userService;
   @Autowired
   WorkflowFacade workflowFacade;
+  @Autowired
+  WorkflowRepository workflowRepository;
   @MockBean
   private WorkflowEventPublisher workflowEventPublisher;
 
@@ -1348,6 +1353,148 @@ class WorkflowFacadeTest {
     var workflow = workflowFacade.get(4000L);
     //then
     assertThat(workflow.getAllowedActions().canUpdate()).isFalse();
+  }
+
+  @Transactional
+  @Test
+  @Sql("/test-scripts/insert-users.sql")
+  public void registerSystemDefaultWorkflow_shouldCreateIt() {
+    //given
+    long tenantId = 99L;
+    long userId = 12L;
+    User aUser = UserStub.aUser(userId, tenantId, true, true, true, false, false)
+        .withName("user 1");
+    given(authService.getLoggedInUser())
+        .willReturn(aUser);
+    given(userService.getUserDetails(12L, authService.getAuthenticationToken()))
+        .willReturn(Mono.just(aUser));
+    given(userService.getTenantCreator(tenantId, authService.getAuthenticationToken()))
+        .willReturn(Mono.just(aUser));
+    String hookUrl = "https://webhook.site/af3b2540-96fe-416a-a373-41596e4d7197";
+    IntegrationConfig config =
+        IntegrationConfig.from("create-lead", new IntegrationRequest(hookUrl));
+    //when
+    var workflow = workflowFacade.registerIntegration(config, aUser).block();
+    //then
+    assertThat(workflow).isNotNull();
+    assertThat(workflow.isSystemDefault()).isTrue();
+    assertThat(workflow.isActive()).isTrue();
+    assertThat(workflow.getWorkflowActions().stream().findFirst()).isPresent();
+    var workflowAction = workflow.getWorkflowActions().stream().findFirst().get();
+    var webhookAction = (WebhookAction) workflowAction.getType().toActionResponse(workflowAction).getPayload();
+    assertThat(webhookAction.getRequestUrl()).isEqualTo("https://webhook.site/af3b2540-96fe-416a-a373-41596e4d7197");
+    assertThat(webhookAction.getMethod()).isEqualTo(HttpMethod.POST);
+  }
+
+  @Transactional
+  @Test
+  @Sql("/test-scripts/insert-users.sql")
+  public void registerSystemDefaultWorkflow_onContactIntegration_shouldCreateIt() {
+    //given
+    long tenantId = 99L;
+    long userId = 12L;
+    User aUser = UserStub.aUser(userId, tenantId, true, true, true, true, true)
+        .withName("user 1");
+    given(authService.getLoggedInUser())
+        .willReturn(aUser);
+    given(userService.getUserDetails(12L, authService.getAuthenticationToken()))
+        .willReturn(Mono.just(aUser));
+    given(userService.getTenantCreator(tenantId, authService.getAuthenticationToken()))
+        .willReturn(Mono.just(aUser));
+    String hookUrl = "https://webhook.site/af3b2540-96fe-416a-a373-41596e4d7197";
+    IntegrationConfig config =
+        IntegrationConfig.from("create-contact", new IntegrationRequest(hookUrl));
+    //when
+    var workflow = workflowFacade.registerIntegration(config, aUser).block();
+    //then
+    assertThat(workflow).isNotNull();
+    assertThat(workflow.isSystemDefault()).isTrue();
+    assertThat(workflow.isActive()).isTrue();
+    assertThat(workflow.getEntityType()).isEqualTo(CONTACT);
+    assertThat(workflow.getWorkflowActions().stream().findFirst()).isPresent();
+    var workflowAction = workflow.getWorkflowActions().stream().findFirst().get();
+    var webhookAction = (WebhookAction) workflowAction.getType().toActionResponse(workflowAction).getPayload();
+    assertThat(webhookAction.getRequestUrl()).isEqualTo("https://webhook.site/af3b2540-96fe-416a-a373-41596e4d7197");
+    assertThat(webhookAction.getMethod()).isEqualTo(HttpMethod.POST);
+  }
+
+  @Transactional
+  @Test
+  @Sql("/test-scripts/insert-system-default-workflow.sql")
+  public void registerSystemDefaultWorkflow_forLastFragmentMatchingRequestUrl_shouldUpdateIt() {
+    //given
+    long tenantId = 99L;
+    long userId = 12L;
+    User aUser = UserStub.aUser(userId, tenantId, true, true, true, true, true)
+        .withName("user 1");
+    given(authService.getLoggedInUser())
+        .willReturn(aUser);
+    given(userService.getUserDetails(12L, authService.getAuthenticationToken()))
+        .willReturn(Mono.just(aUser));
+    given(userService.getTenantCreator(tenantId, authService.getAuthenticationToken()))
+        .willReturn(Mono.just(aUser));
+    IntegrationConfig config =
+        IntegrationConfig.from("create-lead", new IntegrationRequest("https://other.site/3e0d9676-ad3c-4cf2-a449-ca334e43b815"));
+    //when
+    var workflow = workflowFacade.registerIntegration(config, aUser).block();
+    //then
+    assertThat(workflow).isNotNull();
+    assertThat(workflow.isSystemDefault()).isTrue();
+    assertThat(workflow.isActive()).isTrue();
+    var workflowAction = workflow.getWorkflowActions().stream().findFirst().get();
+    var webhookAction = (WebhookAction) workflowAction.getType().toActionResponse(workflowAction).getPayload();
+    assertThat(webhookAction.getRequestUrl())
+        .isEqualTo("https://other.site/3e0d9676-ad3c-4cf2-a449-ca334e43b815");
+  }
+
+  @Transactional
+  @Test
+  public void registerSystemDefaultWorkflow_withNonTenantCreator_shouldThrow() {
+    //given
+    long tenantId = 99L;
+    long userId = 12L;
+    User aUser = UserStub.aUser(userId, tenantId, true, true, true, false, false)
+        .withName("user 1");
+    User tenantCreator = UserStub.aUser(17L, tenantId, true, true, true, false, false)
+        .withName("tenantCreator");
+    given(authService.getAuthenticationToken())
+        .willReturn("some-token");
+    given(authService.getLoggedInUser())
+        .willReturn(aUser);
+    given(userService.getUserDetails(12L, authService.getAuthenticationToken()))
+        .willReturn(Mono.just(aUser));
+    given(userService.getTenantCreator(tenantId, authService.getAuthenticationToken()))
+        .willReturn(Mono.just(tenantCreator));
+    String hookUrl = "https://webhook.site/af3b2540-96fe-416a-a373-41596e4d7197";
+    IntegrationConfig config =
+        IntegrationConfig.from("create-lead", new IntegrationRequest(hookUrl));
+    //when
+    assertThatExceptionOfType(IntegrationPermissionException.class)
+        .isThrownBy(() -> workflowFacade.registerIntegration(config, aUser).block())
+        .withMessage("You are not authorised to create/update an integration-based workflow.");
+  }
+
+  @Transactional
+  @Test
+  @Sql("/test-scripts/insert-system-default-workflow.sql")
+  public void unregisterSystemDefaultWorkflow_shouldDeactivateIt() {
+    //given
+    long tenantId = 99L;
+    long userId = 12L;
+    User aUser = UserStub.aUser(userId, tenantId, true, true, true, true, true)
+        .withName("user 1");
+    given(authService.getLoggedInUser())
+        .willReturn(aUser);
+    given(userService.getUserDetails(12L, authService.getAuthenticationToken()))
+        .willReturn(Mono.just(aUser));
+    given(userService.getTenantCreator(tenantId, authService.getAuthenticationToken()))
+        .willReturn(Mono.just(aUser));
+    IntegrationConfig config =
+        IntegrationConfig.from("create-lead", new IntegrationRequest("https://webhook.site/3e0d9676-ad3c-4cf2-a449-ca334e43b815"));
+    //when
+    workflowFacade.unregisterIntegration(config, aUser).block();
+    //then
+    assertThat(workflowRepository.findById(4000L)).isNotPresent();
   }
 
   @Transactional

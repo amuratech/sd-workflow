@@ -11,38 +11,39 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor
 public enum EntityType {
-  LEAD(true) {
+  LEAD(true, true) {
     public List<String> getIdNameFields() {
       return List.of(LeadAttribute.PIPELINE.getName());
     }
   },
-  CONTACT(true) {
+  CONTACT(true, true) {
     public List<String> getIdNameFields() {
       return List.of(ContactAttribute.COMPANY.getName());
     }
   },
-  DEAL(true) {
+  DEAL(true, false) {
     public List<String> getIdNameFields() {
       return emptyList();
     }
   },
-  USER(false) {
+  USER(false, false) {
     public List<String> getIdNameFields() {
       return emptyList();
     }
   },
-  TENANT(false) {
+  TENANT(false, false) {
     public List<String> getIdNameFields() {
       return emptyList();
     }
   },
-  CUSTOM(false) {
+  CUSTOM(false, false) {
     public List<String> getIdNameFields() {
       return emptyList();
     }
   };
 
   private final boolean workflowEntity;
+  private final boolean integrationAllowed;
 
   public abstract List<String> getIdNameFields();
 }

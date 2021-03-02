@@ -5,11 +5,14 @@ import static com.kylas.sales.workflow.common.dto.ActionDetail.EditPropertyActio
 import static com.kylas.sales.workflow.common.dto.ActionDetail.EditPropertyAction.ValueType.PLAIN;
 import static com.kylas.sales.workflow.domain.workflow.action.WorkflowAction.ActionType.CREATE_TASK;
 import static java.util.Arrays.asList;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 import com.kylas.sales.workflow.api.request.Condition;
 import com.kylas.sales.workflow.api.request.Condition.ExpressionElement;
@@ -37,9 +40,11 @@ import com.kylas.sales.workflow.domain.workflow.ConditionType;
 import com.kylas.sales.workflow.domain.workflow.EntityType;
 import com.kylas.sales.workflow.domain.workflow.TriggerFrequency;
 import com.kylas.sales.workflow.domain.workflow.TriggerType;
+import com.kylas.sales.workflow.domain.workflow.Workflow;
 import com.kylas.sales.workflow.domain.workflow.action.WorkflowAction.ActionType;
 import com.kylas.sales.workflow.domain.workflow.action.task.AssignedTo;
 import com.kylas.sales.workflow.domain.workflow.action.task.DueDate;
+import com.kylas.sales.workflow.integration.IntegrationConfig;
 import com.kylas.sales.workflow.matchers.FilterRequestMatcher;
 import com.kylas.sales.workflow.matchers.PageableMatcher;
 import com.kylas.sales.workflow.stubs.WorkflowStub;
@@ -56,6 +61,7 @@ import org.json.JSONException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.platform.commons.util.StringUtils;
+import org.mockito.ArgumentCaptor;
 import org.skyscreamer.jsonassert.Customization;
 import org.skyscreamer.jsonassert.JSONAssert;
 import org.skyscreamer.jsonassert.JSONCompareMode;
@@ -74,6 +80,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Sort.Order;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
@@ -1676,6 +1683,56 @@ class WorkflowControllerTest {
     var expectedResponse =
         getResourceAsString("classpath:contracts/workflow/api/create-workflow-response.json");
     JSONAssert.assertEquals(expectedResponse, workflowResponse, false);
+  }
+
+  @Test
+  public void workflowIntegrationRegisterRequest_shouldBeCaptured() {
+    //given
+    var integrationConfigCaptor = ArgumentCaptor.forClass(IntegrationConfig.class);
+    given(workflowService.registerIntegration(any()))
+        .willReturn(Mono.just(new Workflow()));
+    //when
+    buildWebClient()
+        .post()
+        .uri("/v1/workflows/integrations/create-lead")
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue("{\"hookUrl\": \"https://zapier.com/hooks/standard/some-path/\"}")
+        .retrieve()
+        .bodyToMono(String.class)
+        .block();
+    //then
+    verify(workflowService, times(1))
+        .registerIntegration(integrationConfigCaptor.capture());
+    var value = integrationConfigCaptor.getValue();
+    assertThat(value.getHookUrl()).isEqualTo("https://zapier.com/hooks/standard/some-path/");
+    assertThat(value.getEntityType()).isEqualTo(EntityType.LEAD);
+    assertThat(value.getTrigger().getName()).isEqualTo(TriggerType.EVENT);
+    assertThat(value.getTrigger().getTriggerFrequency()).isEqualTo(TriggerFrequency.CREATED);
+  }
+
+  @Test
+  public void workflowIntegrationUnregisterRequest_shouldBeCaptured() {
+    //given
+    var integrationConfigCaptor = ArgumentCaptor.forClass(IntegrationConfig.class);
+    given(workflowService.unregisterIntegration(any()))
+        .willReturn(Mono.just(true));
+    //when
+    buildWebClient()
+        .method(HttpMethod.DELETE)
+        .uri("/v1/workflows/integrations/create-lead")
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue("{\"hookUrl\": \"https://zapier.com/hooks/standard/some-path/\"}")
+        .retrieve()
+        .bodyToMono(String.class)
+        .block();
+    //then
+    verify(workflowService, times(1))
+        .unregisterIntegration(integrationConfigCaptor.capture());
+    var value = integrationConfigCaptor.getValue();
+    assertThat(value.getEntityType()).isEqualTo(EntityType.LEAD);
+    assertThat(value.getTrigger().getName()).isEqualTo(TriggerType.EVENT);
+    assertThat(value.getHookUrl()).isEqualTo("https://zapier.com/hooks/standard/some-path/");
+    assertThat(value.getTrigger().getTriggerFrequency()).isEqualTo(TriggerFrequency.CREATED);
   }
 
   @Test

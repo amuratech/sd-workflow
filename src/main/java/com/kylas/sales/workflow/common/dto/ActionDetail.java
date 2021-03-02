@@ -19,10 +19,14 @@ public interface ActionDetail {
     private final String name;
     private final String description;
     private final HttpMethod method;
-    private final String requestUrl;
+    private String requestUrl;
     private final AuthorizationType authorizationType;
     private final List<Parameter> parameters;
     private final String authorizationParameter;
+
+    public void setRequestUrl(String requestUrl) {
+      this.requestUrl = requestUrl;
+    }
 
     public enum AuthorizationType {
       NONE, API_KEY, BEARER_TOKEN, BASIC_AUTH

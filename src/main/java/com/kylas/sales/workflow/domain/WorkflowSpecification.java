@@ -7,6 +7,7 @@ import com.kylas.sales.workflow.domain.workflow.TriggerFrequency;
 import com.kylas.sales.workflow.domain.workflow.Workflow;
 import com.kylas.sales.workflow.domain.workflow.WorkflowTrigger_;
 import com.kylas.sales.workflow.domain.workflow.Workflow_;
+import com.kylas.sales.workflow.integration.IntegrationConfig;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.Date;
@@ -41,12 +42,16 @@ public class WorkflowSpecification {
     return (root, criteria, builder) -> builder.equal(root.get(Workflow_.active), true);
   }
 
+  static Specification<Workflow> systemDefault() {
+    return (root, criteria, builder) -> builder.equal(root.get(Workflow_.systemDefault), true);
+  }
+
   public static Specification<Workflow> hasFieldEqualsTo(String fieldName, Object value) {
-    return (root, criteriaQuery, criteriaBuilder) -> criteriaBuilder.equal(root.get(fieldName),value);
+    return (root, criteriaQuery, criteriaBuilder) -> criteriaBuilder.equal(root.get(fieldName), value);
   }
 
   public static Specification<Workflow> fieldIsNotEqualsTo(String fieldName, Object value) {
-    return (root, criteriaQuery, criteriaBuilder) -> criteriaBuilder.equal(root.get(fieldName),value).not();
+    return (root, criteriaQuery, criteriaBuilder) -> criteriaBuilder.equal(root.get(fieldName), value).not();
   }
 
   public static Specification<Workflow> hasFieldGreaterTo(String fieldName, Object value) {
@@ -93,5 +98,11 @@ public class WorkflowSpecification {
       log.error("Unable to parse date " + value, ex);
       throw new InvalidFilterException();
     }
+  }
+
+  public static Specification<Workflow> systemDefaultConfiguration(IntegrationConfig config) {
+    return systemDefault()
+        .and(withEntityType(config.getEntityType())
+            .and(withTriggerFrequency(config.getTrigger().getTriggerFrequency())));
   }
 }

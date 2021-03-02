@@ -1,0 +1,206 @@
+{
+  "name": "Integration- Webhook on Lead Update",
+  "description": "This workflow posts lead information on the specified REST endpoint when a lead gets updated.",
+  "entityType": "LEAD",
+  "trigger": {
+    "name": "EVENT",
+    "triggerFrequency": "UPDATED"
+  },
+  "condition": {
+    "conditionType": "FOR_ALL"
+  },
+  "actions": [
+    {
+      "type": "WEBHOOK",
+      "payload": {
+        "name": "Integration- Post Lead Details",
+        "description": "This webhook posts lead details when it is created.",
+        "method": "POST",
+        "authorizationType": "NONE",
+        "parameters": [
+          {
+            "name": "id",
+            "entity": "LEAD",
+            "attribute": "id"
+          },
+          {
+            "entity": "LEAD",
+            "name": "salutation",
+            "attribute": "salutation"
+          },
+          {
+            "entity": "LEAD",
+            "name": "firstName",
+            "attribute": "firstName"
+          },
+          {
+            "entity": "LEAD",
+            "name": "lastName",
+            "attribute": "lastName"
+          },
+          {
+            "entity": "LEAD",
+            "name": "email",
+            "attribute": "emails"
+          },
+          {
+            "entity": "LEAD",
+            "name": "phoneNumber",
+            "attribute": "phoneNumbers"
+          },
+          {
+            "entity": "LEAD",
+            "name": "pipeline",
+            "attribute": "pipeline"
+          },
+          {
+            "entity": "LEAD",
+            "name": "status",
+            "attribute": "pipelineStage"
+          },
+          {
+            "entity": "LEAD",
+            "name": "timezone",
+            "attribute": "timezone"
+          },
+          {
+            "entity": "LEAD",
+            "name": "address",
+            "attribute": "address"
+          },
+          {
+            "entity": "LEAD",
+            "name": "city",
+            "attribute": "city"
+          },
+          {
+            "entity": "LEAD",
+            "name": "state",
+            "attribute": "state"
+          },
+          {
+            "entity": "LEAD",
+            "name": "country",
+            "attribute": "country"
+          },
+          {
+            "entity": "LEAD",
+            "name": "zipcode",
+            "attribute": "zipcode"
+          },
+          {
+            "entity": "LEAD",
+            "name": "facebook",
+            "attribute": "facebook"
+          },
+          {
+            "entity": "LEAD",
+            "name": "twitter",
+            "attribute": "twitter"
+          },
+          {
+            "entity": "LEAD",
+            "name": "linkedIn",
+            "attribute": "linkedIn"
+          },
+          {
+            "entity": "LEAD",
+            "name": "companyName",
+            "attribute": "companyName"
+          },
+          {
+            "entity": "LEAD",
+            "name": "department",
+            "attribute": "department"
+          },
+          {
+            "entity": "LEAD",
+            "name": "designation",
+            "attribute": "designation"
+          },
+          {
+            "entity": "LEAD",
+            "name": "companyIndustry",
+            "attribute": "companyIndustry"
+          },
+          {
+            "entity": "LEAD",
+            "name": "businessType",
+            "attribute": "companyBusinessType"
+          },
+          {
+            "entity": "LEAD",
+            "name": "companyEmployees",
+            "attribute": "companyEmployees"
+          },
+          {
+            "entity": "LEAD",
+            "name": "companyAnnualRevenue",
+            "attribute": "companyAnnualRevenue"
+          },
+          {
+            "entity": "LEAD",
+            "name": "companyWebsite",
+            "attribute": "companyWebsite"
+          },
+          {
+            "entity": "LEAD",
+            "name": "companyPhone",
+            "attribute": "companyPhones"
+          },
+          {
+            "entity": "LEAD",
+            "name": "name",
+            "attribute": "requirementName"
+          },
+          {
+            "entity": "LEAD",
+            "name": "product",
+            "attribute": "products"
+          },
+          {
+            "entity": "LEAD",
+            "name": "currency",
+            "attribute": "requirementCurrency"
+          },
+          {
+            "entity": "LEAD",
+            "name": "budget",
+            "attribute": "requirementBudget"
+          },
+          {
+            "entity": "LEAD",
+            "name": "campaign",
+            "attribute": "campaign"
+          },
+          {
+            "entity": "LEAD",
+            "name": "source",
+            "attribute": "source"
+          },
+          {
+            "entity": "LEAD",
+            "name": "updatedBy",
+            "attribute": "updatedBy"
+          },
+          {
+            "entity": "LEAD",
+            "name": "updatedAt",
+            "attribute": "updatedAt"
+          },
+          {
+            "entity": "LEAD",
+            "name": "createdBy",
+            "attribute": "createdBy"
+          },
+          {
+            "entity": "LEAD",
+            "name": "createdAt",
+            "attribute": "createdAt"
+          }
+        ],
+        "authorizationParameter": null
+      }
+    }
+  ]
+}

@@ -3,21 +3,26 @@ package com.kylas.sales.workflow.domain;
 import static com.kylas.sales.workflow.domain.WorkflowSpecification.active;
 import static com.kylas.sales.workflow.domain.WorkflowSpecification.belongToTenant;
 import static com.kylas.sales.workflow.domain.WorkflowSpecification.belongToUser;
+import static com.kylas.sales.workflow.domain.WorkflowSpecification.systemDefaultConfiguration;
 import static com.kylas.sales.workflow.domain.WorkflowSpecification.withEntityType;
 import static com.kylas.sales.workflow.domain.WorkflowSpecification.withId;
 import static com.kylas.sales.workflow.domain.WorkflowSpecification.withTriggerFrequency;
 import static com.kylas.sales.workflow.domain.processor.FieldValueTypeFactory.createByEntityType;
 import static com.kylas.sales.workflow.domain.workflow.action.WorkflowAction.ActionType.EDIT_PROPERTY;
+import static java.lang.String.format;
 import static java.util.Objects.isNull;
 import static org.apache.commons.collections.CollectionUtils.isEmpty;
 import static org.apache.commons.lang3.ObjectUtils.allNotNull;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kylas.sales.workflow.api.request.WorkflowRequest;
 import com.kylas.sales.workflow.common.dto.ActionDetail.EditPropertyAction;
+import com.kylas.sales.workflow.common.dto.ActionDetail.WebhookAction;
 import com.kylas.sales.workflow.common.dto.ActionResponse;
 import com.kylas.sales.workflow.common.dto.UsageRecord;
 import com.kylas.sales.workflow.domain.exception.InsufficientPrivilegeException;
+import com.kylas.sales.workflow.domain.exception.IntegrationPermissionException;
 import com.kylas.sales.workflow.domain.exception.InvalidActionException;
 import com.kylas.sales.workflow.domain.exception.InvalidValueTypeException;
 import com.kylas.sales.workflow.domain.exception.InvalidWorkflowRequestException;
@@ -30,9 +35,16 @@ import com.kylas.sales.workflow.domain.workflow.TriggerFrequency;
 import com.kylas.sales.workflow.domain.workflow.Workflow;
 import com.kylas.sales.workflow.domain.workflow.WorkflowTrigger;
 import com.kylas.sales.workflow.domain.workflow.action.AbstractWorkflowAction;
+import com.kylas.sales.workflow.integration.IntegrationConfig;
 import com.kylas.sales.workflow.mq.WorkflowEventPublisher;
 import com.kylas.sales.workflow.mq.event.TenantUsageEvent;
 import com.kylas.sales.workflow.security.AuthService;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -41,6 +53,8 @@ import java.util.stream.Collectors;
 import javax.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -58,6 +72,7 @@ public class WorkflowFacade {
   private final UserFacade userFacade;
   private final ConditionFacade conditionFacade;
   private final WorkflowEventPublisher workflowEventPublisher;
+  private final ObjectMapper objectMapper;
 
   @Autowired
   public WorkflowFacade(
@@ -66,7 +81,7 @@ public class WorkflowFacade {
       AuthService authService,
       UserService userService,
       UserFacade userFacade,
-      ConditionFacade conditionFacade, WorkflowEventPublisher workflowEventPublisher) {
+      ConditionFacade conditionFacade, WorkflowEventPublisher workflowEventPublisher, ObjectMapper objectMapper) {
     this.workflowRepository = workflowRepository;
     this.workflowExecutedEventRepository = workflowExecutedEventRepository;
     this.authService = authService;
@@ -74,11 +89,14 @@ public class WorkflowFacade {
     this.userFacade = userFacade;
     this.conditionFacade = conditionFacade;
     this.workflowEventPublisher = workflowEventPublisher;
+    this.objectMapper = objectMapper;
   }
 
   public Mono<Workflow> create(WorkflowRequest workflowRequest) {
-    var loggedInUser = authService.getLoggedInUser();
-    var authenticationToken = authService.getAuthenticationToken();
+    return create(workflowRequest, authService.getLoggedInUser(), authService.getAuthenticationToken());
+  }
+
+  public Mono<Workflow> create(WorkflowRequest workflowRequest, User loggedInUser, String authenticationToken) {
     return userService
         .getUserDetails(loggedInUser.getId(), authenticationToken)
         .map(user -> userFacade.getExistingOrCreateNewUser(user, loggedInUser.getTenantId()))
@@ -125,6 +143,18 @@ public class WorkflowFacade {
   public Mono<Workflow> update(long workflowId, WorkflowRequest request) {
     var loggedInUser = authService.getLoggedInUser();
     var authenticationToken = authService.getAuthenticationToken();
+    workflowRepository
+        .findOne(getSpecificationByUpdatePrivileges(loggedInUser).and(withId(workflowId)))
+        .ifPresent(workflow -> {
+          if (workflow.isSystemDefault()) {
+            log.error("User cannot update system-default workflow-{}", workflowId);
+            throw new InvalidWorkflowRequestException();
+          }
+        });
+    return update(workflowId, request, loggedInUser, authenticationToken);
+  }
+
+  public Mono<Workflow> update(long workflowId, WorkflowRequest request, User loggedInUser, String authenticationToken) {
     return userService
         .getUserDetails(loggedInUser.getId(), authenticationToken)
         .map(user -> userFacade.getExistingOrCreateNewUser(user, loggedInUser.getTenantId()))
@@ -135,12 +165,7 @@ public class WorkflowFacade {
                         getSpecificationByUpdatePrivileges(loggedInUser).and(withId(workflowId)))
                     .map(
                         workflow -> {
-                          if (workflow.isSystemDefault()) {
-                            log.error("User cannot update system-default workflow.");
-                            throw new InvalidWorkflowRequestException();
-                          }
                           var condition = conditionFacade.update(request.getCondition(), workflow);
-
                           var trigger = workflow.getWorkflowTrigger().update(request.getTrigger());
                           var actions =
                               updateOrCreateActions(request, workflow);
@@ -205,7 +230,10 @@ public class WorkflowFacade {
   }
 
   public Workflow deactivate(long workflowId) {
-    var user = authService.getLoggedInUser();
+    return deactivate(workflowId, authService.getLoggedInUser());
+  }
+
+  public Workflow deactivate(long workflowId, User user) {
     return workflowRepository
         .findOne(getSpecificationByUpdatePrivileges(user).and(withId(workflowId)))
         .map(workflow -> workflowRepository.saveAndFlush(workflow.deactivate()))
@@ -213,11 +241,19 @@ public class WorkflowFacade {
   }
 
   public Workflow activate(long workflowId) {
-    var user = authService.getLoggedInUser();
+    return activate(workflowId, authService.getLoggedInUser());
+  }
+
+  public Workflow activate(long workflowId, User user) {
     return workflowRepository
         .findOne(getSpecificationByUpdatePrivileges(user).and(withId(workflowId)))
         .map(workflow -> workflowRepository.saveAndFlush(workflow.activate()))
         .orElseThrow(WorkflowNotFoundException::new);
+  }
+
+  public Mono<Boolean> delete(long workflowId) {
+    workflowRepository.deleteById(workflowId);
+    return Mono.just(true);
   }
 
   private Specification<Workflow> getSpecificationByUpdatePrivileges(User user) {
@@ -287,5 +323,100 @@ public class WorkflowFacade {
   public void publishTenantUsage() {
     List<UsageRecord> usageRecords = workflowRepository.getActiveCountByTenantId();
     workflowEventPublisher.publishTenantUsage(new TenantUsageEvent(usageRecords));
+  }
+
+  public Mono<Workflow> updateOrCreateSystemDefaultWorkflow(IntegrationConfig config) {
+    User user = authService.getLoggedInUser();
+    String authToken = authService.getAuthenticationToken();
+    var specification = belongToTenant(user.getTenantId()).and(systemDefaultConfiguration(config));
+    String lastSegment = getLastSegment(config.getHookUrl());
+    return workflowRepository.findAll(specification).stream()
+        .filter(workflow -> lastSegment.equals(getLastSegment(getWebhookAction(workflow).getRequestUrl())))
+        .findFirst()
+        .map(workflow -> update(workflow.getId(), getWorkflowRequestFor(config), user, authToken)
+            .map(updatedWorkflow -> workflowRepository.save(updatedWorkflow.withSystemDefault(true))))
+        .orElseGet(() -> create(getWorkflowRequestFor(config), user, authToken)
+            .map(workflow -> workflowRepository.save(workflow.withSystemDefault(true))));
+  }
+
+  private WebhookAction getWebhookAction(Workflow workflow) {
+    var workflowAction = workflow.getWorkflowActions().stream().findFirst().orElseThrow(InvalidActionException::new);
+    return (WebhookAction) workflowAction.getType().toActionResponse(workflowAction).getPayload();
+  }
+
+  private String getLastSegment(String url) {
+    if (url == null) {
+      return null;
+    }
+    Path urlPath = Paths.get(url);
+    return urlPath.getName(urlPath.getNameCount() - 1).toString();
+  }
+
+  public Mono<Workflow> getSystemDefaultWorkflowFor(IntegrationConfig config) {
+    User user = authService.getLoggedInUser();
+    return workflowRepository
+        .findAll(belongToTenant(user.getTenantId()).and(systemDefaultConfiguration(config)))
+        .stream()
+        .filter(workflow -> config.getHookUrl().equals(getWebhookAction(workflow).getRequestUrl()))
+        .findFirst()
+        .map(Mono::just)
+        .orElseThrow(WorkflowNotFoundException::new);
+  }
+
+  private WorkflowRequest getWorkflowRequestFor(IntegrationConfig config) {
+    try {
+      String requestString = readFromFile(
+          format("/system-default-workflow/%s-%s.json",
+              config.getEntityType().name().toLowerCase(), config.getTrigger().getTriggerFrequency().name().toLowerCase()));
+      WorkflowRequest request = objectMapper.readValue(requestString, WorkflowRequest.class);
+      request.getActions().stream()
+          .findFirst()
+          .map(actionResponse -> (WebhookAction) actionResponse.getPayload())
+          .ifPresent(webhookAction -> webhookAction.setRequestUrl(config.getHookUrl()));
+      return request;
+    } catch (IOException e) {
+      log.error("Exception while building workflow request for entity-{}, trigger-{}",
+          config.getEntityType(), config.getTrigger().getTriggerFrequency());
+      throw new InvalidWorkflowRequestException();
+    }
+  }
+
+  private static String readFromFile(String resourcePath) throws IOException {
+    Resource resource = new ClassPathResource(resourcePath);
+    InputStream inputStream = resource.getInputStream();
+    return readFromInputStream(inputStream);
+  }
+
+  private static String readFromInputStream(InputStream inputStream) throws IOException {
+    StringBuilder resultStringBuilder = new StringBuilder();
+    try (BufferedReader br = new BufferedReader(new InputStreamReader(inputStream))) {
+      String line;
+      while ((line = br.readLine()) != null) {
+        resultStringBuilder.append(line).append("\n");
+      }
+    }
+    return resultStringBuilder.toString();
+  }
+
+  public Mono<Workflow> registerIntegration(IntegrationConfig config, User user) {
+    return validateTenantCreatorUser(user, authService.getAuthenticationToken())
+        .then(updateOrCreateSystemDefaultWorkflow(config))
+        .map(workflow -> workflow.isActive() ? workflow : activate(workflow.getId(), user));
+  }
+
+  public Mono<Boolean> unregisterIntegration(IntegrationConfig config, User user) {
+    return validateTenantCreatorUser(user, authService.getAuthenticationToken())
+        .then(getSystemDefaultWorkflowFor(config)
+            .flatMap(workflow -> delete(workflow.getId())));
+  }
+
+  private Mono<User> validateTenantCreatorUser(User user, String authToken) {
+    return userService.getTenantCreator(user.getTenantId(), authToken)
+        .map(tenantCreator -> {
+          if (tenantCreator.getId() != user.getId()) {
+            throw new IntegrationPermissionException();
+          }
+          return user;
+        });
   }
 }

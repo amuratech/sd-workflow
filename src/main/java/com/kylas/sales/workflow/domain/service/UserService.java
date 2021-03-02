@@ -45,4 +45,17 @@ public class UserService {
         .retrieve()
         .bodyToMono(Tenant.class);
   }
+
+  public Mono<User> getTenantCreator(long tenantId, String authenticationToken) {
+    return WebClient.builder()
+        .baseUrl(clientBasePath)
+        .defaultHeader(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE)
+        .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + authenticationToken)
+        .build()
+        .get()
+        .uri(uriBuilder -> uriBuilder.path("/v1/tenants").path("/" + tenantId).path("/creator").build())
+        .accept(MediaType.APPLICATION_JSON)
+        .retrieve()
+        .bodyToMono(User.class);
+  }
 }

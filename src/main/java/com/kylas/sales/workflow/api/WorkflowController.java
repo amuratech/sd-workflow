@@ -6,6 +6,9 @@ import com.kylas.sales.workflow.api.request.FilterRequest;
 import com.kylas.sales.workflow.api.request.WorkflowRequest;
 import com.kylas.sales.workflow.api.response.WorkflowDetail;
 import com.kylas.sales.workflow.api.response.WorkflowEntry;
+import com.kylas.sales.workflow.domain.workflow.Workflow;
+import com.kylas.sales.workflow.integration.IntegrationConfig;
+import com.kylas.sales.workflow.integration.request.IntegrationRequest;
 import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -15,6 +18,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Sort.Order;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -102,5 +106,15 @@ public class WorkflowController {
   @PostMapping(value = "/{id}/activate", produces = APPLICATION_JSON_VALUE)
   public Mono<WorkflowDetail> activate(@PathVariable("id") long workflowId) {
     return workflowService.activate(workflowId);
+  }
+
+  @PostMapping(value = "/integrations/{event}")
+  public Mono<Workflow> registerSystemDefault(@PathVariable("event") String event, @RequestBody IntegrationRequest request) {
+    return workflowService.registerIntegration(IntegrationConfig.from(event, request));
+  }
+
+  @DeleteMapping(value = "/integrations/{event}")
+  public Mono<Boolean> unregisterSystemDefault(@PathVariable("event") String event, @RequestBody IntegrationRequest request) {
+    return workflowService.unregisterIntegration(IntegrationConfig.from(event, request));
   }
 }

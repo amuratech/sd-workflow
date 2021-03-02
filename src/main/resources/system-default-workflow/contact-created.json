@@ -1,0 +1,137 @@
+{
+  "name": "Integration- Webhook on Contact Creation",
+  "description": "This workflow posts contact information on the specified REST endpoint when a contact gets created.",
+  "active": false,
+  "actions": [
+    {
+      "type": "WEBHOOK",
+      "payload": {
+        "name": "Integration- Post Contact Details",
+        "method": "POST",
+        "authorizationType": "NONE",
+        "authorizationParameter": null,
+        "parameters": [
+          {
+            "name": "id",
+            "entity": "CONTACT",
+            "attribute": "id"
+          },
+          {
+            "entity": "CONTACT",
+            "name": "salutation",
+            "attribute": "salutation"
+          },
+          {
+            "entity": "CONTACT",
+            "name": "firstName",
+            "attribute": "firstName"
+          },
+          {
+            "entity": "CONTACT",
+            "name": "lastName",
+            "attribute": "lastName"
+          },
+          {
+            "entity": "CONTACT",
+            "name": "email",
+            "attribute": "emails"
+          },
+          {
+            "entity": "CONTACT",
+            "name": "phoneNumber",
+            "attribute": "phoneNumbers"
+          },
+          {
+            "entity": "CONTACT",
+            "name": "timezone",
+            "attribute": "timezone"
+          },
+          {
+            "entity": "CONTACT",
+            "name": "address",
+            "attribute": "address"
+          },
+          {
+            "entity": "CONTACT",
+            "name": "city",
+            "attribute": "city"
+          },
+          {
+            "entity": "CONTACT",
+            "name": "state",
+            "attribute": "state"
+          },
+          {
+            "entity": "CONTACT",
+            "name": "country",
+            "attribute": "country"
+          },
+          {
+            "entity": "CONTACT",
+            "name": "zipcode",
+            "attribute": "zipcode"
+          },
+          {
+            "entity": "CONTACT",
+            "name": "facebook",
+            "attribute": "facebook"
+          },
+          {
+            "entity": "CONTACT",
+            "name": "twitter",
+            "attribute": "twitter"
+          },
+          {
+            "entity": "CONTACT",
+            "name": "linkedIn",
+            "attribute": "linkedin"
+          },
+          {
+            "entity": "CONTACT",
+            "name": "company",
+            "attribute": "company"
+          },
+          {
+            "entity": "CONTACT",
+            "name": "department",
+            "attribute": "department"
+          },
+          {
+            "entity": "CONTACT",
+            "name": "designation",
+            "attribute": "designation"
+          },
+          {
+            "entity": "CONTACT",
+            "name": "createdBy",
+            "attribute": "createdBy"
+          },
+          {
+            "entity": "CONTACT",
+            "name": "createdAt",
+            "attribute": "createdAt"
+          },
+          {
+            "entity": "CONTACT",
+            "name": "stakeholder",
+            "attribute": "stakeholder"
+          },
+          {
+            "entity": "CONTACT",
+            "name": "dnd",
+            "attribute": "dnd"
+          }
+        ],
+        "description": "This webhook posts contact details when it is created."
+      }
+    }
+  ],
+  "entityType": "CONTACT",
+  "trigger": {
+    "name": "EVENT",
+    "triggerFrequency": "CREATED"
+  },
+  "condition": {
+    "conditionType": "FOR_ALL"
+  }
+}

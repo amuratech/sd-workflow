@@ -86,7 +86,7 @@ public class Workflow {
   private Workflow(Long id, @NotBlank @Size(min = 3, max = 255) String name, String description,
       EntityType entityType, WorkflowTrigger workflowTrigger, WorkflowCondition workflowCondition,
       Set<AbstractWorkflowAction> workflowActions, boolean active, User createdBy, User updatedBy, Long tenantId, Date createdAt,
-      Date updatedAt, Action allowedActions, WorkflowExecutedEvent executedEvent) {
+      Date updatedAt, Action allowedActions, WorkflowExecutedEvent executedEvent, boolean systemDefault) {
     this.id = id;
     this.name = name;
     this.description = description;
@@ -105,6 +105,7 @@ public class Workflow {
     this.updatedAt = updatedAt;
     this.allowedActions = allowedActions;
     this.workflowExecutedEvent = executedEvent;
+    this.systemDefault = systemDefault;
   }
 
   private Workflow(String name, String description, EntityType entityType, WorkflowTrigger workflowTrigger,
@@ -211,7 +212,8 @@ public class Workflow {
         this.createdAt,
         new Date(),
         this.allowedActions,
-        this.workflowExecutedEvent);
+        this.workflowExecutedEvent,
+        this.systemDefault);
   }
 
   public Workflow deactivate() {
@@ -230,7 +232,8 @@ public class Workflow {
         this.createdAt,
         new Date(),
         this.allowedActions,
-        this.workflowExecutedEvent);
+        this.workflowExecutedEvent,
+        this.systemDefault);
   }
 
   public Workflow update(
@@ -256,7 +259,28 @@ public class Workflow {
         this.createdAt,
         new Date(),
         this.allowedActions,
-        this.workflowExecutedEvent
+        this.workflowExecutedEvent,
+        this.systemDefault
     );
+  }
+
+  public Workflow withSystemDefault(boolean systemDefault) {
+    return new Workflow(
+        this.id,
+        this.name,
+        this.description,
+        this.entityType,
+        this.workflowTrigger,
+        this.workflowCondition,
+        this.workflowActions,
+        this.active,
+        this.createdBy,
+        this.updatedBy,
+        this.tenantId,
+        this.createdAt,
+        new Date(),
+        this.allowedActions,
+        this.workflowExecutedEvent,
+        systemDefault);
   }
 }

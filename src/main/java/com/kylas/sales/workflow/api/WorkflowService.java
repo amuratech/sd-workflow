@@ -29,6 +29,7 @@ import com.kylas.sales.workflow.domain.workflow.WorkflowExecutedEvent;
 import com.kylas.sales.workflow.domain.workflow.action.WorkflowAction.ActionType;
 import com.kylas.sales.workflow.domain.workflow.action.task.AssignedTo;
 import com.kylas.sales.workflow.domain.workflow.action.webhook.attribute.AttributeFactory.LeadAttribute;
+import com.kylas.sales.workflow.integration.IntegrationConfig;
 import com.kylas.sales.workflow.security.AuthService;
 import java.util.List;
 import java.util.Optional;
@@ -203,5 +204,13 @@ public class WorkflowService {
 
     List<WorkflowEntry> workflowEntries = list.getContent().stream().map(this::toWorkflowEntry).collect(toList());
     return new PageImpl<>(workflowEntries, list.getPageable(), list.getTotalElements());
+  }
+
+  public Mono<Workflow> registerIntegration(IntegrationConfig config) {
+    return workflowFacade.registerIntegration(config, authService.getLoggedInUser());
+  }
+
+  public Mono<Boolean> unregisterIntegration(IntegrationConfig config) {
+    return workflowFacade.unregisterIntegration(config, authService.getLoggedInUser());
   }
 }
