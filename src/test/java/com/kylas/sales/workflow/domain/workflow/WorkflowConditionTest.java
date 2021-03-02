@@ -26,8 +26,10 @@ import com.kylas.sales.workflow.domain.ConditionFacade;
 import com.kylas.sales.workflow.domain.processor.lead.IdName;
 import com.kylas.sales.workflow.domain.processor.lead.LeadDetail;
 import com.kylas.sales.workflow.domain.processor.lead.Product;
+import com.kylas.sales.workflow.mq.event.LeadEvent;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -380,6 +382,46 @@ class WorkflowConditionTest {
         .isFalse();
   }
 
+  @Test
+  public void givenInOperator_onBudget_evaluatesTrue() {
+    var expression = new ConditionExpression(IN, "requirementBudget", "40, 50", NEW_VALUE);
+    var entity = stubLeadDetail();
+    entity.setRequirementBudget(50D);
+
+    assertThat(conditionFacade.satisfies(expression, entity))
+        .isTrue();
+  }
+
+  @Test
+  public void givenInOperator_onBudget_evaluatesFalse() {
+    var expression = new ConditionExpression(IN, "requirementBudget", "40, 50", NEW_VALUE);
+    var entity = stubLeadDetail();
+    entity.setRequirementBudget(80D);
+
+    assertThat(conditionFacade.satisfies(expression, entity))
+        .isFalse();
+  }
+
+  @Test
+  public void givenNotInOperator_onBudget_evaluatesTrue() {
+    var expression = new ConditionExpression(NOT_IN, "requirementBudget", "40, 50", NEW_VALUE);
+    var entity = stubLeadDetail();
+    entity.setRequirementBudget(30D);
+
+    assertThat(conditionFacade.satisfies(expression, entity))
+        .isTrue();
+  }
+
+  @Test
+  public void givenNotInOperator_onBudget_evaluatesFalse() {
+    var expression = new ConditionExpression(NOT_IN, "requirementBudget", "40, 50", NEW_VALUE);
+    var entity = stubLeadDetail();
+    entity.setRequirementBudget(50D);
+
+    assertThat(conditionFacade.satisfies(expression, entity))
+        .isFalse();
+  }
+
   @Nested
   @DisplayName("Condition tests for IdName values")
   @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
@@ -618,6 +660,7 @@ class WorkflowConditionTest {
 
       assertThat(conditionFacade.satisfies(expression, entity)).isTrue();
     }
+
     @Test
     public void givenInValidProductExpression_tryToCompareUsingNotContainsOperatorOnListOfProducts_shouldReturnFalse() {
       Object product = new IdName(101L, "Product1");
@@ -634,15 +677,38 @@ class WorkflowConditionTest {
       var entity = stubLeadDetail();
       assertThat(conditionFacade.satisfies(expression, entity)).isTrue();
     }
+
     @Test
     public void givenProductExpression_tryToCompareUsingIsNotEmptyOperator_shouldReturnTrue() {
       ConditionExpression expression = new ConditionExpression(IS_NOT_EMPTY, "products", null, NEW_VALUE);
       var entity = stubLeadDetail();
-      entity.setProducts(Arrays.asList(new Product(101,"Product1"),new Product(102,"Product2")));
+      entity.setProducts(Arrays.asList(new Product(101, "Product1"), new Product(102, "Product2")));
 
       assertThat(conditionFacade.satisfies(expression, entity)).isTrue();
     }
 
+  }
+
+  @Test
+  public void givenIsChanged_onProducts_evaluatesTrue() {
+    var expression = new ConditionExpression(null, null, null, "products", null, "IS_CHANGED");
+    var oldEntity = stubLeadDetail();
+    oldEntity.setProducts(List.of(new Product(12L, "new product")));
+    var newEntity = stubLeadDetail();
+    newEntity.setProducts(List.of(new Product(13L, "new product")));
+    LeadEvent event = new LeadEvent(newEntity, oldEntity, null);
+    assertThat(conditionFacade.satisfiesValueIsChanged(event, expression)).isTrue();
+  }
+
+  @Test
+  public void givenIsChanged_onProducts_evaluatesFalse() {
+    var expression = new ConditionExpression(null, null, null, "products", null, "IS_CHANGED");
+    var oldEntity = stubLeadDetail();
+    oldEntity.setProducts(List.of(new Product(12L, "new product")));
+    var newEntity = stubLeadDetail();
+    newEntity.setProducts(List.of(new Product(12L, "new product")));
+    LeadEvent event = new LeadEvent(newEntity, oldEntity, null);
+    assertThat(conditionFacade.satisfiesValueIsChanged(event, expression)).isFalse();
   }
 
   private LeadDetail stubLeadDetail() {

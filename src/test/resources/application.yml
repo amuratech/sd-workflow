@@ -29,3 +29,5 @@ client:
     basePath: http://localhost:9090/search
   product:
     basePath: http://localhost:9090/product
+  company:
+    basePath: http://localhost:8091/company

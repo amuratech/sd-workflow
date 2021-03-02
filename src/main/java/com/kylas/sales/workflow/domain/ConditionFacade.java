@@ -37,6 +37,7 @@ import com.kylas.sales.workflow.domain.processor.lead.IdName;
 import com.kylas.sales.workflow.domain.service.ValueResolver;
 import com.kylas.sales.workflow.domain.workflow.Workflow;
 import com.kylas.sales.workflow.domain.workflow.WorkflowCondition;
+import com.kylas.sales.workflow.mq.event.EntityEvent;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -62,21 +63,22 @@ import reactor.core.publisher.Mono;
 public class ConditionFacade {
 
   private final ValueResolver valueResolver;
-  private final ObjectMapper objectMapper;
 
   private final List<String> ID_NAME_PROPERTIES = List
-      .of("pipeline", "pipelineStage", "createdBy", "updatedBy", "convertedBy", "ownerId");
+      .of("pipeline", "pipelineStage", "createdBy", "updatedBy", "convertedBy", "ownerId", "ownedBy", "product", "company");
 
   private final List<String> LIST_OF_ID_NAME_PROPERTIES = List
-      .of("products");
+      .of("products", "associatedContacts");
+
+  private final List<String> NUMBER_PROPERTIES = List
+      .of("requirementBudget", "actualValue", "estimatedValue");
 
   private final List<String> USER_FIELDS =
-      List.of("createdBy", "updatedBy", "convertedBy", "ownerId");
+      List.of("createdBy", "updatedBy", "convertedBy", "ownerId", "ownedBy");
 
   @Autowired
-  public ConditionFacade(ValueResolver valueResolver, ObjectMapper objectMapper) {
+  public ConditionFacade(ValueResolver valueResolver) {
     this.valueResolver = valueResolver;
-    this.objectMapper = objectMapper;
   }
 
   public void validate(Condition condition) {
@@ -162,6 +164,7 @@ public class ConditionFacade {
       List<String> actualValues = getActualValueOfList(expression, entity);
       return idNameSatisfiedForList(expression, actualValues);
     }
+
     String actualValue = getActualValue(expression, entity);
     if (isNotBlank(expression.getName()) && ID_NAME_PROPERTIES.contains(expression.getName())) {
       return idNameSatisfiedBy(expression, actualValue);
@@ -219,9 +222,9 @@ public class ConditionFacade {
       case LESS_OR_EQUAL:
         return !isNull(actualValue) && parseDouble(actualValue) <= parseDouble(valueOf(expression.getValue()));
       case IN:
-        return Arrays.asList(valueOf(expression.getValue()).split("\\s*,\\s*")).contains(actualValue);
+        return isInOrNotInConditionSatisfied(expression, actualValue);
       case NOT_IN:
-        return !Arrays.asList(valueOf(expression.getValue()).split("\\s*,\\s*")).contains(actualValue);
+        return !isInOrNotInConditionSatisfied(expression, actualValue);
       case IS_EMPTY:
         return isEmpty(actualValue);
       case IS_NOT_EMPTY:
@@ -230,6 +233,17 @@ public class ConditionFacade {
         return startsWith(actualValue, valueOf(expression.getValue()));
     }
     throw new InvalidConditionException();
+  }
+
+  public boolean satisfiesValueIsChanged(EntityEvent event, ConditionExpression expression) {
+
+    String actualNewValue = null;
+    String actualOldValue = null;
+    if (nonNull(expression.getName())) {
+      actualNewValue = getActualValueForIsChanged(expression, event.getEntity());
+      actualOldValue = getActualValueForIsChanged(expression, event.getOldEntity());
+    }
+    return !isNull(actualNewValue) && !actualNewValue.equals(actualOldValue);
   }
 
   private boolean idNameSatisfiedBy(ConditionExpression expression, Object actualValue) {
@@ -259,6 +273,27 @@ public class ConditionFacade {
         return CollectionUtils.isNotEmpty(actualValues);
     }
     throw new InvalidConditionException();
+  }
+
+  private boolean isInOrNotInConditionSatisfied(ConditionExpression expression, String actualValue) {
+    if (NUMBER_PROPERTIES.contains(expression.getName())) {
+      List<Double> numberValues = Arrays.stream(valueOf(expression.getValue()).split("\\s*,\\s*")).map(Double::parseDouble)
+          .collect(Collectors.toList());
+      return numberValues.contains(parseDouble(actualValue));
+    }
+    return Arrays.asList(valueOf(expression.getValue()).split("\\s*,\\s*")).contains(actualValue);
+  }
+
+  private String getActualValueForIsChanged(ConditionExpression expression, Object entity) {
+    if (LIST_OF_ID_NAME_PROPERTIES.contains(expression.getName())) {
+      return String.join(",", getActualValueOfList(expression, entity));
+    }
+    try {
+      return getNestedProperty(entity, getFieldByName(expression.getName()));
+    } catch (IllegalAccessException | NoSuchMethodException | InvocationTargetException e) {
+      log.error("Exception occurred while getting actual value for {}", expression.getName());
+      throw new InvalidConditionException();
+    }
   }
 
   private String getActualValue(ConditionExpression expression, Object entity) {
@@ -310,9 +345,7 @@ public class ConditionFacade {
     if (ID_NAME_PROPERTIES.contains(expression.getName())) {
       var idNameMono =
           USER_FIELDS.contains(expression.getName()) ? valueResolver.getUser(expression.getValue(), authenticationToken)
-              : expression.getName().equals("pipeline") ? valueResolver.getPipeline(expression.getValue(), authenticationToken)
-                  : expression.getName().equals("pipelineStage") ? valueResolver.getPipelineStage(expression.getValue(), authenticationToken)
-                      : valueResolver.getProduct(expression.getValue(), authenticationToken);
+              : valueResolver.resolveNamesOfIdNameFieldsExceptUserFields(expression.getName(), expression.getValue(), authenticationToken);
       return idNameMono
           .map(idName -> getExpressionWithValue(expression, idName))
           .defaultIfEmpty(getExpressionWithValue(expression, null));

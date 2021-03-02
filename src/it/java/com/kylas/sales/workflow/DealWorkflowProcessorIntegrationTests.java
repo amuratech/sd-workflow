@@ -160,7 +160,138 @@ public class DealWorkflowProcessorIntegrationTests {
     Assertions.assertThat(workflow.getWorkflowExecutedEvent().getLastTriggeredAt()).isNotNull();
     Assertions.assertThat(workflow.getWorkflowExecutedEvent().getTriggerCount()).isEqualTo(152);
   }
-  
+
+  @Test
+  @Sql("/test-scripts/integration/insert-deal-workflow-with-multiple-conditions-trigger-on-new-value.sql")
+  public void givenDealCreatedEvent_withTriggerOnNewValue_shouldTriggerWorkflowConditionally()
+      throws IOException, InterruptedException {
+    // given
+    String authenticationToken = "some-token";
+    User aUser = UserStub.aUser(12L, 99L, true, true, true, true, true).withName("user 1");
+    given(authService.getLoggedInUser()).willReturn(aUser);
+    given(authService.getAuthenticationToken()).willReturn(authenticationToken);
+
+    String resourceAsString = getResourceAsString("/contracts/mq/events/deal-created-event-with-new-value-conditions.json");
+    DealEvent dealEvent = objectMapper.readValue(resourceAsString, DealEvent.class);
+    initializeRabbitMqListener(DEAL_UPDATE_COMMAND, DEAL_UPDATE_QUEUE_NEW);
+    // when
+    rabbitTemplate.convertAndSend(DEAL_EXCHANGE, getDealCreatedEventName(), dealEvent);
+    // then
+    mockMqListener.latch.await(3, TimeUnit.SECONDS);
+    Workflow workflow = workflowFacade.get(301);
+    Assertions.assertThat(workflow.getWorkflowExecutedEvent().getLastTriggeredAt()).isNotNull();
+    Assertions.assertThat(workflow.getWorkflowExecutedEvent().getTriggerCount()).isEqualTo(152);
+  }
+
+  @Test
+  @Sql("/test-scripts/integration/insert-deal-workflow-with-multiple-conditions-trigger-on-new-value.sql")
+  public void givenDealUpdatedEvent_withTriggerOnNewValue_shouldTriggerWorkflowConditionally()
+      throws IOException, InterruptedException {
+    // given
+    String authenticationToken = "some-token";
+    User aUser = UserStub.aUser(12L, 99L, true, true, true, true, true).withName("user 1");
+    given(authService.getLoggedInUser()).willReturn(aUser);
+    given(authService.getAuthenticationToken()).willReturn(authenticationToken);
+
+    String resourceAsString = getResourceAsString("/contracts/mq/events/deal-created-event-with-new-value-conditions.json");
+    DealEvent dealEvent = objectMapper.readValue(resourceAsString, DealEvent.class);
+    initializeRabbitMqListener(DEAL_UPDATE_COMMAND, DEAL_UPDATE_QUEUE_NEW);
+    // when
+    rabbitTemplate.convertAndSend(DEAL_EXCHANGE, getDealUpdatedEventName(), dealEvent);
+    // then
+    mockMqListener.latch.await(3, TimeUnit.SECONDS);
+    Workflow workflow = workflowFacade.get(301);
+    Assertions.assertThat(workflow.getWorkflowExecutedEvent().getLastTriggeredAt()).isNotNull();
+    Assertions.assertThat(workflow.getWorkflowExecutedEvent().getTriggerCount()).isEqualTo(152);
+  }
+
+  @Test
+  @Sql("/test-scripts/integration/insert-deal-workflow-with-multiple-conditions-trigger-on-old-value.sql")
+  public void givenDealCreatedEvent_withTriggerOnOldValue_shouldTriggerWorkflowConditionally()
+      throws IOException, InterruptedException {
+    // given
+    String authenticationToken = "some-token";
+    User aUser = UserStub.aUser(12L, 99L, true, true, true, true, true).withName("user 1");
+    given(authService.getLoggedInUser()).willReturn(aUser);
+    given(authService.getAuthenticationToken()).willReturn(authenticationToken);
+
+    String resourceAsString = getResourceAsString("/contracts/mq/events/deal-created-event-with-old-value-conditions.json");
+    DealEvent dealEvent = objectMapper.readValue(resourceAsString, DealEvent.class);
+    initializeRabbitMqListener(DEAL_UPDATE_COMMAND, DEAL_UPDATE_QUEUE_NEW);
+    // when
+    rabbitTemplate.convertAndSend(DEAL_EXCHANGE, getDealCreatedEventName(), dealEvent);
+    // then
+    mockMqListener.latch.await(3, TimeUnit.SECONDS);
+    Workflow workflow = workflowFacade.get(301);
+    Assertions.assertThat(workflow.getWorkflowExecutedEvent().getLastTriggeredAt()).isNotNull();
+    Assertions.assertThat(workflow.getWorkflowExecutedEvent().getTriggerCount()).isEqualTo(152);
+  }
+
+  @Test
+  @Sql("/test-scripts/integration/insert-deal-workflow-with-multiple-conditions-trigger-on-old-value.sql")
+  public void givenDealUpdatedEvent_withTriggerOnOldValue_shouldTriggerWorkflowConditionally()
+      throws IOException, InterruptedException {
+    // given
+    String authenticationToken = "some-token";
+    User aUser = UserStub.aUser(12L, 99L, true, true, true, true, true).withName("user 1");
+    given(authService.getLoggedInUser()).willReturn(aUser);
+    given(authService.getAuthenticationToken()).willReturn(authenticationToken);
+
+    String resourceAsString = getResourceAsString("/contracts/mq/events/deal-created-event-with-old-value-conditions.json");
+    DealEvent dealEvent = objectMapper.readValue(resourceAsString, DealEvent.class);
+    initializeRabbitMqListener(DEAL_UPDATE_COMMAND, DEAL_UPDATE_QUEUE_NEW);
+    // when
+    rabbitTemplate.convertAndSend(DEAL_EXCHANGE, getDealUpdatedEventName(), dealEvent);
+    // then
+    mockMqListener.latch.await(3, TimeUnit.SECONDS);
+    Workflow workflow = workflowFacade.get(301);
+    Assertions.assertThat(workflow.getWorkflowExecutedEvent().getLastTriggeredAt()).isNotNull();
+    Assertions.assertThat(workflow.getWorkflowExecutedEvent().getTriggerCount()).isEqualTo(152);
+  }
+
+  @Test
+  @Sql("/test-scripts/integration/insert-deal-workflow-with-multiple-conditions-trigger-on-is-changed-value.sql")
+  public void givenDealCreatedEvent_withTriggerOnIsChangedValue_shouldTriggerWorkflowConditionally()
+      throws IOException, InterruptedException {
+    // given
+    String authenticationToken = "some-token";
+    User aUser = UserStub.aUser(12L, 99L, true, true, true, true, true).withName("user 1");
+    given(authService.getLoggedInUser()).willReturn(aUser);
+    given(authService.getAuthenticationToken()).willReturn(authenticationToken);
+
+    String resourceAsString = getResourceAsString("/contracts/mq/events/deal-created-event-with-is-changed-value-conditions.json");
+    DealEvent dealEvent = objectMapper.readValue(resourceAsString, DealEvent.class);
+    initializeRabbitMqListener(DEAL_UPDATE_COMMAND, DEAL_UPDATE_QUEUE_NEW);
+    // when
+    rabbitTemplate.convertAndSend(DEAL_EXCHANGE, getDealCreatedEventName(), dealEvent);
+    // then
+    mockMqListener.latch.await(3, TimeUnit.SECONDS);
+    Workflow workflow = workflowFacade.get(301);
+    Assertions.assertThat(workflow.getWorkflowExecutedEvent().getLastTriggeredAt()).isNotNull();
+    Assertions.assertThat(workflow.getWorkflowExecutedEvent().getTriggerCount()).isEqualTo(152);
+  }
+
+  @Test
+  @Sql("/test-scripts/integration/insert-deal-workflow-with-multiple-conditions-trigger-on-is-changed-value.sql")
+  public void givenDealUpdatedEvent_withTriggerOnIsChangedValue_shouldTriggerWorkflowConditionally()
+      throws IOException, InterruptedException {
+    // given
+    String authenticationToken = "some-token";
+    User aUser = UserStub.aUser(12L, 99L, true, true, true, true, true).withName("user 1");
+    given(authService.getLoggedInUser()).willReturn(aUser);
+    given(authService.getAuthenticationToken()).willReturn(authenticationToken);
+
+    String resourceAsString = getResourceAsString("/contracts/mq/events/deal-created-event-with-is-changed-value-conditions.json");
+    DealEvent dealEvent = objectMapper.readValue(resourceAsString, DealEvent.class);
+    initializeRabbitMqListener(DEAL_UPDATE_COMMAND, DEAL_UPDATE_QUEUE_NEW);
+    // when
+    rabbitTemplate.convertAndSend(DEAL_EXCHANGE, getDealUpdatedEventName(), dealEvent);
+    // then
+    mockMqListener.latch.await(3, TimeUnit.SECONDS);
+    Workflow workflow = workflowFacade.get(301);
+    Assertions.assertThat(workflow.getWorkflowExecutedEvent().getLastTriggeredAt()).isNotNull();
+    Assertions.assertThat(workflow.getWorkflowExecutedEvent().getTriggerCount()).isEqualTo(152);
+  }
 
   @Nested
   @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)

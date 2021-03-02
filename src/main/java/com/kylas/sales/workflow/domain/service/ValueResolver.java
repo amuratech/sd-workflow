@@ -4,6 +4,7 @@ import static java.util.Objects.isNull;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.kylas.sales.workflow.common.dto.condition.IdNameField;
 import com.kylas.sales.workflow.domain.exception.InvalidActionException;
 import com.kylas.sales.workflow.domain.processor.lead.IdName;
 import com.kylas.sales.workflow.domain.user.User;
@@ -21,53 +22,41 @@ public class ValueResolver {
   private final ProductService productService;
   private final ObjectMapper objectMapper;
   private final UserService userService;
+  private final CompanyService companyService;
 
   @Autowired
   public ValueResolver(PipelineService pipelineService, ProductService productService, ObjectMapper objectMapper,
-      UserService userService) {
+      UserService userService, CompanyService companyService) {
     this.pipelineService = pipelineService;
     this.productService = productService;
     this.objectMapper = objectMapper;
     this.userService = userService;
+    this.companyService = companyService;
   }
 
-  public Mono<IdName> getPipeline(Object pipeline, String authenticationToken) {
-    if (isNull(pipeline)) {
-      return Mono.empty();
-    }
-    try {
-      var pipelineIdName = objectMapper.readValue(serialize(pipeline), IdName.class);
-      return pipelineService.getPipeline(pipelineIdName.getId(), authenticationToken);
-    } catch (JsonProcessingException e) {
-      log.error("Exception while extracting pipelineId from {}", pipeline);
-      throw new InvalidActionException();
-    }
-  }
+  public Mono<IdName> resolveNamesOfIdNameFieldsExceptUserFields(String fieldName, Object value, String authentication) {
 
-  public Mono<IdName> getPipelineStage(Object pipelineStage, String authenticationToken) {
-    if (isNull(pipelineStage)) {
+    if (isNull(value)) {
       return Mono.empty();
     }
-    try {
-      var pipelineStageIdName = objectMapper.readValue(serialize(pipelineStage), IdName.class);
-      return pipelineService.getPipelineStage(pipelineStageIdName.getId(), authenticationToken);
-    } catch (JsonProcessingException e) {
-      log.error("Exception while extracting pipelineId from {}", pipelineStage);
-      throw new InvalidActionException();
-    }
-  }
 
-  public Mono<IdName> getProduct(Object product, String authenticationToken) {
-    if (isNull(product)) {
-      return Mono.empty();
-    }
+    IdNameField field = IdNameField.getFieldByName(fieldName);
     try {
-      var productIdName = objectMapper.readValue(serialize(product), IdName.class);
-      return productService.getProduct(productIdName.getId(), authenticationToken);
+      var idName = objectMapper.readValue(serialize(value), IdName.class);
+      switch (field) {
+        case PIPELINE:
+          return pipelineService.getPipeline(idName.getId(), authentication);
+        case PIPELINE_STAGE:
+          return pipelineService.getPipelineStage(idName.getId(), authentication);
+        case PRODUCT:
+          return productService.getProduct(idName.getId(), authentication);
+        case COMPANY:
+          return companyService.getCompanyById(idName.getId(), authentication);
+      }
     } catch (JsonProcessingException e) {
-      log.error("Exception while extracting pipelineId from {}", product);
-      throw new InvalidActionException();
+      log.error("error in parsing json", e);
     }
+    throw new InvalidActionException();
   }
 
   public Mono<IdName> getUser(Object user, String authenticationToken) {

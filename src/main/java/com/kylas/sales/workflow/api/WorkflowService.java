@@ -137,7 +137,7 @@ public class WorkflowService {
       var actionDetail = (EditPropertyAction) action.getPayload();
       if (actionDetail.getName().equals(LeadAttribute.PIPELINE.getName())) {
         return valueResolver
-            .getPipeline(actionDetail.getValue(), authenticationToken)
+            .resolveNamesOfIdNameFieldsExceptUserFields(actionDetail.getName(), actionDetail.getValue(), authenticationToken)
             .map(idName ->
                 new ActionResponse(
                     action.getId(),
