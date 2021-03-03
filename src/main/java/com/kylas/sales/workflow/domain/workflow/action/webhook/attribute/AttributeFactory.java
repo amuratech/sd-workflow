@@ -147,7 +147,7 @@ public class AttributeFactory {
   @Getter
   public enum DealWebhookEntity {
     CUSTOM("Custom Parameter", EntityType.CUSTOM, null),
-    DEAL("Deal", EntityType.DEAL, ContactAttribute.values()),
+    DEAL("Deal", EntityType.DEAL, DealAttribute.values()),
     DEAL_OWNER("Deal Owner", EntityType.USER, UserAttribute.values()),
     CREATED_BY("Created By", EntityType.USER, UserAttribute.values()),
     UPDATED_BY("Updated By", EntityType.USER, UserAttribute.values()),

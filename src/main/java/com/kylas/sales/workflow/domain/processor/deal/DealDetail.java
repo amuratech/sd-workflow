@@ -26,6 +26,8 @@ public class DealDetail implements Actionable, EntityDetail {
   private Money actualValue;
   @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
   private Date estimatedClosureOn;
+  @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
+  private Date actualClosureDate;
   private List<IdName> associatedContacts;
   private IdName product;
   private Pipeline pipeline;
