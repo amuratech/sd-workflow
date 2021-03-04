@@ -45,6 +45,18 @@
                 "name": "LEAD",
                 "displayName": "Lead",
                 "systemDefault": true
+              },
+              {
+                "id": "CONTACT",
+                "name": "CONTACT",
+                "displayName": "Contact",
+                "systemDefault": true
+              },
+              {
+                "id": "DEAL",
+                "name": "DEAL",
+                "displayName": "Deal",
+                "systemDefault": true
               }
             ]
           },
