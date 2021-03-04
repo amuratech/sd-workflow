@@ -2,6 +2,7 @@ package com.kylas.sales.workflow.mq;
 
 import static com.kylas.sales.workflow.domain.workflow.EntityType.DEAL;
 import static com.kylas.sales.workflow.mq.RabbitMqConfig.DEAL_EXCHANGE;
+import static com.kylas.sales.workflow.mq.RabbitMqConfig.IAM_EXCHANGE;
 import static com.kylas.sales.workflow.mq.RabbitMqConfig.SALES_EXCHANGE;
 import static com.kylas.sales.workflow.mq.RabbitMqConfig.SCHEDULER_EXCHANGE;
 import static com.kylas.sales.workflow.mq.RabbitMqConfig.USAGE_REQUEST_EVENT;
@@ -14,6 +15,7 @@ import static com.kylas.sales.workflow.mq.event.EntityAction.UPDATED;
 import static com.kylas.sales.workflow.mq.event.LeadEvent.getLeadCreatedEventName;
 import static com.kylas.sales.workflow.mq.event.LeadEvent.getLeadUpdatedEventName;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.times;
@@ -25,11 +27,13 @@ import com.kylas.sales.workflow.config.TestDatabaseInitializer;
 import com.kylas.sales.workflow.domain.WorkflowFacade;
 import com.kylas.sales.workflow.domain.processor.WorkflowProcessor;
 import com.kylas.sales.workflow.domain.processor.deal.DealDetail;
+import com.kylas.sales.workflow.domain.user.UserFacade;
 import com.kylas.sales.workflow.mq.EventListenerTest.TestMqSetup;
 import com.kylas.sales.workflow.mq.event.ContactEvent;
 import com.kylas.sales.workflow.mq.event.DealEvent;
 import com.kylas.sales.workflow.mq.event.LeadEvent;
 import com.kylas.sales.workflow.mq.event.Metadata;
+import com.kylas.sales.workflow.mq.event.UserNameUpdatedEvent;
 import java.io.IOException;
 import java.util.Date;
 import java.util.concurrent.CountDownLatch;
@@ -72,6 +76,8 @@ class EventListenerTest {
   private WorkflowProcessor workflowProcessor;
   @MockBean
   private WorkflowFacade workflowFacade;
+  @MockBean
+  private UserFacade userFacade;
   @Captor
   ArgumentCaptor<LeadEvent> leadEventArgumentCaptor;
   @Captor
@@ -293,6 +299,19 @@ class EventListenerTest {
     var resource = new ClassPathResource(resourcePath);
     var file = resource.getFile();
     return FileUtils.readFileToString(file, "UTF-8");
+  }
+
+  @Test
+  public void givenUserNameUpdatedEvent_shouldListenItAndUpdateUserName() throws IOException, InterruptedException {
+    //given
+    String resourceAsString = getResourceAsString("/contracts/mq/events/user-name-updated-event.json");
+    UserNameUpdatedEvent userNameUpdatedEvent = objectMapper.readValue(resourceAsString, UserNameUpdatedEvent.class);
+    //when
+    rabbitTemplate.convertAndSend(IAM_EXCHANGE, UserNameUpdatedEvent.getEventName(), userNameUpdatedEvent);
+    //then
+    latch.await(3, TimeUnit.SECONDS);
+    verify(userFacade, times(1)).tryUpdateUser(eq(userNameUpdatedEvent.getUserId()), eq(userNameUpdatedEvent.getTenantId()),
+        eq(userNameUpdatedEvent.getFirstName()), eq(userNameUpdatedEvent.getLastName()));
   }
 
 

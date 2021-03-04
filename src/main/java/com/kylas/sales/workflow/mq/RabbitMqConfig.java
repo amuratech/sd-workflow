@@ -6,6 +6,7 @@ import static com.kylas.sales.workflow.mq.event.DealEvent.getDealCreatedEventNam
 import static com.kylas.sales.workflow.mq.event.DealEvent.getDealUpdatedEventName;
 import static com.kylas.sales.workflow.mq.event.LeadEvent.getLeadCreatedEventName;
 import static com.kylas.sales.workflow.mq.event.LeadEvent.getLeadUpdatedEventName;
+import static com.kylas.sales.workflow.mq.event.UserNameUpdatedEvent.getEventName;
 
 import org.springframework.amqp.core.BindingBuilder;
 import org.springframework.amqp.core.Declarables;
@@ -31,6 +32,8 @@ public class RabbitMqConfig {
   static final String SCHEDULER_EXCHANGE = "ex.scheduler";
   static final String USAGE_QUEUE = "q.collect.usage.workflow";
   static final String USAGE_REQUEST_EVENT = "scheduler.collect.usage";
+  static final String IAM_EXCHANGE = "ex.iam";
+  static final String USER_NAME_UPDATED_QUEUE = "q.user.name.updated.workflow";
 
 
   @Bean
@@ -50,6 +53,7 @@ public class RabbitMqConfig {
     var salesExchange = new TopicExchange(SALES_EXCHANGE, true, false);
     var dealExchange = new TopicExchange(DEAL_EXCHANGE, true, false);
     var schedulerExchange = new TopicExchange(SCHEDULER_EXCHANGE, true, false);
+    var iamExchange = new TopicExchange(IAM_EXCHANGE, true, false);
     var salesLeadCreatedQueue = new Queue(SALES_LEAD_CREATED_QUEUE, true);
     var salesLeadUpdatedQueue = new Queue(SALES_LEAD_UPDATED_QUEUE, true);
     var dealCreatedQueue = new Queue(DEAL_CREATED_QUEUE, true);
@@ -57,6 +61,7 @@ public class RabbitMqConfig {
     var salesContactCreatedQueue = new Queue(SALES_CONTACT_CREATED_QUEUE, true);
     var salesContactUpdatedQueue = new Queue(SALES_CONTACT_UPDATED_QUEUE, true);
     var usageQueue = new Queue(USAGE_QUEUE, true);
+    var userNameUpdatedQueue = new Queue(USER_NAME_UPDATED_QUEUE, true);
 
     return new Declarables(
         salesLeadCreatedQueue,
@@ -68,7 +73,9 @@ public class RabbitMqConfig {
         salesContactCreatedQueue,
         salesContactUpdatedQueue,
         schedulerExchange,
+        iamExchange,
         usageQueue,
+        userNameUpdatedQueue,
 
         BindingBuilder.bind(usageQueue).to(schedulerExchange)
             .with(USAGE_REQUEST_EVENT),
@@ -89,7 +96,10 @@ public class RabbitMqConfig {
             .with(getContactCreatedEventName()),
 
         BindingBuilder.bind(salesContactUpdatedQueue).to(salesExchange)
-            .with(getContactUpdatedEventName())
+            .with(getContactUpdatedEventName()),
+
+        BindingBuilder.bind(userNameUpdatedQueue).to(iamExchange)
+            .with(getEventName())
     );
   }
 }

@@ -7,14 +7,18 @@ import static com.kylas.sales.workflow.mq.RabbitMqConfig.SALES_CONTACT_UPDATED_Q
 import static com.kylas.sales.workflow.mq.RabbitMqConfig.SALES_LEAD_CREATED_QUEUE;
 import static com.kylas.sales.workflow.mq.RabbitMqConfig.SALES_LEAD_UPDATED_QUEUE;
 import static com.kylas.sales.workflow.mq.RabbitMqConfig.USAGE_QUEUE;
+import static com.kylas.sales.workflow.mq.RabbitMqConfig.USER_NAME_UPDATED_QUEUE;
 import static java.lang.String.valueOf;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kylas.sales.workflow.domain.WorkflowFacade;
 import com.kylas.sales.workflow.domain.processor.WorkflowProcessor;
+import com.kylas.sales.workflow.domain.user.UserFacade;
 import com.kylas.sales.workflow.mq.event.ContactEvent;
 import com.kylas.sales.workflow.mq.event.DealEvent;
 import com.kylas.sales.workflow.mq.event.LeadEvent;
+import com.kylas.sales.workflow.mq.event.UserNameUpdatedEvent;
 import com.kylas.sales.workflow.security.InternalAuthProvider;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
@@ -31,14 +35,16 @@ public class EventListener {
   private final WorkflowProcessor workflowProcessor;
   private final InternalAuthProvider internalAuthProvider;
   private final WorkflowFacade workflowFacade;
+  private final UserFacade userFacade;
 
   @Autowired
   public EventListener(ObjectMapper objectMapper, WorkflowProcessor workflowProcessor,
-      InternalAuthProvider internalAuthProvider, WorkflowFacade workflowFacade) {
+      InternalAuthProvider internalAuthProvider, WorkflowFacade workflowFacade, UserFacade userFacade) {
     this.objectMapper = objectMapper;
     this.workflowProcessor = workflowProcessor;
     this.internalAuthProvider = internalAuthProvider;
     this.workflowFacade = workflowFacade;
+    this.userFacade = userFacade;
   }
 
   @RabbitListener(queues = SALES_LEAD_CREATED_QUEUE)
@@ -95,6 +101,20 @@ public class EventListener {
         message.getMessageProperties().getMessageId(),
         message.getMessageProperties().getReceivedRoutingKey());
     workflowFacade.publishTenantUsage();
+  }
+
+  @RabbitListener(queues = USER_NAME_UPDATED_QUEUE)
+  public void listenToUserNameChangedEvent(Message message) {
+    log.info("Received request to update user name with MessageId:{}, EventName:{} ",
+        message.getMessageProperties().getMessageId(),
+        message.getMessageProperties().getReceivedRoutingKey());
+    try {
+      var userNameUpdatedEvent = objectMapper.readValue(new String(message.getBody()), UserNameUpdatedEvent.class);
+      userFacade.tryUpdateUser(userNameUpdatedEvent.getUserId(), userNameUpdatedEvent.getTenantId(), userNameUpdatedEvent.getFirstName(),
+          userNameUpdatedEvent.getLastName());
+    } catch (JsonProcessingException e) {
+      log.error(e.getMessage(), e);
+    }
   }
 
   private void processLeadEvent(Message message) {
