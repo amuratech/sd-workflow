@@ -67,7 +67,7 @@ public class AttributeFactory {
         .collectList()
         .map(entityDefinitions ->
             stream(DealAttribute.values())
-                .map(attribute -> new Attribute(attribute.name, getDisplayName(entityDefinitions, attribute.name)))
+                .map(attribute -> new Attribute(attribute.name, getDisplayName(entityDefinitions, attribute.displayName)))
                 .collect(Collectors.toList()));
   }
 
@@ -262,25 +262,26 @@ public class AttributeFactory {
   @AllArgsConstructor
   @Getter
   public enum DealAttribute implements EntityAttribute {
-    ID("id", "id"),
-    NAME("name", "name"),
-    ESTIMATED_VALUE("estimatedValue", "estimatedValue"),
-    ACTUAL_VALUE("actualValue", "actualValue"),
-    ESTIMATED_CLOSURE("estimatedClosureOn", "estimatedClosureOn"),
-    ACTUAL_CLOSURE("actualClosureDate", "actualClosureDate"),
-    ASSOCIATED_CONTACTS("associatedContacts", "associatedContacts.name"),
-    PIPELINE("pipeline", "pipeline.name"),
-    STATUS("pipelineStage", "pipeline.stage.name"),
-    PRODUCT("product", "product.name"),
-    COMPANY("company", "company.name"),
-    OWNED_BY("ownedBy", "ownedBy.name"),
-    CREATED_BY("createdBy", "createdBy.name"),
-    CREATED_AT("createdAt", "createdAt"),
-    UPDATED_BY("updatedBy", "updatedBy.name"),
-    UPDATED_AT("updatedAt", "updatedAt");
+    ID("id", "id","Id"),
+    NAME("name", "name","Name"),
+    ESTIMATED_VALUE("estimatedValue", "estimatedValue","Estimated Value"),
+    ACTUAL_VALUE("actualValue", "actualValue","Actual Value"),
+    ESTIMATED_CLOSURE("estimatedClosureOn", "estimatedClosureOn","Estimated Closure Date"),
+    ACTUAL_CLOSURE("actualClosureDate", "actualClosureDate","Actual Closure Date"),
+    ASSOCIATED_CONTACTS("associatedContacts", "associatedContacts.name","Associated Contacts"),
+    PIPELINE("pipeline", "pipeline.name","Pipeline"),
+    STATUS("pipelineStage", "pipeline.stage.name","Pipeline Stage"),
+    PRODUCT("product", "product.name","Product"),
+    COMPANY("company", "company.name","Company"),
+    OWNED_BY("ownedBy", "ownedBy.name","Owned By"),
+    CREATED_BY("createdBy", "createdBy.name","Created By"),
+    CREATED_AT("createdAt", "createdAt","Created At"),
+    UPDATED_BY("updatedBy", "updatedBy.name","Updated By"),
+    UPDATED_AT("updatedAt", "updatedAt","Updated At");
 
     private final String name;
     private final String pathToField;
+    private final String displayName;
   }
 
 }

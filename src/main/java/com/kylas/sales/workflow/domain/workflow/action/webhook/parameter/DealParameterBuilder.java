@@ -1,5 +1,6 @@
 package com.kylas.sales.workflow.domain.workflow.action.webhook.parameter;
 
+import static com.kylas.sales.workflow.common.dto.condition.ExpressionField.getFieldByName;
 import static com.kylas.sales.workflow.domain.workflow.action.webhook.attribute.AttributeFactory.DealAttribute.ACTUAL_VALUE;
 import static com.kylas.sales.workflow.domain.workflow.action.webhook.attribute.AttributeFactory.DealAttribute.ESTIMATED_VALUE;
 import static com.kylas.sales.workflow.domain.workflow.action.webhook.attribute.AttributeFactory.WebhookEntity.CREATED_BY;
@@ -7,6 +8,7 @@ import static com.kylas.sales.workflow.domain.workflow.action.webhook.attribute.
 import static com.kylas.sales.workflow.domain.workflow.action.webhook.attribute.AttributeFactory.WebhookEntity.DEAL_OWNER;
 import static com.kylas.sales.workflow.domain.workflow.action.webhook.attribute.AttributeFactory.WebhookEntity.TENANT;
 import static com.kylas.sales.workflow.domain.workflow.action.webhook.attribute.AttributeFactory.WebhookEntity.UPDATED_BY;
+import static org.apache.commons.beanutils.BeanUtils.getNestedProperty;
 import static org.apache.commons.collections.CollectionUtils.isNotEmpty;
 
 import com.kylas.sales.workflow.domain.processor.EntityDetail;
@@ -17,15 +19,19 @@ import com.kylas.sales.workflow.domain.service.UserService;
 import com.kylas.sales.workflow.domain.user.UserDetails;
 import com.kylas.sales.workflow.domain.workflow.EntityType;
 import com.kylas.sales.workflow.domain.workflow.action.webhook.WebhookAction;
+import java.lang.reflect.InvocationTargetException;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.beanutils.NestedNullException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
 @Service
+@Slf4j
 public class DealParameterBuilder extends ParameterBuilder {
 
   @Autowired
@@ -74,9 +80,15 @@ public class DealParameterBuilder extends ParameterBuilder {
   }
 
   private List<String> getFormattedActualMoneyText(DealDetail deal, IdName t5) {
-    return List.of(deal.getActualValue().getValue() + " " + t5.getName());
+    try {
+      return List.of(t5.getName()+ " " +deal.getActualValue().getValue());
+    } catch (NullPointerException ignored) {
+    }
+    return  List.of("");
   }
+
+
   private List<String> getFormattedEstimatedMoneyText(DealDetail deal, IdName t6) {
-    return List.of(deal.getEstimatedValue().getValue() + " " + t6.getName());
+    return List.of(t6.getName()+ " " +deal.getEstimatedValue().getValue());
   }
 }
