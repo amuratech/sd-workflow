@@ -1,0 +1,32 @@
+{
+  "name": "Contact Workflow with Old value trigger",
+  "description": "Workflow Description trigger with old value",
+  "entityType": "CONTACT",
+  "trigger": {
+    "name": "EVENT",
+    "triggerFrequency": "UPDATED",
+    "payload": {
+    }
+  },
+  "condition": {
+    "conditionType": "CONDITION_BASED",
+    "conditions": [
+      {
+        "triggerOn": "OLD_VALUE",
+        "name": "firstName",
+        "operator": "EQUAL",
+        "value": "Max"
+      }
+    ]
+  },
+  "actions": [
+    {
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "salutation",
+        "value": 1319,
+        "valueType": "PLAIN"
+      }
+    }
+  ]
+}

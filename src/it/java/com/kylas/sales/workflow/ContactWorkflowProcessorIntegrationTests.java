@@ -239,6 +239,51 @@ public class ContactWorkflowProcessorIntegrationTests {
       Workflow workflow302 = workflowFacade.get(302);
       Assertions.assertThat(workflow302.getWorkflowExecutedEvent().getTriggerCount()).isEqualTo(1);
     }
+
+    @Test
+    @Sql("/test-scripts/integration/insert-contact-workflow-with-condition-and-old-value-trigger.sql")
+    public void givenContactUpdatedEvent_withOldValueTriggerOn_shouldTriggerWorkflowsConditionally()
+        throws IOException, InterruptedException {
+      // given
+      User aUser = UserStub.aUser(12L, 99L, true, true, true, true, true).withName("user 1");
+      given(authService.getLoggedInUser()).willReturn(aUser);
+
+      String resourceAsString =
+          getResourceAsString(
+              "/contracts/mq/events/contact-created-triggering-conditional-workflows.json");
+      ContactEvent contactEvent = objectMapper.readValue(resourceAsString, ContactEvent.class);
+      initializeRabbitMqListener(CONTACT_UPDATE_COMMAND_QUEUE, SALES_CONTACT_UPDATE_QUEUE);
+      // when
+      rabbitTemplate.convertAndSend(SALES_EXCHANGE, ContactEvent.getContactUpdatedEventName(), contactEvent);
+      // then
+      mockMqListener.latch.await(3, TimeUnit.SECONDS);
+
+      Workflow workflow301 = workflowFacade.get(301);
+      Assertions.assertThat(workflow301.getWorkflowExecutedEvent().getTriggerCount()).isEqualTo(1);
+
+    }
+
+    @Test
+    @Sql("/test-scripts/integration/insert-contact-workflow-with-condition-and-is-changed-trigger.sql")
+    public void givenContactUpdatedEvent_withIsChangedTriggerOn_shouldTriggerWorkflowsConditionally()
+        throws IOException, InterruptedException {
+      // given
+      User aUser = UserStub.aUser(12L, 99L, true, true, true, true, true).withName("user 1");
+      given(authService.getLoggedInUser()).willReturn(aUser);
+
+      String resourceAsString =
+          getResourceAsString(
+              "/contracts/mq/events/contact-created-triggering-conditional-workflows.json");
+      ContactEvent contactEvent = objectMapper.readValue(resourceAsString, ContactEvent.class);
+      initializeRabbitMqListener(CONTACT_UPDATE_COMMAND_QUEUE, SALES_CONTACT_UPDATE_QUEUE);
+      // when
+      rabbitTemplate.convertAndSend(SALES_EXCHANGE, ContactEvent.getContactUpdatedEventName(), contactEvent);
+      // then
+      mockMqListener.latch.await(3, TimeUnit.SECONDS);
+
+      Workflow workflow301 = workflowFacade.get(301);
+      Assertions.assertThat(workflow301.getWorkflowExecutedEvent().getTriggerCount()).isEqualTo(1);
+    }
   }
 
   @Nested

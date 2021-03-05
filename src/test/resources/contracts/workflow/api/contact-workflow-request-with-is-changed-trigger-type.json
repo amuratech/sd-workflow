@@ -1,0 +1,30 @@
+{
+  "name": "Contact Workflow with Is Changed trigger",
+  "description": "Workflow Description trigger with is changed",
+  "entityType": "CONTACT",
+  "trigger": {
+    "name": "EVENT",
+    "triggerFrequency": "UPDATED",
+    "payload": {
+    }
+  },
+  "condition": {
+    "conditionType": "CONDITION_BASED",
+    "conditions": [
+      {
+        "triggerOn": "IS_CHANGED",
+        "name": "firstName"
+      }
+    ]
+  },
+  "actions": [
+    {
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "salutation",
+        "value": 1319,
+        "valueType": "PLAIN"
+      }
+    }
+  ]
+}

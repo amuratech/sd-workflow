@@ -1297,6 +1297,37 @@ class WorkflowControllerTest {
   }
 
   @Test
+  public void givenContactWorkflowRequest_withOldValueTrigger_shouldCreateIt() throws IOException, JSONException {
+    //given
+    var requestPayload =
+        getResourceAsString("classpath:contracts/workflow/api/contact-workflow-request-with-old-value-trigger-type.json");
+    given(workflowService.create(argThat(workflowRequest ->
+        {
+          ExpressionElement expressionElement = workflowRequest.getCondition().getConditions().get(0);
+          return workflowRequest.getName().equalsIgnoreCase("Contact Workflow with Old value trigger")
+              && workflowRequest.getDescription().equalsIgnoreCase("Workflow Description trigger with old value")
+              && workflowRequest.getCondition().getConditionType().equals(ConditionType.CONDITION_BASED)
+              && expressionElement.getName().equals("firstName")
+              && expressionElement.getOperator().equals(Operator.EQUAL)
+              && expressionElement.getValue().equals("Max");
+        })
+    )).willReturn(Mono.just(new WorkflowSummary(1L)));
+    //when
+    var workflowResponse = buildWebClient()
+        .post()
+        .uri("/v1/workflows")
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(requestPayload)
+        .retrieve()
+        .bodyToMono(String.class).block();
+    //then
+    var expectedResponse =
+        getResourceAsString("classpath:contracts/workflow/api/create-workflow-response.json");
+    JSONAssert.assertEquals(expectedResponse, workflowResponse, false);
+
+  }
+
+  @Test
   public void givenLeadWorkflowRequest_withIdNameConditionAndIsChangedTrigger_shouldCreateIt() throws IOException, JSONException {
     //given
     var requestPayload =
@@ -1308,6 +1339,35 @@ class WorkflowControllerTest {
               && workflowRequest.getDescription().equalsIgnoreCase("Workflow Description trigger with is changed")
               && workflowRequest.getCondition().getConditionType().equals(ConditionType.CONDITION_BASED)
               && expressionElement.getName().equals("pipeline");
+        })
+    )).willReturn(Mono.just(new WorkflowSummary(1L)));
+    //when
+    var workflowResponse = buildWebClient()
+        .post()
+        .uri("/v1/workflows")
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(requestPayload)
+        .retrieve()
+        .bodyToMono(String.class).block();
+    //then
+    var expectedResponse =
+        getResourceAsString("classpath:contracts/workflow/api/create-workflow-response.json");
+    JSONAssert.assertEquals(expectedResponse, workflowResponse, false);
+
+  }
+
+  @Test
+  public void givenContactWorkflowRequest_withIsChangedTrigger_shouldCreateIt() throws IOException, JSONException {
+    //given
+    var requestPayload =
+        getResourceAsString("classpath:contracts/workflow/api/contact-workflow-request-with-is-changed-trigger-type.json");
+    given(workflowService.create(argThat(workflowRequest ->
+        {
+          ExpressionElement expressionElement = workflowRequest.getCondition().getConditions().get(0);
+          return workflowRequest.getName().equalsIgnoreCase("Contact Workflow with Is Changed trigger")
+              && workflowRequest.getDescription().equalsIgnoreCase("Workflow Description trigger with is changed")
+              && workflowRequest.getCondition().getConditionType().equals(ConditionType.CONDITION_BASED)
+              && expressionElement.getName().equals("firstName");
         })
     )).willReturn(Mono.just(new WorkflowSummary(1L)));
     //when
