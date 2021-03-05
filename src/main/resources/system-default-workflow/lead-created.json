@@ -40,28 +40,13 @@
           },
           {
             "entity": "LEAD",
-            "name": "email",
+            "name": "email value",
             "attribute": "emails"
           },
           {
             "entity": "LEAD",
-            "name": "phoneNumber",
+            "name": "phoneNumber value",
             "attribute": "phoneNumbers"
-          },
-          {
-            "entity": "LEAD",
-            "name": "pipeline",
-            "attribute": "pipeline"
-          },
-          {
-            "entity": "LEAD",
-            "name": "status",
-            "attribute": "pipelineStage"
-          },
-          {
-            "entity": "LEAD",
-            "name": "timezone",
-            "attribute": "timezone"
           },
           {
             "entity": "LEAD",
@@ -135,18 +120,8 @@
           },
           {
             "entity": "LEAD",
-            "name": "companyAnnualRevenue",
-            "attribute": "companyAnnualRevenue"
-          },
-          {
-            "entity": "LEAD",
             "name": "companyWebsite",
             "attribute": "companyWebsite"
-          },
-          {
-            "entity": "LEAD",
-            "name": "companyPhone",
-            "attribute": "companyPhones"
           },
           {
             "entity": "LEAD",
@@ -177,16 +152,6 @@
             "entity": "LEAD",
             "name": "source",
             "attribute": "source"
-          },
-          {
-            "entity": "LEAD",
-            "name": "createdBy",
-            "attribute": "createdBy"
-          },
-          {
-            "entity": "LEAD",
-            "name": "createdAt",
-            "attribute": "createdAt"
           }
         ],
         "authorizationParameter": null
