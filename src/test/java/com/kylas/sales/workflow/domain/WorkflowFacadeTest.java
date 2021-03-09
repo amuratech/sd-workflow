@@ -11,6 +11,7 @@ import static com.kylas.sales.workflow.domain.workflow.TriggerType.EVENT;
 import static com.kylas.sales.workflow.domain.workflow.action.WorkflowAction.ActionType.CREATE_TASK;
 import static com.kylas.sales.workflow.domain.workflow.action.WorkflowAction.ActionType.EDIT_PROPERTY;
 import static com.kylas.sales.workflow.domain.workflow.action.WorkflowAction.ActionType.REASSIGN;
+import static com.kylas.sales.workflow.domain.workflow.action.WorkflowAction.ActionType.SEND_EMAIL;
 import static com.kylas.sales.workflow.domain.workflow.action.WorkflowAction.ActionType.WEBHOOK;
 import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -19,9 +20,12 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kylas.sales.workflow.api.request.Condition.ExpressionElement;
 import com.kylas.sales.workflow.common.dto.ActionDetail;
 import com.kylas.sales.workflow.common.dto.ActionDetail.CreateTaskAction;
+import com.kylas.sales.workflow.common.dto.ActionDetail.EmailAction;
 import com.kylas.sales.workflow.common.dto.ActionDetail.WebhookAction;
 import com.kylas.sales.workflow.common.dto.ActionDetail.WebhookAction.AuthorizationType;
 import com.kylas.sales.workflow.common.dto.ActionResponse;
@@ -42,6 +46,9 @@ import com.kylas.sales.workflow.domain.workflow.TriggerType;
 import com.kylas.sales.workflow.domain.workflow.Workflow;
 import com.kylas.sales.workflow.domain.workflow.WorkflowCondition;
 import com.kylas.sales.workflow.domain.workflow.action.EditPropertyAction;
+import com.kylas.sales.workflow.domain.workflow.action.email.EmailActionType;
+import com.kylas.sales.workflow.domain.workflow.action.email.EmailEntityType;
+import com.kylas.sales.workflow.domain.workflow.action.email.Participant;
 import com.kylas.sales.workflow.domain.workflow.action.reassign.ReassignAction;
 import com.kylas.sales.workflow.domain.workflow.action.task.AssignedTo;
 import com.kylas.sales.workflow.domain.workflow.action.task.DueDate;
@@ -316,6 +323,240 @@ class WorkflowFacadeTest {
   @Transactional
   @Test
   @Sql("/test-scripts/insert-users.sql")
+  public void givenLeadWorkflowRequest_withSendEmailAction_shouldCreateIt() {
+    //given
+    User aUser = UserStub.aUser(11L, 99L, true, true, true, true, true)
+        .withName("user 1");
+    given(authService.getLoggedInUser()).willReturn(aUser);
+
+    given(userService.getUserDetails(11L, authService.getAuthenticationToken()))
+        .willReturn(
+            Mono.just(
+                aUser));
+
+    Object from = "{\"type\":\"RECORD_OWNER\",\"entity\":\"user\",\"entityId\":null,\"name\":\"user1\",\"email\":\"user1@gmail.com\"}";
+    List<Participant> participants = List
+        .of(new Participant(EmailActionType.RECORD_OWNER, EmailEntityType.LEAD.getEntityName(), 1L, "test user", "test@user.com"),
+            new Participant(EmailActionType.RECORD_OWNER, EmailEntityType.LEAD.getEntityName(), 2L, "test user", "test@user.com"));
+
+    var actions = Set.of(new ActionResponse(SEND_EMAIL, new EmailAction(1L, from, participants, participants, participants)));
+
+    var workflowRequest = WorkflowStub.aWorkflowRequestWithActions("Workflow 1", "Workflow 1", LEAD, EVENT, CREATED, FOR_ALL, actions);
+    //when
+    var workflowMono = workflowFacade.create(workflowRequest);
+    //then
+    StepVerifier.create(workflowMono)
+        .expectNextMatches(workflow -> {
+          assertThat(workflow.getId())
+              .isNotNull()
+              .isGreaterThan(0L);
+
+          assertThat(workflow.getWorkflowTrigger().getTriggerFrequency()).isEqualTo(CREATED);
+          assertThat(workflow.getWorkflowTrigger().getTriggerType()).isEqualTo(TriggerType.EVENT);
+
+          assertThat(workflow.getWorkflowActions().size()).isEqualTo(1);
+          assertThat(workflow.getEntityType()).isEqualTo(LEAD);
+
+          com.kylas.sales.workflow.domain.workflow.action.email.EmailAction emailAction = (com.kylas.sales.workflow.domain.workflow.action.email.EmailAction) workflow
+              .getWorkflowActions().iterator().next();
+
+          assertThat(emailAction.getType()).isEqualTo(SEND_EMAIL);
+          assertThat(emailAction.getEmailTemplateId()).isEqualTo(1L);
+          assertThat(emailAction.getFrom()).isEqualTo(from);
+          assertThat(emailAction.getTo()).hasSize(2);
+          assertThat(emailAction.getTo()).allMatch(
+              participant -> participant.getType().equals(EmailActionType.RECORD_OWNER) && participant.getEntity()
+                  .equals(EmailEntityType.LEAD.getEntityName()));
+          assertThat(emailAction.getCc()).hasSize(2);
+          assertThat(emailAction.getCc()).allMatch(
+              participant -> participant.getType().equals(EmailActionType.RECORD_OWNER) && participant.getEntity()
+                  .equals(EmailEntityType.LEAD.getEntityName()));
+          assertThat(emailAction.getBcc()).hasSize(2);
+          assertThat(emailAction.getBcc()).allMatch(
+              participant -> participant.getType().equals(EmailActionType.RECORD_OWNER) && participant.getEntity()
+                  .equals(EmailEntityType.LEAD.getEntityName()));
+
+          assertThat(workflow.getWorkflowCondition().getType()).isEqualTo(ConditionType.FOR_ALL);
+
+          assertThat(workflow.getWorkflowExecutedEvent().getLastTriggeredAt()).isNull();
+          assertThat(workflow.getWorkflowExecutedEvent().getId()).isPositive();
+          assertThat(workflow.getWorkflowExecutedEvent().getTriggerCount()).isZero();
+
+          assertThat(workflow.isActive()).isTrue();
+          return true;
+        })
+        .verifyComplete();
+  }
+
+  @Transactional
+  @Test
+  @Sql("/test-scripts/insert-users.sql")
+  public void givenWorkflowRequest_withSendEmailActionAndInvalidFromEntity_shouldThrow() {
+    //given
+    User aUser = UserStub.aUser(11L, 99L, true, true, true, true, true)
+        .withName("user 1");
+    given(authService.getLoggedInUser()).willReturn(aUser);
+
+    given(userService.getUserDetails(11L, authService.getAuthenticationToken()))
+        .willReturn(
+            Mono.just(
+                aUser));
+
+    Object from = "{\"type\":\"RECORD_OWNER\",\"entity\":\"lead\",\"entityId\":null,\"name\":\"user1\",\"email\":\"user1@gmail.com\"}";
+    List<Participant> participants = List
+        .of(new Participant(EmailActionType.RECORD_OWNER, EmailEntityType.LEAD.getEntityName(), 1L, "test user", "test@user.com"),
+            new Participant(EmailActionType.RECORD_OWNER, EmailEntityType.LEAD.getEntityName(), 2L, "test user", "test@user.com"));
+
+    var actions = Set.of(new ActionResponse(SEND_EMAIL, new EmailAction(1L, from, participants, participants, participants)));
+
+    var workflowRequest = WorkflowStub.aWorkflowRequestWithActions("Workflow 1", "Workflow 1", LEAD, EVENT, CREATED, FOR_ALL, actions);
+    //when
+    var workflowMono = workflowFacade.create(workflowRequest);
+    //then
+    StepVerifier.create(workflowMono)
+        .expectError(InvalidWorkflowRequestException.class).verify();
+  }
+
+
+  @Transactional
+  @Test
+  @Sql("/test-scripts/insert-users.sql")
+  public void givenContactWorkflowRequest_withSendEmailAction_shouldCreateIt() {
+    //given
+    User aUser = UserStub.aUser(11L, 99L, true, true, true, true, true)
+        .withName("user 1");
+    given(authService.getLoggedInUser()).willReturn(aUser);
+
+    given(userService.getUserDetails(11L, authService.getAuthenticationToken()))
+        .willReturn(
+            Mono.just(
+                aUser));
+
+    Object from = "{\"type\":\"RECORD_OWNER\",\"entity\":\"user\",\"entityId\":null,\"name\":\"user1\",\"email\":\"user1@gmail.com\"}";
+    List<Participant> participants = List
+        .of(new Participant(EmailActionType.RECORD_OWNER, EmailEntityType.CONTACT.getEntityName(), 1L, "test user", "test@user.com"),
+            new Participant(EmailActionType.RECORD_OWNER, EmailEntityType.CONTACT.getEntityName(), 2L, "test user", "test@user.com"));
+
+    var actions = Set.of(new ActionResponse(SEND_EMAIL, new EmailAction(1L, from, participants, participants, participants)));
+
+    var workflowRequest = WorkflowStub.aWorkflowRequestWithActions("Workflow 1", "Workflow 1", CONTACT, EVENT, CREATED, FOR_ALL, actions);
+    //when
+    var workflowMono = workflowFacade.create(workflowRequest);
+    //then
+    StepVerifier.create(workflowMono)
+        .expectNextMatches(workflow -> {
+          assertThat(workflow.getId())
+              .isNotNull()
+              .isGreaterThan(0L);
+
+          assertThat(workflow.getWorkflowTrigger().getTriggerFrequency()).isEqualTo(CREATED);
+          assertThat(workflow.getWorkflowTrigger().getTriggerType()).isEqualTo(TriggerType.EVENT);
+
+          assertThat(workflow.getWorkflowActions().size()).isEqualTo(1);
+          assertThat(workflow.getEntityType()).isEqualTo(CONTACT);
+
+          com.kylas.sales.workflow.domain.workflow.action.email.EmailAction emailAction = (com.kylas.sales.workflow.domain.workflow.action.email.EmailAction) workflow
+              .getWorkflowActions().iterator().next();
+
+          assertThat(emailAction.getType()).isEqualTo(SEND_EMAIL);
+          assertThat(emailAction.getEmailTemplateId()).isEqualTo(1L);
+          assertThat(emailAction.getFrom()).isEqualTo(from);
+          assertThat(emailAction.getTo()).hasSize(2);
+          assertThat(emailAction.getTo()).allMatch(
+              participant -> participant.getType().equals(EmailActionType.RECORD_OWNER) && participant.getEntity()
+                  .equals(EmailEntityType.CONTACT.getEntityName()));
+          assertThat(emailAction.getCc()).hasSize(2);
+          assertThat(emailAction.getCc()).allMatch(
+              participant -> participant.getType().equals(EmailActionType.RECORD_OWNER) && participant.getEntity()
+                  .equals(EmailEntityType.CONTACT.getEntityName()));
+          assertThat(emailAction.getBcc()).hasSize(2);
+          assertThat(emailAction.getBcc()).allMatch(
+              participant -> participant.getType().equals(EmailActionType.RECORD_OWNER) && participant.getEntity()
+                  .equals(EmailEntityType.CONTACT.getEntityName()));
+
+          assertThat(workflow.getWorkflowCondition().getType()).isEqualTo(ConditionType.FOR_ALL);
+
+          assertThat(workflow.getWorkflowExecutedEvent().getLastTriggeredAt()).isNull();
+          assertThat(workflow.getWorkflowExecutedEvent().getId()).isPositive();
+          assertThat(workflow.getWorkflowExecutedEvent().getTriggerCount()).isZero();
+
+          assertThat(workflow.isActive()).isTrue();
+          return true;
+        })
+        .verifyComplete();
+  }
+
+  @Transactional
+  @Test
+  @Sql("/test-scripts/insert-users.sql")
+  public void givenDealWorkflowRequest_withSendEmailAction_shouldCreateIt() {
+    //given
+    User aUser = UserStub.aUser(11L, 99L, true, true, true, true, true)
+        .withName("user 1");
+    given(authService.getLoggedInUser()).willReturn(aUser);
+
+    given(userService.getUserDetails(11L, authService.getAuthenticationToken()))
+        .willReturn(
+            Mono.just(
+                aUser));
+
+    Object from = "{\"type\":\"RECORD_OWNER\",\"entity\":\"user\",\"entityId\":null,\"name\":\"user1\",\"email\":\"user1@gmail.com\"}";
+    List<Participant> participants = List
+        .of(new Participant(EmailActionType.RECORD_OWNER, EmailEntityType.DEAL.getEntityName(), 1L, "test user", "test@user.com"),
+            new Participant(EmailActionType.RECORD_OWNER, EmailEntityType.DEAL.getEntityName(), 2L, "test user", "test@user.com"));
+
+    var actions = Set.of(new ActionResponse(SEND_EMAIL, new EmailAction(1L, from, participants, participants, participants)));
+
+    var workflowRequest = WorkflowStub.aWorkflowRequestWithActions("Workflow 1", "Workflow 1", DEAL, EVENT, CREATED, FOR_ALL, actions);
+    //when
+    var workflowMono = workflowFacade.create(workflowRequest);
+    //then
+    StepVerifier.create(workflowMono)
+        .expectNextMatches(workflow -> {
+          assertThat(workflow.getId())
+              .isNotNull()
+              .isGreaterThan(0L);
+
+          assertThat(workflow.getWorkflowTrigger().getTriggerFrequency()).isEqualTo(CREATED);
+          assertThat(workflow.getWorkflowTrigger().getTriggerType()).isEqualTo(TriggerType.EVENT);
+
+          assertThat(workflow.getWorkflowActions().size()).isEqualTo(1);
+          assertThat(workflow.getEntityType()).isEqualTo(DEAL);
+
+          com.kylas.sales.workflow.domain.workflow.action.email.EmailAction emailAction = (com.kylas.sales.workflow.domain.workflow.action.email.EmailAction) workflow
+              .getWorkflowActions().iterator().next();
+
+          assertThat(emailAction.getType()).isEqualTo(SEND_EMAIL);
+          assertThat(emailAction.getEmailTemplateId()).isEqualTo(1L);
+          assertThat(emailAction.getFrom()).isEqualTo(from);
+          assertThat(emailAction.getTo()).hasSize(2);
+          assertThat(emailAction.getTo()).allMatch(
+              participant -> participant.getType().equals(EmailActionType.RECORD_OWNER) && participant.getEntity()
+                  .equals(EmailEntityType.DEAL.getEntityName()));
+          assertThat(emailAction.getCc()).hasSize(2);
+          assertThat(emailAction.getCc()).allMatch(
+              participant -> participant.getType().equals(EmailActionType.RECORD_OWNER) && participant.getEntity()
+                  .equals(EmailEntityType.DEAL.getEntityName()));
+          assertThat(emailAction.getBcc()).hasSize(2);
+          assertThat(emailAction.getBcc()).allMatch(
+              participant -> participant.getType().equals(EmailActionType.RECORD_OWNER) && participant.getEntity()
+                  .equals(EmailEntityType.DEAL.getEntityName()));
+
+          assertThat(workflow.getWorkflowCondition().getType()).isEqualTo(ConditionType.FOR_ALL);
+
+          assertThat(workflow.getWorkflowExecutedEvent().getLastTriggeredAt()).isNull();
+          assertThat(workflow.getWorkflowExecutedEvent().getId()).isPositive();
+          assertThat(workflow.getWorkflowExecutedEvent().getTriggerCount()).isZero();
+
+          assertThat(workflow.isActive()).isTrue();
+          return true;
+        })
+        .verifyComplete();
+  }
+
+  @Transactional
+  @Test
+  @Sql("/test-scripts/insert-users.sql")
   public void givenCreateWorkflowRequest_withCreateTaskActionAndInvalidPropertyValues_shouldThrow() throws IOException {
     //given
     User aUser = UserStub.aUser(11L, 99L, true, true, true, true, true)
@@ -534,11 +775,18 @@ class WorkflowFacadeTest {
     List<Parameter> parameters = List.of(new Parameter("paramKey", WebhookEntity.LEAD, "firstName"));
 
     String requestUrl = "https://webhook.site/3e0d9676-ad3c-4cf2-a449-ca334e43b815";
+
+    Object from = "{\"type\":\"RECORD_OWNER\",\"entity\":\"user\",\"entityId\":null,\"name\":\"user1\",\"email\":\"user1@gmail.com\"}";
+    List<Participant> participants = List
+        .of(new Participant(EmailActionType.RECORD_OWNER, EmailEntityType.DEAL.getEntityName(), 1L, "test user", "test@user.com"),
+            new Participant(EmailActionType.RECORD_OWNER, EmailEntityType.DEAL.getEntityName(), 2L, "test user", "test@user.com"));
+
     Set<ActionResponse> actions = Set.of(
         new ActionResponse(EDIT_PROPERTY,
             new ActionDetail.EditPropertyAction("city", "Pune", PLAIN)),
         new ActionResponse(WEBHOOK,
-            new WebhookAction("name", "desc", HttpMethod.GET, requestUrl, AuthorizationType.NONE, parameters, null))
+            new WebhookAction("name", "desc", HttpMethod.GET, requestUrl, AuthorizationType.NONE, parameters, null)),
+        new ActionResponse(SEND_EMAIL, new EmailAction(1L, from, participants, participants, participants))
     );
     var workflowRequest = WorkflowStub
         .aWorkflowRequestWithActions("Edit Lead Property", "Edit Lead Property", EntityType.LEAD, TriggerType.EVENT, CREATED,
@@ -551,10 +799,12 @@ class WorkflowFacadeTest {
           assertThat(workflow.getId())
               .isNotNull()
               .isGreaterThan(0L);
-          assertThat(workflow.getWorkflowActions()).isNotEmpty().hasSize(2);
+          assertThat(workflow.getWorkflowActions()).isNotEmpty().hasSize(3);
           assertThat(workflow.getWorkflowActions().stream().anyMatch(action -> action.getType().equals(EDIT_PROPERTY)))
               .isTrue();
           assertThat(workflow.getWorkflowActions().stream().anyMatch(action -> action.getType().equals(WEBHOOK)))
+              .isTrue();
+          assertThat(workflow.getWorkflowActions().stream().anyMatch(action -> action.getType().equals(SEND_EMAIL)))
               .isTrue();
           return true;
         })
@@ -726,7 +976,6 @@ class WorkflowFacadeTest {
         .willReturn(
             Mono.just(
                 aUser));
-    String dueDate = "{\"days\":12,\"hours\":2}";
     var actions = Set.of(new ActionResponse(CREATE_TASK,
         new CreateTaskAction("new Task", "new task description", 1L, "contacted", 2L, 3L, new AssignedTo(AssignedToType.USER, 4L, "Tony"),
             new DueDate(12, 2))));
@@ -826,6 +1075,236 @@ class WorkflowFacadeTest {
         .verifyComplete();
   }
 
+  @Transactional
+  @Test
+  @Sql("/test-scripts/insert-workflow.sql")
+  public void givenLeadWorkflowUpdateRequest_withSendEmailAction_shouldUpdateIt() throws JsonProcessingException {
+    //given
+    ObjectMapper objectMapper = new ObjectMapper();
+    User aUser = UserStub.aUser(11L, 99L, true, true, true, true, true)
+        .withName("user 1");
+    given(authService.getLoggedInUser()).willReturn(aUser);
+
+    given(userService.getUserDetails(11L, authService.getAuthenticationToken()))
+        .willReturn(Mono.just(
+            aUser));
+
+    String from = "{\"type\":\"RECORD_OWNER\",\"entity\":\"user\",\"entityId\":null,\"name\":\"user1\",\"email\":\"user1@gmail.com\"}";
+    List<Participant> participants = List
+        .of(new Participant(EmailActionType.RECORD_OWNER, EmailEntityType.LEAD.getEntityName(), 1L, "test user", "test@user.com"),
+            new Participant(EmailActionType.RECORD_OWNER, EmailEntityType.LEAD.getEntityName(), 2L, "test user", "test@user.com"));
+
+    var actions = Set.of(new ActionResponse(SEND_EMAIL, new EmailAction(1L, from, participants, participants, participants)));
+
+    var workflowRequest = WorkflowStub.aWorkflowRequestWithActions("Workflow 1", "Workflow 1", LEAD, EVENT, UPDATED, FOR_ALL, actions);
+    //when
+    var workflowMono = workflowFacade.update(301L, workflowRequest);
+    //then
+    StepVerifier.create(workflowMono)
+        .expectNextMatches(workflow -> {
+          assertThat(workflow.getId())
+              .isNotNull()
+              .isGreaterThan(0L);
+
+          assertThat(workflow.getWorkflowTrigger().getTriggerFrequency()).isEqualTo(UPDATED);
+          assertThat(workflow.getWorkflowTrigger().getTriggerType()).isEqualTo(TriggerType.EVENT);
+
+          assertThat(workflow.getWorkflowActions().size()).isEqualTo(1);
+          com.kylas.sales.workflow.domain.workflow.action.email.EmailAction emailAction = (com.kylas.sales.workflow.domain.workflow.action.email.EmailAction) workflow
+              .getWorkflowActions().iterator().next();
+
+          assertThat(emailAction.getType()).isEqualTo(SEND_EMAIL);
+          assertThat(emailAction.getEmailTemplateId()).isEqualTo(1L);
+          Participant participantFrom = null;
+          try {
+            participantFrom = objectMapper.readValue(from, Participant.class);
+            assertThat(participantFrom).isNotNull();
+            assertThat(participantFrom.getEntityId()).isNull();
+            assertThat(participantFrom.getEntity()).isEqualTo(EmailEntityType.USER.getEntityName());
+            assertThat(participantFrom.getType()).isEqualTo(EmailActionType.RECORD_OWNER);
+            assertThat(participantFrom.getEmail()).isEqualTo("user1@gmail.com");
+            assertThat(participantFrom.getName()).isEqualTo("user1");
+          } catch (JsonProcessingException e) {
+            e.printStackTrace();
+          }
+
+          assertThat(emailAction.getTo()).hasSize(2);
+          assertThat(emailAction.getTo()).allMatch(
+              participant -> participant.getType().equals(EmailActionType.RECORD_OWNER) && participant.getEntity()
+                  .equals(EmailEntityType.LEAD.getEntityName()));
+          assertThat(emailAction.getCc()).hasSize(2);
+          assertThat(emailAction.getCc()).allMatch(
+              participant -> participant.getType().equals(EmailActionType.RECORD_OWNER) && participant.getEntity()
+                  .equals(EmailEntityType.LEAD.getEntityName()));
+          assertThat(emailAction.getBcc()).hasSize(2);
+          assertThat(emailAction.getBcc()).allMatch(
+              participant -> participant.getType().equals(EmailActionType.RECORD_OWNER) && participant.getEntity()
+                  .equals(EmailEntityType.LEAD.getEntityName()));
+
+          assertThat(workflow.getWorkflowCondition().getType()).isEqualTo(ConditionType.FOR_ALL);
+
+          assertThat(workflow.getWorkflowExecutedEvent().getLastTriggeredAt()).isNull();
+          assertThat(workflow.getWorkflowExecutedEvent().getId()).isPositive();
+
+          assertThat(workflow.isActive()).isTrue();
+          return true;
+        })
+        .verifyComplete();
+  }
+
+  @Transactional
+  @Test
+  @Sql("/test-scripts/insert-workflow.sql")
+  public void givenContactWorkflowUpdateRequest_withSendEmailAction_shouldUpdateIt() throws JsonProcessingException {
+    //given
+    ObjectMapper objectMapper = new ObjectMapper();
+    User aUser = UserStub.aUser(11L, 99L, true, true, true, true, true)
+        .withName("user 1");
+    given(authService.getLoggedInUser()).willReturn(aUser);
+
+    given(userService.getUserDetails(11L, authService.getAuthenticationToken()))
+        .willReturn(Mono.just(
+            aUser));
+
+    String from = "{\"type\":\"RECORD_OWNER\",\"entity\":\"user\",\"entityId\":null,\"name\":\"user1\",\"email\":\"user1@gmail.com\"}";
+    List<Participant> participants = List
+        .of(new Participant(EmailActionType.RECORD_OWNER, EmailEntityType.CONTACT.getEntityName(), 1L, "test user", "test@user.com"),
+            new Participant(EmailActionType.RECORD_OWNER, EmailEntityType.CONTACT.getEntityName(), 2L, "test user", "test@user.com"));
+
+    var actions = Set.of(new ActionResponse(SEND_EMAIL, new EmailAction(1L, from, participants, participants, participants)));
+
+    var workflowRequest = WorkflowStub.aWorkflowRequestWithActions("Workflow 1", "Workflow 1", CONTACT, EVENT, UPDATED, FOR_ALL, actions);
+    //when
+    var workflowMono = workflowFacade.update(301L, workflowRequest);
+    //then
+    StepVerifier.create(workflowMono)
+        .expectNextMatches(workflow -> {
+          assertThat(workflow.getId())
+              .isNotNull()
+              .isGreaterThan(0L);
+
+          assertThat(workflow.getWorkflowTrigger().getTriggerFrequency()).isEqualTo(UPDATED);
+          assertThat(workflow.getWorkflowTrigger().getTriggerType()).isEqualTo(TriggerType.EVENT);
+
+          assertThat(workflow.getWorkflowActions().size()).isEqualTo(1);
+          com.kylas.sales.workflow.domain.workflow.action.email.EmailAction emailAction = (com.kylas.sales.workflow.domain.workflow.action.email.EmailAction) workflow
+              .getWorkflowActions().iterator().next();
+
+          assertThat(emailAction.getType()).isEqualTo(SEND_EMAIL);
+          assertThat(emailAction.getEmailTemplateId()).isEqualTo(1L);
+          Participant participantFrom = null;
+          try {
+            participantFrom = objectMapper.readValue(from, Participant.class);
+            assertThat(participantFrom).isNotNull();
+            assertThat(participantFrom.getEntityId()).isNull();
+            assertThat(participantFrom.getEntity()).isEqualTo(EmailEntityType.USER.getEntityName());
+            assertThat(participantFrom.getType()).isEqualTo(EmailActionType.RECORD_OWNER);
+            assertThat(participantFrom.getEmail()).isEqualTo("user1@gmail.com");
+            assertThat(participantFrom.getName()).isEqualTo("user1");
+          } catch (JsonProcessingException e) {
+            e.printStackTrace();
+          }
+
+          assertThat(emailAction.getTo()).hasSize(2);
+          assertThat(emailAction.getTo()).allMatch(
+              participant -> participant.getType().equals(EmailActionType.RECORD_OWNER) && participant.getEntity()
+                  .equals(EmailEntityType.CONTACT.getEntityName()));
+          assertThat(emailAction.getCc()).hasSize(2);
+          assertThat(emailAction.getCc()).allMatch(
+              participant -> participant.getType().equals(EmailActionType.RECORD_OWNER) && participant.getEntity()
+                  .equals(EmailEntityType.CONTACT.getEntityName()));
+          assertThat(emailAction.getBcc()).hasSize(2);
+          assertThat(emailAction.getBcc()).allMatch(
+              participant -> participant.getType().equals(EmailActionType.RECORD_OWNER) && participant.getEntity()
+                  .equals(EmailEntityType.CONTACT.getEntityName()));
+
+          assertThat(workflow.getWorkflowCondition().getType()).isEqualTo(ConditionType.FOR_ALL);
+
+          assertThat(workflow.getWorkflowExecutedEvent().getLastTriggeredAt()).isNull();
+          assertThat(workflow.getWorkflowExecutedEvent().getId()).isPositive();
+
+          assertThat(workflow.isActive()).isTrue();
+          return true;
+        })
+        .verifyComplete();
+  }
+
+  @Transactional
+  @Test
+  @Sql("/test-scripts/insert-workflow.sql")
+  public void givenDealWorkflowUpdateRequest_withSendEmailAction_shouldUpdateIt() throws JsonProcessingException {
+    //given
+    ObjectMapper objectMapper = new ObjectMapper();
+    User aUser = UserStub.aUser(11L, 99L, true, true, true, true, true)
+        .withName("user 1");
+    given(authService.getLoggedInUser()).willReturn(aUser);
+
+    given(userService.getUserDetails(11L, authService.getAuthenticationToken()))
+        .willReturn(Mono.just(
+            aUser));
+
+    String from = "{\"type\":\"RECORD_OWNER\",\"entity\":\"user\",\"entityId\":null,\"name\":\"user1\",\"email\":\"user1@gmail.com\"}";
+    List<Participant> participants = List
+        .of(new Participant(EmailActionType.RECORD_OWNER, EmailEntityType.DEAL.getEntityName(), 1L, "test user", "test@user.com"),
+            new Participant(EmailActionType.RECORD_OWNER, EmailEntityType.DEAL.getEntityName(), 2L, "test user", "test@user.com"));
+
+    var actions = Set.of(new ActionResponse(SEND_EMAIL, new EmailAction(1L, from, participants, participants, participants)));
+
+    var workflowRequest = WorkflowStub.aWorkflowRequestWithActions("Workflow 1", "Workflow 1", DEAL, EVENT, UPDATED, FOR_ALL, actions);
+    //when
+    var workflowMono = workflowFacade.update(301L, workflowRequest);
+    //then
+    StepVerifier.create(workflowMono)
+        .expectNextMatches(workflow -> {
+          assertThat(workflow.getId())
+              .isNotNull()
+              .isGreaterThan(0L);
+
+          assertThat(workflow.getWorkflowTrigger().getTriggerFrequency()).isEqualTo(UPDATED);
+          assertThat(workflow.getWorkflowTrigger().getTriggerType()).isEqualTo(TriggerType.EVENT);
+
+          assertThat(workflow.getWorkflowActions().size()).isEqualTo(1);
+          com.kylas.sales.workflow.domain.workflow.action.email.EmailAction emailAction = (com.kylas.sales.workflow.domain.workflow.action.email.EmailAction) workflow
+              .getWorkflowActions().iterator().next();
+
+          assertThat(emailAction.getType()).isEqualTo(SEND_EMAIL);
+          assertThat(emailAction.getEmailTemplateId()).isEqualTo(1L);
+          Participant participantFrom = null;
+          try {
+            participantFrom = objectMapper.readValue(from, Participant.class);
+            assertThat(participantFrom).isNotNull();
+            assertThat(participantFrom.getEntityId()).isNull();
+            assertThat(participantFrom.getEntity()).isEqualTo(EmailEntityType.USER.getEntityName());
+            assertThat(participantFrom.getType()).isEqualTo(EmailActionType.RECORD_OWNER);
+            assertThat(participantFrom.getEmail()).isEqualTo("user1@gmail.com");
+            assertThat(participantFrom.getName()).isEqualTo("user1");
+          } catch (JsonProcessingException e) {
+            e.printStackTrace();
+          }
+
+          assertThat(emailAction.getTo()).hasSize(2);
+          assertThat(emailAction.getTo()).allMatch(
+              participant -> participant.getType().equals(EmailActionType.RECORD_OWNER) && participant.getEntity()
+                  .equals(EmailEntityType.DEAL.getEntityName()));
+          assertThat(emailAction.getCc()).hasSize(2);
+          assertThat(emailAction.getCc()).allMatch(
+              participant -> participant.getType().equals(EmailActionType.RECORD_OWNER) && participant.getEntity()
+                  .equals(EmailEntityType.DEAL.getEntityName()));
+          assertThat(emailAction.getBcc()).hasSize(2);
+          assertThat(emailAction.getBcc()).allMatch(
+              participant -> participant.getType().equals(EmailActionType.RECORD_OWNER) && participant.getEntity()
+                  .equals(EmailEntityType.DEAL.getEntityName()));
+
+          assertThat(workflow.getWorkflowCondition().getType()).isEqualTo(ConditionType.FOR_ALL);
+
+          assertThat(workflow.getWorkflowExecutedEvent().getLastTriggeredAt()).isNull();
+          assertThat(workflow.getWorkflowExecutedEvent().getId()).isPositive();
+
+          assertThat(workflow.isActive()).isTrue();
+          return true;
+        })
+        .verifyComplete();
+  }
 
   @Transactional
   @Test

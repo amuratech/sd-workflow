@@ -1,6 +1,7 @@
 package com.kylas.sales.workflow.common.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.kylas.sales.workflow.domain.workflow.action.email.Participant;
 import com.kylas.sales.workflow.domain.workflow.action.task.AssignedTo;
 import com.kylas.sales.workflow.domain.workflow.action.task.DueDate;
 import com.kylas.sales.workflow.domain.workflow.action.webhook.Parameter;
@@ -70,5 +71,17 @@ public interface ActionDetail {
     private final AssignedTo assignedTo;
     private final DueDate dueDate;
 
+  }
+
+  @Getter
+  @JsonIgnoreProperties(ignoreUnknown = true)
+  @AllArgsConstructor
+  class EmailAction implements ActionDetail {
+
+    private final long emailTemplateId;
+    private final Object from;
+    private final List<Participant> to;
+    private final List<Participant> cc;
+    private final List<Participant> bcc;
   }
 }

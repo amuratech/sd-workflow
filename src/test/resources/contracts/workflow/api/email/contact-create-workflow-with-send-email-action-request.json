@@ -1,0 +1,112 @@
+{
+  "name": "Workflow 1",
+  "description": "Workflow Description",
+  "entityType": "CONTACT",
+  "trigger": {
+    "name": "EVENT",
+    "triggerFrequency": "CREATED",
+    "payload": {
+    }
+  },
+  "condition": {
+    "conditionType": "FOR_ALL"
+  },
+  "actions": [
+    {
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "salutation",
+        "value": 1319,
+        "valueType": "PLAIN"
+      }
+    },
+    {
+      "type": "REASSIGN",
+      "payload": {
+        "id": 20003,
+        "name": "Tony Stark"
+      }
+    },
+    {
+      "type": "CREATE_TASK",
+      "payload": {
+        "name": "new task",
+        "description": "new task description",
+        "priority": 11,
+        "outcome": "contacted",
+        "type": 12,
+        "status": 13,
+        "assignedTo": {
+          "type": "USER",
+          "id": 5,
+          "name": "Tony Stark"
+        },
+        "dueDate": {
+          "days": 4,
+          "hours": 3
+        }
+      }
+    },
+    {
+      "type": "SEND_EMAIL",
+      "payload": {
+        "from": {
+          "type": "RECORD_OWNER",
+          "entity": "user",
+          "entityId": 1,
+          "name": "user1",
+          "email": "user1@gmail.com"
+        },
+        "to": [
+          {
+            "type": "RECORD_PRIMARY_EMAIL",
+            "entity": "contact",
+            "entityId": 1,
+            "name": "user1",
+            "email": "user1@gmail.com"
+          },
+          {
+            "type": "RECORD_PRIMARY_EMAIL",
+            "entity": "contact",
+            "entityId": 2,
+            "name": "user2",
+            "email": "user2@gmail.com"
+          }
+        ],
+        "cc": [
+          {
+            "type": "RECORD_PRIMARY_EMAIL",
+            "entity": "contact",
+            "entityId": 1,
+            "name": "user1",
+            "email": "user1@gmail.com"
+          },
+          {
+            "type": "RECORD_PRIMARY_EMAIL",
+            "entity": "contact",
+            "entityId": 2,
+            "name": "user2",
+            "email": "user2@gmail.com"
+          }
+        ],
+        "bcc": [
+          {
+            "type": "RECORD_PRIMARY_EMAIL",
+            "entity": "contact",
+            "entityId": 1,
+            "name": "user1",
+            "email": "user1@gmail.com"
+          },
+          {
+            "type": "RECORD_PRIMARY_EMAIL",
+            "entity": "contact",
+            "entityId": 2,
+            "name": "user2",
+            "email": "user2@gmail.com"
+          }
+        ],
+        "emailTemplateId": 1
+      }
+    }
+  ]
+}

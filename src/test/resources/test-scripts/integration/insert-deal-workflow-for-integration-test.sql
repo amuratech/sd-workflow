@@ -1,8 +1,10 @@
 DELETE FROM parameter;
+DELETE FROM participant;
 DELETE FROM webhook_action;
 DELETE FROM reassign_action;
 DELETE FROM edit_property_action;
 DELETE FROM create_task_action;
+DELETE FROM email_action;
 DELETE FROM workflow_executed_event;
 DELETE FROM abstract_workflow_action;
 DELETE FROM workflow_condition;
@@ -54,6 +56,14 @@ VALUES ('a0eebc55-9c0b-4ef8-bb6d-6bb9bd380a12', 301, 'ownedBy', '{"id": 12,"name
 
 INSERT INTO create_task_action(id, workflow_id, name, description, priority, outcome, type, status, assigned_to_type, assigned_to_id, assigned_to_name, due_days, due_hours)
 VALUES ('a0eebc55-9c0b-4ef8-bb6d-6bb9bd380a11', 301, 'new task', 'new task desc', 2, 'contacted', 3, 4, 'USER', 5, 'James Bond', 4, 2);
+
+INSERT INTO email_action(id, workflow_id, email_template_id, email_from)
+VALUES ('a0eebc55-9c0b-4ef8-bb6d-6bb9bd380a13', 301, 2, '{ "type": "RECORD_OWNER", "entity": "user", "entityId": 1, "name": "user1", "email": "user1@gmail.com" }');
+
+INSERT INTO participant(id, type, entity, entity_id, name, email, email_action_to_id, email_action_cc_id, email_action_bcc_id)
+VALUES ('a0eebc55-9c0b-4ef8-bb6d-6bb9bd380a14','RECORD_OWNER', 'lead', 2, 'test', 'test@123.com', 'a0eebc55-9c0b-4ef8-bb6d-6bb9bd380a13', 'a0eebc55-9c0b-4ef8-bb6d-6bb9bd380a13', 'a0eebc55-9c0b-4ef8-bb6d-6bb9bd380a13'),
+('a0eebc55-9c0b-4ef8-bb6d-6bb9bd380a15','RECORD_OWNER', 'lead', 3, 'test', 'test@123.com','a0eebc55-9c0b-4ef8-bb6d-6bb9bd380a13', 'a0eebc55-9c0b-4ef8-bb6d-6bb9bd380a13', 'a0eebc55-9c0b-4ef8-bb6d-6bb9bd380a13'),
+('a0eebc55-9c0b-4ef8-bb6d-6bb9bd380a16','RECORD_OWNER', 'lead', 4, 'test', 'test@123.com','a0eebc55-9c0b-4ef8-bb6d-6bb9bd380a13', 'a0eebc55-9c0b-4ef8-bb6d-6bb9bd380a13', 'a0eebc55-9c0b-4ef8-bb6d-6bb9bd380a13');
 
 INSERT INTO workflow_executed_event(id, workflow_id, last_triggered_at, trigger_count)
 OVERRIDING SYSTEM VALUE VALUES

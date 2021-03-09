@@ -1,0 +1,114 @@
+{
+  "id": 301,
+  "name": "Workflow 1",
+  "description": "Workflow Description",
+  "entityType": "DEAL",
+  "trigger": {
+    "name": "EVENT",
+    "triggerFrequency": "UPDATED"
+  },
+  "condition": {
+    "conditionType": "FOR_ALL"
+  },
+  "actions": [
+    {
+      "id": "08518b20-23f9-11eb-adc1-0242ac120003",
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "salutation",
+        "value": 1319,
+        "valueType": "PLAIN"
+      }
+    },
+    {
+      "id": "08518b20-23f9-11eb-adc1-0242ac120004",
+      "type": "REASSIGN",
+      "payload": {
+        "id": 20003,
+        "name": "Tony Stark"
+      }
+    },
+    {
+      "id": "08518b20-23f9-11eb-adc1-0242ac120005",
+      "type": "CREATE_TASK",
+      "payload": {
+        "name": "new task",
+        "description": "new task description",
+        "priority": 11,
+        "outcome": "contacted",
+        "type": 12,
+        "status": 13,
+        "assignedTo": {
+          "type": "USER",
+          "id": 5,
+          "name": "Tony Stark"
+        },
+        "dueDate": {
+          "days": 4,
+          "hours": 3
+        }
+      }
+    },
+    {
+      "id": "08518b20-23f9-11eb-adc1-0242ac120006",
+      "type": "SEND_EMAIL",
+      "payload": {
+        "from": {
+          "type": "RECORD_OWNER",
+          "entity": "user",
+          "entityId": 1,
+          "name": "user1",
+          "email": "user1@gmail.com"
+        },
+        "to": [
+          {
+            "type": "RECORD_OWNER",
+            "entity": "user",
+            "entityId": 1,
+            "name": "user1",
+            "email": "user1@gmail.com"
+          }
+        ],
+        "cc": [
+          {
+            "type": "RECORD_OWNER",
+            "entity": "user",
+            "entityId": 1,
+            "name": "user1",
+            "email": "user1@gmail.com"
+          }
+        ],
+        "bcc": [
+          {
+            "type": "RECORD_OWNER",
+            "entity": "user",
+            "entityId": 1,
+            "name": "user1",
+            "email": "user1@gmail.com"
+          }
+        ],
+        "emailTemplateId": 1
+      }
+    }
+  ],
+  "createdBy": {
+    "id": 12,
+    "name": "Steve"
+  },
+  "updatedBy": {
+    "id": 12,
+    "name": "Steve"
+  },
+  "createdAt": "2020-10-20T23:17:59.442+0000",
+  "updatedAt": "2020-11-17T11:01:31.603+0000",
+  "lastTriggeredAt": "2020-10-21T23:17:59.442+0000",
+  "triggerCount": 151,
+  "active": true,
+  "recordActions": {
+    "read": true,
+    "update": true,
+    "write": true,
+    "readAll": false,
+    "updateAll": false
+  }
+}

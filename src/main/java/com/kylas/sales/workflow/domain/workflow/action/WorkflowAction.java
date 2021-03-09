@@ -2,6 +2,7 @@ package com.kylas.sales.workflow.domain.workflow.action;
 
 import com.kylas.sales.workflow.common.dto.ActionResponse;
 import com.kylas.sales.workflow.domain.workflow.Workflow;
+import com.kylas.sales.workflow.domain.workflow.action.email.EmailAction;
 import com.kylas.sales.workflow.domain.workflow.action.reassign.ReassignAction;
 import com.kylas.sales.workflow.domain.workflow.action.task.CreateTaskAction;
 import com.kylas.sales.workflow.domain.workflow.action.webhook.WebhookAction;
@@ -53,6 +54,17 @@ public interface WorkflowAction {
       @Override
       public ActionResponse toActionResponse(AbstractWorkflowAction workflowAction) {
         return CreateTaskAction.toActionResponse((CreateTaskAction) workflowAction);
+      }
+    },
+    SEND_EMAIL {
+      @Override
+      public AbstractWorkflowAction create(ActionResponse action) {
+        return EmailAction.createNew(action);
+      }
+
+      @Override
+      public ActionResponse toActionResponse(AbstractWorkflowAction workflowAction) {
+        return EmailAction.toActionResponse((EmailAction) workflowAction);
       }
     };
 

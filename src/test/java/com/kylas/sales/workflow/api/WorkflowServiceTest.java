@@ -8,6 +8,7 @@ import static com.kylas.sales.workflow.domain.workflow.TriggerFrequency.CREATED;
 import static com.kylas.sales.workflow.domain.workflow.TriggerType.EVENT;
 import static com.kylas.sales.workflow.domain.workflow.action.WorkflowAction.ActionType.CREATE_TASK;
 import static com.kylas.sales.workflow.domain.workflow.action.WorkflowAction.ActionType.EDIT_PROPERTY;
+import static com.kylas.sales.workflow.domain.workflow.action.WorkflowAction.ActionType.SEND_EMAIL;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
@@ -25,6 +26,7 @@ import com.kylas.sales.workflow.api.response.WorkflowEntry;
 import com.kylas.sales.workflow.api.response.WorkflowSummary;
 import com.kylas.sales.workflow.common.dto.ActionDetail;
 import com.kylas.sales.workflow.common.dto.ActionDetail.CreateTaskAction;
+import com.kylas.sales.workflow.common.dto.ActionDetail.EmailAction;
 import com.kylas.sales.workflow.common.dto.ActionResponse;
 import com.kylas.sales.workflow.domain.WorkflowFacade;
 import com.kylas.sales.workflow.domain.processor.task.AssignedToType;
@@ -37,13 +39,15 @@ import com.kylas.sales.workflow.domain.workflow.WorkflowTrigger;
 import com.kylas.sales.workflow.domain.workflow.action.AbstractWorkflowAction;
 import com.kylas.sales.workflow.domain.workflow.action.EditPropertyAction;
 import com.kylas.sales.workflow.domain.workflow.action.WorkflowAction.ActionType;
+import com.kylas.sales.workflow.domain.workflow.action.email.EmailActionType;
+import com.kylas.sales.workflow.domain.workflow.action.email.EmailEntityType;
+import com.kylas.sales.workflow.domain.workflow.action.email.Participant;
 import com.kylas.sales.workflow.domain.workflow.action.task.AssignedTo;
 import com.kylas.sales.workflow.domain.workflow.action.task.DueDate;
 import com.kylas.sales.workflow.matchers.PageableMatcher;
 import com.kylas.sales.workflow.security.AuthService;
 import com.kylas.sales.workflow.stubs.UserStub;
 import com.kylas.sales.workflow.stubs.WorkflowStub;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -61,13 +65,11 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Sort.Order;
-import org.testcontainers.shaded.com.fasterxml.jackson.databind.ObjectMapper;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
@@ -85,8 +87,6 @@ class WorkflowServiceTest {
 
   @Mock
   private ValueResolver valueResolver;
-  @Autowired
-  ObjectMapper objectMapper;
 
   @Test
   public void givenWorkflowRequest_shouldCreateIt() {
@@ -106,7 +106,7 @@ class WorkflowServiceTest {
   }
 
   @Test
-  public void givenLeadWorkflowRequest_withCreateTaskAction_shouldCreateIt() throws IOException {
+  public void givenLeadWorkflowRequest_withCreateTaskAction_shouldCreateIt() {
     // given
     var actions = Set.of(new ActionResponse(CREATE_TASK,
         new CreateTaskAction("new Task", "new Task description", 1L, "contacted", 2L, 3L, new AssignedTo(AssignedToType.USER, 4L, "Tony Stark"),
@@ -116,9 +116,9 @@ class WorkflowServiceTest {
 
     var workflowMock = mock(Workflow.class);
     given(workflowMock.getId()).willReturn(1L);
-    given(workflowFacade.create(argThat(request -> {
-      return request.getActions().stream().anyMatch(action -> action.getType().equals(ActionType.CREATE_TASK));
-    }))).willReturn(Mono.just(workflowMock));
+    given(
+        workflowFacade.create(argThat(request -> request.getActions().stream().anyMatch(action -> action.getType().equals(ActionType.CREATE_TASK)))))
+        .willReturn(Mono.just(workflowMock));
     doNothing().when(workflowFacade).validate(workflowRequest);
     // when
     Mono<WorkflowSummary> workflowSummaryMono = workflowService.create(workflowRequest);
@@ -130,7 +130,7 @@ class WorkflowServiceTest {
   }
 
   @Test
-  public void givenDealWorkflowRequest_withCreateTaskAction_shouldCreateIt() throws IOException {
+  public void givenDealWorkflowRequest_withCreateTaskAction_shouldCreateIt() {
     // given
     var actions = Set.of(new ActionResponse(CREATE_TASK,
         new CreateTaskAction("new Task", "new Task description", 1L, "contacted", 2L, 3L, new AssignedTo(AssignedToType.USER, 4L, "Tony Stark"),
@@ -140,9 +140,9 @@ class WorkflowServiceTest {
 
     var workflowMock = mock(Workflow.class);
     given(workflowMock.getId()).willReturn(1L);
-    given(workflowFacade.create(argThat(request -> {
-      return request.getActions().stream().anyMatch(action -> action.getType().equals(ActionType.CREATE_TASK));
-    }))).willReturn(Mono.just(workflowMock));
+    given(
+        workflowFacade.create(argThat(request -> request.getActions().stream().anyMatch(action -> action.getType().equals(ActionType.CREATE_TASK)))))
+        .willReturn(Mono.just(workflowMock));
     doNothing().when(workflowFacade).validate(workflowRequest);
     // when
     Mono<WorkflowSummary> workflowSummaryMono = workflowService.create(workflowRequest);
@@ -154,7 +154,7 @@ class WorkflowServiceTest {
   }
 
   @Test
-  public void givenContactWorkflowRequest_withCreateTaskAction_shouldCreateIt() throws IOException {
+  public void givenContactWorkflowRequest_withCreateTaskAction_shouldCreateIt() {
     // given
     var actions = Set.of(new ActionResponse(CREATE_TASK,
         new CreateTaskAction("new Task", "new Task description", 1L, "contacted", 2L, 3L, new AssignedTo(AssignedToType.USER, 4L, "Tony Stark"),
@@ -164,9 +164,9 @@ class WorkflowServiceTest {
 
     var workflowMock = mock(Workflow.class);
     given(workflowMock.getId()).willReturn(1L);
-    given(workflowFacade.create(argThat(request -> {
-      return request.getActions().stream().anyMatch(action -> action.getType().equals(ActionType.CREATE_TASK));
-    }))).willReturn(Mono.just(workflowMock));
+    given(
+        workflowFacade.create(argThat(request -> request.getActions().stream().anyMatch(action -> action.getType().equals(ActionType.CREATE_TASK)))))
+        .willReturn(Mono.just(workflowMock));
     doNothing().when(workflowFacade).validate(workflowRequest);
     // when
     Mono<WorkflowSummary> workflowSummaryMono = workflowService.create(workflowRequest);
@@ -178,7 +178,85 @@ class WorkflowServiceTest {
   }
 
   @Test
-  public void givenWorkflowRequest_withCreateTaskActionAndAssignedToOwner_shouldCreateIt() throws IOException {
+  public void givenLeadWorkflowRequest_withSendEmailAction_shouldCreateIt() {
+    // given
+    Object from = "{\"type\":\"RECORD_OWNER\",\"entity\":\"user\",\"entityId\":1,\"name\":\"user1\",\"email\":\"user1@gmail.com\"}";
+    List<Participant> participants = List
+        .of(new Participant(EmailActionType.RECORD_OWNER, EmailEntityType.LEAD.getEntityName(), 1L, "test user", "test@user.com"),
+            new Participant(EmailActionType.RECORD_OWNER, EmailEntityType.LEAD.getEntityName(), 2L, "test user", "test@user.com"));
+
+    var actions = Set.of(new ActionResponse(SEND_EMAIL, new EmailAction(1L, from, participants, participants, participants)));
+
+    var workflowRequest = WorkflowStub.aWorkflowRequestWithActions("Workflow 1", "Workflow 1", LEAD, EVENT, CREATED, FOR_ALL, actions);
+
+    var workflowMock = mock(Workflow.class);
+    given(workflowMock.getId()).willReturn(1L);
+    given(workflowFacade.create(argThat(request -> request.getActions().stream().anyMatch(action -> action.getType().equals(SEND_EMAIL)))))
+        .willReturn(Mono.just(workflowMock));
+    doNothing().when(workflowFacade).validate(workflowRequest);
+    // when
+    Mono<WorkflowSummary> workflowSummaryMono = workflowService.create(workflowRequest);
+    // then
+    verify(workflowFacade, times(1)).validate(workflowRequest);
+    StepVerifier.create(workflowSummaryMono)
+        .assertNext(workflowSummary -> assertThat(workflowSummary.getId()).isEqualTo(1L))
+        .verifyComplete();
+  }
+
+  @Test
+  public void givenContactWorkflowRequest_withSendEmailAction_shouldCreateIt() {
+    // given
+    Object from = "{\"type\":\"RECORD_OWNER\",\"entity\":\"user\",\"entityId\":1,\"name\":\"user1\",\"email\":\"user1@gmail.com\"}";
+    List<Participant> participants = List
+        .of(new Participant(EmailActionType.RECORD_OWNER, EmailEntityType.CONTACT.getEntityName(), 1L, "test user", "test@user.com"),
+            new Participant(EmailActionType.RECORD_OWNER, EmailEntityType.CONTACT.getEntityName(), 2L, "test user", "test@user.com"));
+
+    var actions = Set.of(new ActionResponse(SEND_EMAIL, new EmailAction(1L, from, participants, participants, participants)));
+
+    var workflowRequest = WorkflowStub.aWorkflowRequestWithActions("Workflow 1", "Workflow 1", CONTACT, EVENT, CREATED, FOR_ALL, actions);
+
+    var workflowMock = mock(Workflow.class);
+    given(workflowMock.getId()).willReturn(1L);
+    given(workflowFacade.create(argThat(request -> request.getActions().stream().anyMatch(action -> action.getType().equals(SEND_EMAIL)))))
+        .willReturn(Mono.just(workflowMock));
+    doNothing().when(workflowFacade).validate(workflowRequest);
+    // when
+    Mono<WorkflowSummary> workflowSummaryMono = workflowService.create(workflowRequest);
+    // then
+    verify(workflowFacade, times(1)).validate(workflowRequest);
+    StepVerifier.create(workflowSummaryMono)
+        .assertNext(workflowSummary -> assertThat(workflowSummary.getId()).isEqualTo(1L))
+        .verifyComplete();
+  }
+
+  @Test
+  public void givenDealWorkflowRequest_withSendEmailAction_shouldCreateIt() {
+    // given
+    Object from = "{\"type\":\"RECORD_OWNER\",\"entity\":\"user\",\"entityId\":1,\"name\":\"user1\",\"email\":\"user1@gmail.com\"}";
+    List<Participant> participants = List
+        .of(new Participant(EmailActionType.RECORD_OWNER, EmailEntityType.DEAL.getEntityName(), 1L, "test user", "test@user.com"),
+            new Participant(EmailActionType.RECORD_OWNER, EmailEntityType.DEAL.getEntityName(), 2L, "test user", "test@user.com"));
+
+    var actions = Set.of(new ActionResponse(SEND_EMAIL, new EmailAction(1L, from, participants, participants, participants)));
+
+    var workflowRequest = WorkflowStub.aWorkflowRequestWithActions("Workflow 1", "Workflow 1", DEAL, EVENT, CREATED, FOR_ALL, actions);
+
+    var workflowMock = mock(Workflow.class);
+    given(workflowMock.getId()).willReturn(1L);
+    given(workflowFacade.create(argThat(request -> request.getActions().stream().anyMatch(action -> action.getType().equals(SEND_EMAIL)))))
+        .willReturn(Mono.just(workflowMock));
+    doNothing().when(workflowFacade).validate(workflowRequest);
+    // when
+    Mono<WorkflowSummary> workflowSummaryMono = workflowService.create(workflowRequest);
+    // then
+    verify(workflowFacade, times(1)).validate(workflowRequest);
+    StepVerifier.create(workflowSummaryMono)
+        .assertNext(workflowSummary -> assertThat(workflowSummary.getId()).isEqualTo(1L))
+        .verifyComplete();
+  }
+
+  @Test
+  public void givenWorkflowRequest_withCreateTaskActionAndAssignedToOwner_shouldCreateIt() {
     // given
     var actions = Set.of(new ActionResponse(CREATE_TASK,
         new CreateTaskAction("new Task", "new Task description", 1L, "contacted", 2L, 3L, new AssignedTo(AssignedToType.OWNER, null, "Tony Stark"),
@@ -188,9 +266,9 @@ class WorkflowServiceTest {
 
     var workflowMock = mock(Workflow.class);
     given(workflowMock.getId()).willReturn(1L);
-    given(workflowFacade.create(argThat(request -> {
-      return request.getActions().stream().anyMatch(action -> action.getType().equals(ActionType.CREATE_TASK));
-    }))).willReturn(Mono.just(workflowMock));
+    given(
+        workflowFacade.create(argThat(request -> request.getActions().stream().anyMatch(action -> action.getType().equals(ActionType.CREATE_TASK)))))
+        .willReturn(Mono.just(workflowMock));
     doNothing().when(workflowFacade).validate(workflowRequest);
     // when
     Mono<WorkflowSummary> workflowSummaryMono = workflowService.create(workflowRequest);
@@ -202,7 +280,7 @@ class WorkflowServiceTest {
   }
 
   @Test
-  public void givenWorkflowRequest_withCreateTaskActionAndAssignedToCreatedBy_shouldCreateIt() throws IOException {
+  public void givenWorkflowRequest_withCreateTaskActionAndAssignedToCreatedBy_shouldCreateIt() {
     // given
     var actions = Set.of(new ActionResponse(CREATE_TASK,
         new CreateTaskAction("new Task", "new Task description", 1L, "contacted", 2L, 3L,
@@ -213,9 +291,9 @@ class WorkflowServiceTest {
 
     var workflowMock = mock(Workflow.class);
     given(workflowMock.getId()).willReturn(1L);
-    given(workflowFacade.create(argThat(request -> {
-      return request.getActions().stream().anyMatch(action -> action.getType().equals(ActionType.CREATE_TASK));
-    }))).willReturn(Mono.just(workflowMock));
+    given(
+        workflowFacade.create(argThat(request -> request.getActions().stream().anyMatch(action -> action.getType().equals(ActionType.CREATE_TASK)))))
+        .willReturn(Mono.just(workflowMock));
     doNothing().when(workflowFacade).validate(workflowRequest);
     // when
     Mono<WorkflowSummary> workflowSummaryMono = workflowService.create(workflowRequest);
@@ -249,7 +327,7 @@ class WorkflowServiceTest {
         Workflow.createNew(
             "Workflow 1", "Workflow 1", LEAD, trigger, aUser, actions, condition, true);
     workflow.setId(1L);
-    given(workflowFacade.update(1l, workflowRequestMock)).willReturn(Mono.just(workflow));
+    given(workflowFacade.update(1L, workflowRequestMock)).willReturn(Mono.just(workflow));
     doNothing().when(workflowFacade).validate(workflowRequestMock);
     // when
     Mono<WorkflowDetail> workflowDetailMono = workflowService.update(1L, workflowRequestMock);
@@ -293,7 +371,7 @@ class WorkflowServiceTest {
             "Workflow 1", "Workflow 1", LEAD, trigger, aUser, actions, condition, true);
     workflow.setId(1L);
     given(valueResolver.getUserName(any(), any())).willReturn(Mono.just("James Bond"));
-    given(workflowFacade.update(1l, workflowRequestMock)).willReturn(Mono.just(workflow));
+    given(workflowFacade.update(1L, workflowRequestMock)).willReturn(Mono.just(workflow));
     doNothing().when(workflowFacade).validate(workflowRequestMock);
     // when
     Mono<WorkflowDetail> workflowDetailMono = workflowService.update(1L, workflowRequestMock);
@@ -349,7 +427,7 @@ class WorkflowServiceTest {
         Workflow.createNew(
             "Workflow 1", "Workflow 1", LEAD, trigger, aUser, actions, condition, true);
     workflow.setId(1L);
-    given(workflowFacade.update(1l, workflowRequestMock)).willReturn(Mono.just(workflow));
+    given(workflowFacade.update(1L, workflowRequestMock)).willReturn(Mono.just(workflow));
     doNothing().when(workflowFacade).validate(workflowRequestMock);
     // when
     Mono<WorkflowDetail> workflowDetailMono = workflowService.update(1L, workflowRequestMock);
@@ -405,7 +483,7 @@ class WorkflowServiceTest {
         Workflow.createNew(
             "Workflow 1", "Workflow 1", LEAD, trigger, aUser, actions, condition, true);
     workflow.setId(1L);
-    given(workflowFacade.update(1l, workflowRequestMock)).willReturn(Mono.just(workflow));
+    given(workflowFacade.update(1L, workflowRequestMock)).willReturn(Mono.just(workflow));
     doNothing().when(workflowFacade).validate(workflowRequestMock);
     // when
     Mono<WorkflowDetail> workflowDetailMono = workflowService.update(1L, workflowRequestMock);
@@ -463,7 +541,7 @@ class WorkflowServiceTest {
             "Workflow 1", "Workflow 1", DEAL, trigger, aUser, actions, condition, true);
     workflow.setId(1L);
     given(valueResolver.getUserName(any(), any())).willReturn(Mono.just("James Bond"));
-    given(workflowFacade.update(1l, workflowRequestMock)).willReturn(Mono.just(workflow));
+    given(workflowFacade.update(1L, workflowRequestMock)).willReturn(Mono.just(workflow));
     doNothing().when(workflowFacade).validate(workflowRequestMock);
     // when
     Mono<WorkflowDetail> workflowDetailMono = workflowService.update(1L, workflowRequestMock);
@@ -520,7 +598,7 @@ class WorkflowServiceTest {
             "Workflow 1", "Workflow 1", CONTACT, trigger, aUser, actions, condition, true);
     workflow.setId(1L);
     given(valueResolver.getUserName(any(), any())).willReturn(Mono.just("James Bond"));
-    given(workflowFacade.update(1l, workflowRequestMock)).willReturn(Mono.just(workflow));
+    given(workflowFacade.update(1L, workflowRequestMock)).willReturn(Mono.just(workflow));
     doNothing().when(workflowFacade).validate(workflowRequestMock);
     // when
     Mono<WorkflowDetail> workflowDetailMono = workflowService.update(1L, workflowRequestMock);
@@ -552,6 +630,209 @@ class WorkflowServiceTest {
         })
         .verifyComplete();
   }
+
+  @Test
+  public void givenLeadWorkflowUpdateRequest_withSendEmailAction_shouldUpdateIt() {
+    // given
+    var workflowRequestMock = mock(WorkflowRequest.class);
+    User aUser = UserStub.aUser(11L, 99L, true, true, true, false, false).withName("user 1");
+    WorkflowTrigger trigger =
+        WorkflowTrigger.createNew(
+            new com.kylas.sales.workflow.common.dto.WorkflowTrigger(
+                EVENT, CREATED));
+
+    var condition = new WorkflowCondition(FOR_ALL, null);
+    Set<AbstractWorkflowAction> actions = new HashSet<>();
+
+    Object from = "{\"type\":\"RECORD_OWNER\",\"entity\":\"user\",\"entityId\":1,\"name\":\"user1\",\"email\":\"user1@gmail.com\"}";
+    List<Participant> participants = List
+        .of(new Participant(EmailActionType.RECORD_OWNER, EmailEntityType.LEAD.getEntityName(), 1L, "test user", "test@user.com"),
+            new Participant(EmailActionType.RECORD_OWNER, EmailEntityType.LEAD.getEntityName(), 2L, "test user", "test@user.com"));
+
+    var sendEmailActionMock = new com.kylas.sales.workflow.domain.workflow.action.email.EmailAction(1L, from, participants, participants,
+        participants);
+    UUID id = UUID.randomUUID();
+    sendEmailActionMock.setId(id);
+    actions.add(sendEmailActionMock);
+
+    Workflow workflow =
+        Workflow.createNew(
+            "Workflow 1", "Workflow 1", LEAD, trigger, aUser, actions, condition, true);
+    workflow.setId(1L);
+    given(workflowFacade.update(1L, workflowRequestMock)).willReturn(Mono.just(workflow));
+    doNothing().when(workflowFacade).validate(workflowRequestMock);
+    // when
+    Mono<WorkflowDetail> workflowDetailMono = workflowService.update(1L, workflowRequestMock);
+    // then
+    verify(workflowFacade, times(1)).validate(workflowRequestMock);
+    StepVerifier.create(workflowDetailMono)
+        .assertNext(workflowDetail -> {
+          assertThat(workflowDetail.getId()).isEqualTo(workflow.getId());
+          assertThat(workflowDetail.getActions()).hasSize(workflow.getWorkflowActions().size());
+          assertThat(workflowDetail.getName()).isEqualTo("Workflow 1");
+          assertThat(workflowDetail.getDescription()).isEqualTo("Workflow 1");
+          assertThat(workflowDetail.getEntityType()).isEqualTo(workflow.getEntityType());
+          assertThat(workflowDetail.getTrigger().getTriggerFrequency()).isEqualTo(workflow.getWorkflowTrigger().getTriggerFrequency());
+          assertThat(workflowDetail.getCondition().getConditionType()).isEqualTo(workflow.getWorkflowCondition().getType());
+          com.kylas.sales.workflow.domain.workflow.action.email.EmailAction emailAction = (com.kylas.sales.workflow.domain.workflow.action.email.EmailAction) workflow
+              .getWorkflowActions().iterator().next();
+
+          assertThat(emailAction.getType()).isEqualTo(SEND_EMAIL);
+          assertThat(emailAction.getEmailTemplateId()).isEqualTo(1L);
+          assertThat(emailAction.getFrom()).isEqualTo(from);
+          assertThat(emailAction.getTo()).hasSize(2);
+          assertThat(emailAction.getTo()).allMatch(
+              participant -> participant.getType().equals(EmailActionType.RECORD_OWNER) && participant.getEntity()
+                  .equals(EmailEntityType.LEAD.getEntityName()));
+          assertThat(emailAction.getCc()).hasSize(2);
+          assertThat(emailAction.getCc()).allMatch(
+              participant -> participant.getType().equals(EmailActionType.RECORD_OWNER) && participant.getEntity()
+                  .equals(EmailEntityType.LEAD.getEntityName()));
+          assertThat(emailAction.getBcc()).hasSize(2);
+          assertThat(emailAction.getBcc()).allMatch(
+              participant -> participant.getType().equals(EmailActionType.RECORD_OWNER) && participant.getEntity()
+                  .equals(EmailEntityType.LEAD.getEntityName()));
+
+          assertThat(workflowDetail.isActive()).isTrue();
+        })
+        .verifyComplete();
+  }
+
+  @Test
+  public void givenContactWorkflowUpdateRequest_withSendEmailAction_shouldUpdateIt() {
+    // given
+    var workflowRequestMock = mock(WorkflowRequest.class);
+    User aUser = UserStub.aUser(11L, 99L, true, true, true, false, false).withName("user 1");
+    WorkflowTrigger trigger =
+        WorkflowTrigger.createNew(
+            new com.kylas.sales.workflow.common.dto.WorkflowTrigger(
+                EVENT, CREATED));
+
+    var condition = new WorkflowCondition(FOR_ALL, null);
+    Set<AbstractWorkflowAction> actions = new HashSet<>();
+
+    Object from = "{\"type\":\"RECORD_OWNER\",\"entity\":\"user\",\"entityId\":1,\"name\":\"user1\",\"email\":\"user1@gmail.com\"}";
+    List<Participant> participants = List
+        .of(new Participant(EmailActionType.RECORD_OWNER, EmailEntityType.CONTACT.getEntityName(), 1L, "test user", "test@user.com"),
+            new Participant(EmailActionType.RECORD_OWNER, EmailEntityType.CONTACT.getEntityName(), 2L, "test user", "test@user.com"));
+
+    var sendEmailActionMock = new com.kylas.sales.workflow.domain.workflow.action.email.EmailAction(1L, from, participants, participants,
+        participants);
+    UUID id = UUID.randomUUID();
+    sendEmailActionMock.setId(id);
+    actions.add(sendEmailActionMock);
+
+    Workflow workflow =
+        Workflow.createNew(
+            "Workflow 1", "Workflow 1", CONTACT, trigger, aUser, actions, condition, true);
+    workflow.setId(1L);
+    given(workflowFacade.update(1L, workflowRequestMock)).willReturn(Mono.just(workflow));
+    doNothing().when(workflowFacade).validate(workflowRequestMock);
+    // when
+    Mono<WorkflowDetail> workflowDetailMono = workflowService.update(1L, workflowRequestMock);
+    // then
+    verify(workflowFacade, times(1)).validate(workflowRequestMock);
+    StepVerifier.create(workflowDetailMono)
+        .assertNext(workflowDetail -> {
+          assertThat(workflowDetail.getId()).isEqualTo(workflow.getId());
+          assertThat(workflowDetail.getActions()).hasSize(workflow.getWorkflowActions().size());
+          assertThat(workflowDetail.getName()).isEqualTo("Workflow 1");
+          assertThat(workflowDetail.getDescription()).isEqualTo("Workflow 1");
+          assertThat(workflowDetail.getEntityType()).isEqualTo(workflow.getEntityType());
+          assertThat(workflowDetail.getTrigger().getTriggerFrequency()).isEqualTo(workflow.getWorkflowTrigger().getTriggerFrequency());
+          assertThat(workflowDetail.getCondition().getConditionType()).isEqualTo(workflow.getWorkflowCondition().getType());
+          com.kylas.sales.workflow.domain.workflow.action.email.EmailAction emailAction = (com.kylas.sales.workflow.domain.workflow.action.email.EmailAction) workflow
+              .getWorkflowActions().iterator().next();
+
+          assertThat(emailAction.getType()).isEqualTo(SEND_EMAIL);
+          assertThat(emailAction.getEmailTemplateId()).isEqualTo(1L);
+          assertThat(emailAction.getFrom()).isEqualTo(from);
+          assertThat(emailAction.getTo()).hasSize(2);
+          assertThat(emailAction.getTo()).allMatch(
+              participant -> participant.getType().equals(EmailActionType.RECORD_OWNER) && participant.getEntity()
+                  .equals(EmailEntityType.CONTACT.getEntityName()));
+          assertThat(emailAction.getCc()).hasSize(2);
+          assertThat(emailAction.getCc()).allMatch(
+              participant -> participant.getType().equals(EmailActionType.RECORD_OWNER) && participant.getEntity()
+                  .equals(EmailEntityType.CONTACT.getEntityName()));
+          assertThat(emailAction.getBcc()).hasSize(2);
+          assertThat(emailAction.getBcc()).allMatch(
+              participant -> participant.getType().equals(EmailActionType.RECORD_OWNER) && participant.getEntity()
+                  .equals(EmailEntityType.CONTACT.getEntityName()));
+
+          assertThat(workflowDetail.isActive()).isTrue();
+        })
+        .verifyComplete();
+  }
+
+
+  @Test
+  public void givenDealWorkflowUpdateRequest_withSendEmailAction_shouldUpdateIt() {
+    // given
+    var workflowRequestMock = mock(WorkflowRequest.class);
+    User aUser = UserStub.aUser(11L, 99L, true, true, true, false, false).withName("user 1");
+    WorkflowTrigger trigger =
+        WorkflowTrigger.createNew(
+            new com.kylas.sales.workflow.common.dto.WorkflowTrigger(
+                EVENT, CREATED));
+
+    var condition = new WorkflowCondition(FOR_ALL, null);
+    Set<AbstractWorkflowAction> actions = new HashSet<>();
+
+    Object from = "{\"type\":\"RECORD_OWNER\",\"entity\":\"user\",\"entityId\":1,\"name\":\"user1\",\"email\":\"user1@gmail.com\"}";
+    List<Participant> participants = List
+        .of(new Participant(EmailActionType.RECORD_OWNER, EmailEntityType.DEAL.getEntityName(), 1L, "test user", "test@user.com"),
+            new Participant(EmailActionType.RECORD_OWNER, EmailEntityType.DEAL.getEntityName(), 2L, "test user", "test@user.com"));
+
+    var sendEmailActionMock = new com.kylas.sales.workflow.domain.workflow.action.email.EmailAction(1L, from, participants, participants,
+        participants);
+    UUID id = UUID.randomUUID();
+    sendEmailActionMock.setId(id);
+    actions.add(sendEmailActionMock);
+
+    Workflow workflow =
+        Workflow.createNew(
+            "Workflow 1", "Workflow 1", DEAL, trigger, aUser, actions, condition, true);
+    workflow.setId(1L);
+    given(workflowFacade.update(1L, workflowRequestMock)).willReturn(Mono.just(workflow));
+    doNothing().when(workflowFacade).validate(workflowRequestMock);
+    // when
+    Mono<WorkflowDetail> workflowDetailMono = workflowService.update(1L, workflowRequestMock);
+    // then
+    verify(workflowFacade, times(1)).validate(workflowRequestMock);
+    StepVerifier.create(workflowDetailMono)
+        .assertNext(workflowDetail -> {
+          assertThat(workflowDetail.getId()).isEqualTo(workflow.getId());
+          assertThat(workflowDetail.getActions()).hasSize(workflow.getWorkflowActions().size());
+          assertThat(workflowDetail.getName()).isEqualTo("Workflow 1");
+          assertThat(workflowDetail.getDescription()).isEqualTo("Workflow 1");
+          assertThat(workflowDetail.getEntityType()).isEqualTo(workflow.getEntityType());
+          assertThat(workflowDetail.getTrigger().getTriggerFrequency()).isEqualTo(workflow.getWorkflowTrigger().getTriggerFrequency());
+          assertThat(workflowDetail.getCondition().getConditionType()).isEqualTo(workflow.getWorkflowCondition().getType());
+          com.kylas.sales.workflow.domain.workflow.action.email.EmailAction emailAction = (com.kylas.sales.workflow.domain.workflow.action.email.EmailAction) workflow
+              .getWorkflowActions().iterator().next();
+
+          assertThat(emailAction.getType()).isEqualTo(SEND_EMAIL);
+          assertThat(emailAction.getEmailTemplateId()).isEqualTo(1L);
+          assertThat(emailAction.getFrom()).isEqualTo(from);
+          assertThat(emailAction.getTo()).hasSize(2);
+          assertThat(emailAction.getTo()).allMatch(
+              participant -> participant.getType().equals(EmailActionType.RECORD_OWNER) && participant.getEntity()
+                  .equals(EmailEntityType.DEAL.getEntityName()));
+          assertThat(emailAction.getCc()).hasSize(2);
+          assertThat(emailAction.getCc()).allMatch(
+              participant -> participant.getType().equals(EmailActionType.RECORD_OWNER) && participant.getEntity()
+                  .equals(EmailEntityType.DEAL.getEntityName()));
+          assertThat(emailAction.getBcc()).hasSize(2);
+          assertThat(emailAction.getBcc()).allMatch(
+              participant -> participant.getType().equals(EmailActionType.RECORD_OWNER) && participant.getEntity()
+                  .equals(EmailEntityType.DEAL.getEntityName()));
+
+          assertThat(workflowDetail.isActive()).isTrue();
+        })
+        .verifyComplete();
+  }
+
 
   @Test
   public void givenTenantAndEntityType_shouldReturnWorkflows() {

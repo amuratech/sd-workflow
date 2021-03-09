@@ -4,7 +4,9 @@ import static com.kylas.sales.workflow.common.dto.ActionDetail.EditPropertyActio
 import static com.kylas.sales.workflow.common.dto.ActionDetail.EditPropertyAction.ValueType.OBJECT;
 import static com.kylas.sales.workflow.common.dto.ActionDetail.EditPropertyAction.ValueType.PLAIN;
 import static com.kylas.sales.workflow.domain.workflow.action.WorkflowAction.ActionType.CREATE_TASK;
+import static com.kylas.sales.workflow.domain.workflow.action.WorkflowAction.ActionType.SEND_EMAIL;
 import static java.util.Arrays.asList;
+import static java.util.Objects.isNull;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
@@ -25,6 +27,7 @@ import com.kylas.sales.workflow.api.response.WorkflowSummary;
 import com.kylas.sales.workflow.common.dto.ActionDetail.CreateTaskAction;
 import com.kylas.sales.workflow.common.dto.ActionDetail.EditPropertyAction;
 import com.kylas.sales.workflow.common.dto.ActionDetail.EditPropertyAction.ValueType;
+import com.kylas.sales.workflow.common.dto.ActionDetail.EmailAction;
 import com.kylas.sales.workflow.common.dto.ActionDetail.ReassignAction;
 import com.kylas.sales.workflow.common.dto.ActionResponse;
 import com.kylas.sales.workflow.common.dto.User;
@@ -42,6 +45,9 @@ import com.kylas.sales.workflow.domain.workflow.TriggerFrequency;
 import com.kylas.sales.workflow.domain.workflow.TriggerType;
 import com.kylas.sales.workflow.domain.workflow.Workflow;
 import com.kylas.sales.workflow.domain.workflow.action.WorkflowAction.ActionType;
+import com.kylas.sales.workflow.domain.workflow.action.email.EmailActionType;
+import com.kylas.sales.workflow.domain.workflow.action.email.EmailEntityType;
+import com.kylas.sales.workflow.domain.workflow.action.email.Participant;
 import com.kylas.sales.workflow.domain.workflow.action.task.AssignedTo;
 import com.kylas.sales.workflow.domain.workflow.action.task.DueDate;
 import com.kylas.sales.workflow.integration.IntegrationConfig;
@@ -54,7 +60,6 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 import org.apache.commons.io.FileUtils;
 import org.json.JSONException;
@@ -1123,9 +1128,9 @@ class WorkflowControllerTest {
     WorkflowDetail workflowDetail = new WorkflowDetail(301L, "Workflow 1", "Workflow Description", EntityType.LEAD, trigger, condition, actions,
         user,
         user, null, null, null, 0L, null, true);
-    given(workflowService.update(eq(301L), argThat(workflowRequest -> {
-      return workflowRequest.getActions().stream().anyMatch(action -> action.getType().equals(CREATE_TASK));
-    }))).willReturn(Mono.just(workflowDetail));
+    given(workflowService
+        .update(eq(301L), argThat(workflowRequest -> workflowRequest.getActions().stream().anyMatch(action -> action.getType().equals(CREATE_TASK)))))
+        .willReturn(Mono.just(workflowDetail));
 
     //when
     var workflowResponse = buildWebClient()
@@ -1166,9 +1171,9 @@ class WorkflowControllerTest {
     WorkflowDetail workflowDetail = new WorkflowDetail(301L, "Workflow 1", "Workflow Description", EntityType.DEAL, trigger, condition, actions,
         user,
         user, null, null, null, 0L, null, true);
-    given(workflowService.update(eq(301L), argThat(workflowRequest -> {
-      return workflowRequest.getActions().stream().anyMatch(action -> action.getType().equals(CREATE_TASK));
-    }))).willReturn(Mono.just(workflowDetail));
+    given(workflowService
+        .update(eq(301L), argThat(workflowRequest -> workflowRequest.getActions().stream().anyMatch(action -> action.getType().equals(CREATE_TASK)))))
+        .willReturn(Mono.just(workflowDetail));
 
     //when
     var workflowResponse = buildWebClient()
@@ -1209,9 +1214,9 @@ class WorkflowControllerTest {
     WorkflowDetail workflowDetail = new WorkflowDetail(301L, "Workflow 1", "Workflow Description", EntityType.CONTACT, trigger, condition, actions,
         user,
         user, null, null, null, 0L, null, true);
-    given(workflowService.update(eq(301L), argThat(workflowRequest -> {
-      return workflowRequest.getActions().stream().anyMatch(action -> action.getType().equals(CREATE_TASK));
-    }))).willReturn(Mono.just(workflowDetail));
+    given(workflowService
+        .update(eq(301L), argThat(workflowRequest -> workflowRequest.getActions().stream().anyMatch(action -> action.getType().equals(CREATE_TASK)))))
+        .willReturn(Mono.just(workflowDetail));
 
     //when
     var workflowResponse = buildWebClient()
@@ -1688,7 +1693,7 @@ class WorkflowControllerTest {
           && workflowRequest.getCondition().getConditionType().equals(ConditionType.FOR_ALL)
           && workflowRequest.getActions().stream().anyMatch(action -> action.getType().equals(ActionType.CREATE_TASK))
           && workflowRequest.getActions().size() == 3
-          && !Objects.isNull(createTaskAction)
+          && !isNull(createTaskAction)
           && verifyCreateTaskAction(createTaskAction)
           && workflowRequest.isActive();
     }))).willReturn(Mono.just(new WorkflowSummary(1L)));
@@ -1725,8 +1730,131 @@ class WorkflowControllerTest {
           && workflowRequest.getCondition().getConditionType().equals(ConditionType.FOR_ALL)
           && workflowRequest.getActions().stream().anyMatch(action -> action.getType().equals(ActionType.CREATE_TASK))
           && workflowRequest.getActions().size() == 3
-          && !Objects.isNull(createTaskAction)
+          && !isNull(createTaskAction)
           && verifyCreateTaskAction(createTaskAction)
+          && workflowRequest.isActive();
+    }))).willReturn(Mono.just(new WorkflowSummary(1L)));
+
+    //when
+    var workflowResponse = buildWebClient()
+        .post()
+        .uri("/v1/workflows")
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(requestPayload)
+        .retrieve()
+        .bodyToMono(String.class).block();
+
+    //then
+    var expectedResponse =
+        getResourceAsString("classpath:contracts/workflow/api/create-workflow-response.json");
+    JSONAssert.assertEquals(expectedResponse, workflowResponse, false);
+  }
+
+  @Test
+  public void givenLeadWorkflowRequest_withSendEmailAction_shouldCreateIt() throws IOException, JSONException {
+    //given
+    var requestPayload = getResourceAsString("classpath:contracts/workflow/api/email/lead-create-workflow-with-send-email-action-request.json");
+    given(workflowService.create(argThat(workflowRequest -> {
+      ActionResponse actionResponse = workflowRequest.getActions().stream().filter(action -> action.getType().equals(SEND_EMAIL)).findFirst()
+          .orElse(null);
+      assert actionResponse != null;
+      EmailAction emailAction = (EmailAction) actionResponse.getPayload();
+      return workflowRequest.getName().equalsIgnoreCase("Workflow 1")
+          && workflowRequest.getDescription().equalsIgnoreCase("Workflow Description")
+          && workflowRequest.getEntityType().equals(EntityType.LEAD)
+          && workflowRequest.getTrigger().getName().equals(TriggerType.EVENT)
+          && workflowRequest.getTrigger().getTriggerFrequency().equals(TriggerFrequency.CREATED)
+          && workflowRequest.getCondition().getConditionType().equals(ConditionType.FOR_ALL)
+          && workflowRequest.getActions().stream().anyMatch(action -> action.getType().equals(ActionType.SEND_EMAIL))
+          && workflowRequest.getActions().size() == 3
+          && !isNull(emailAction)
+          && !isNull(emailAction.getFrom())
+          && emailAction.getEmailTemplateId() == 1
+          && emailAction.getTo().size() == 2
+          && emailAction.getCc().size() == 2
+          && emailAction.getBcc().size() == 2
+          && workflowRequest.isActive();
+    }))).willReturn(Mono.just(new WorkflowSummary(1L)));
+
+    //when
+    var workflowResponse = buildWebClient()
+        .post()
+        .uri("/v1/workflows")
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(requestPayload)
+        .retrieve()
+        .bodyToMono(String.class).block();
+
+    //then
+    var expectedResponse =
+        getResourceAsString("classpath:contracts/workflow/api/create-workflow-response.json");
+    JSONAssert.assertEquals(expectedResponse, workflowResponse, false);
+  }
+
+  @Test
+  public void givenContactWorkflowRequest_withSendEmailAction_shouldCreateIt() throws IOException, JSONException {
+    //given
+    var requestPayload = getResourceAsString("classpath:contracts/workflow/api/email/contact-create-workflow-with-send-email-action-request.json");
+    given(workflowService.create(argThat(workflowRequest -> {
+      ActionResponse actionResponse = workflowRequest.getActions().stream().filter(action -> action.getType().equals(SEND_EMAIL)).findFirst()
+          .orElse(null);
+      assert actionResponse != null;
+      EmailAction emailAction = (EmailAction) actionResponse.getPayload();
+      return workflowRequest.getName().equalsIgnoreCase("Workflow 1")
+          && workflowRequest.getDescription().equalsIgnoreCase("Workflow Description")
+          && workflowRequest.getEntityType().equals(EntityType.CONTACT)
+          && workflowRequest.getTrigger().getName().equals(TriggerType.EVENT)
+          && workflowRequest.getTrigger().getTriggerFrequency().equals(TriggerFrequency.CREATED)
+          && workflowRequest.getCondition().getConditionType().equals(ConditionType.FOR_ALL)
+          && workflowRequest.getActions().stream().anyMatch(action -> action.getType().equals(ActionType.SEND_EMAIL))
+          && workflowRequest.getActions().size() == 4
+          && !isNull(emailAction)
+          && !isNull(emailAction.getFrom())
+          && emailAction.getEmailTemplateId() == 1
+          && emailAction.getTo().size() == 2
+          && emailAction.getCc().size() == 2
+          && emailAction.getBcc().size() == 2
+          && workflowRequest.isActive();
+    }))).willReturn(Mono.just(new WorkflowSummary(1L)));
+
+    //when
+    var workflowResponse = buildWebClient()
+        .post()
+        .uri("/v1/workflows")
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(requestPayload)
+        .retrieve()
+        .bodyToMono(String.class).block();
+
+    //then
+    var expectedResponse =
+        getResourceAsString("classpath:contracts/workflow/api/create-workflow-response.json");
+    JSONAssert.assertEquals(expectedResponse, workflowResponse, false);
+  }
+
+  @Test
+  public void givenDealWorkflowRequest_withSendEmailAction_shouldCreateIt() throws IOException, JSONException {
+    //given
+    var requestPayload = getResourceAsString("classpath:contracts/workflow/api/email/deal-create-workflow-with-send-email-action-request.json");
+    given(workflowService.create(argThat(workflowRequest -> {
+      ActionResponse actionResponse = workflowRequest.getActions().stream().filter(action -> action.getType().equals(SEND_EMAIL)).findFirst()
+          .orElse(null);
+      assert actionResponse != null;
+      EmailAction emailAction = (EmailAction) actionResponse.getPayload();
+      return workflowRequest.getName().equalsIgnoreCase("Workflow 1")
+          && workflowRequest.getDescription().equalsIgnoreCase("Workflow Description")
+          && workflowRequest.getEntityType().equals(EntityType.DEAL)
+          && workflowRequest.getTrigger().getName().equals(TriggerType.EVENT)
+          && workflowRequest.getTrigger().getTriggerFrequency().equals(TriggerFrequency.CREATED)
+          && workflowRequest.getCondition().getConditionType().equals(ConditionType.FOR_ALL)
+          && workflowRequest.getActions().stream().anyMatch(action -> action.getType().equals(ActionType.SEND_EMAIL))
+          && workflowRequest.getActions().size() == 4
+          && !isNull(emailAction)
+          && !isNull(emailAction.getFrom())
+          && emailAction.getEmailTemplateId() == 1
+          && emailAction.getTo().size() == 2
+          && emailAction.getCc().size() == 2
+          && emailAction.getBcc().size() == 2
           && workflowRequest.isActive();
     }))).willReturn(Mono.just(new WorkflowSummary(1L)));
 
@@ -1812,7 +1940,7 @@ class WorkflowControllerTest {
           && workflowRequest.getCondition().getConditionType().equals(ConditionType.FOR_ALL)
           && workflowRequest.getActions().stream().anyMatch(action -> action.getType().equals(ActionType.CREATE_TASK))
           && workflowRequest.getActions().size() == 3
-          && !Objects.isNull(createTaskAction)
+          && !isNull(createTaskAction)
           && verifyCreateTaskAction(createTaskAction)
           && workflowRequest.isActive();
     }))).willReturn(Mono.just(new WorkflowSummary(1L)));
@@ -1832,12 +1960,168 @@ class WorkflowControllerTest {
     JSONAssert.assertEquals(expectedResponse, workflowResponse, false);
   }
 
+  @Test
+  public void givenLeadWorkflow_withSendEmailAction_shouldUpdateIt() throws IOException {
+    //given
+    var requestPayload = getResourceAsString("classpath:contracts/workflow/api/email/lead-update-workflow-with-send-email-action-request.json");
+    WorkflowTrigger trigger = new WorkflowTrigger(TriggerType.EVENT, TriggerFrequency.UPDATED);
+    Condition condition = new Condition(ConditionType.FOR_ALL.name(), null);
+
+    Object from = new ObjectMapper()
+        .readValue("{\"type\":\"RECORD_OWNER\",\"entity\":\"user\",\"entityId\":null,\"name\":\"user1\",\"email\":\"user1@gmail.com\"}",
+            Object.class);
+    List<Participant> participants = List
+        .of(new Participant(EmailActionType.RECORD_OWNER, EmailEntityType.LEAD.getEntityName(), 1L, "test user", "test@user.com"),
+            new Participant(EmailActionType.RECORD_OWNER, EmailEntityType.LEAD.getEntityName(), 2L, "test user", "test@user.com"));
+
+    List<ActionResponse> actions =
+        List.of(new ActionResponse(ActionType.REASSIGN, new ReassignAction(20003L, "Tony Stark")),
+            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("salutation", 1319, PLAIN)),
+            new ActionResponse(CREATE_TASK,
+                new CreateTaskAction("new task", "new task description", 11L, "contacted", 12L, 13L,
+                    new AssignedTo(AssignedToType.USER, 5L, "Tony Stark"),
+                    new DueDate(4, 3))),
+            new ActionResponse(SEND_EMAIL, new EmailAction(1L, from, participants, participants, participants)));
+    User user = new User(12L, "Steve");
+    WorkflowDetail workflowDetail = new WorkflowDetail(301L, "Workflow 1", "Workflow Description", EntityType.LEAD, trigger, condition, actions,
+        user,
+        user, null, null, null, 0L, null, true);
+    given(workflowService
+        .update(eq(301L), argThat(workflowRequest -> workflowRequest.getActions().stream().anyMatch(action -> action.getType().equals(SEND_EMAIL)))))
+        .willReturn(Mono.just(workflowDetail));
+
+    //when
+    var workflowResponse = buildWebClient()
+        .put()
+        .uri("/v1/workflows/301")
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(requestPayload)
+        .retrieve()
+        .bodyToMono(String.class);
+
+    //then
+    var expectedResponse =
+        getResourceAsString("classpath:contracts/workflow/api/email/lead-update-workflow-with-send-email-action-response-2.json");
+    StepVerifier.create(workflowResponse)
+        .assertNext(json -> {
+          try {
+            JSONAssert.assertEquals(expectedResponse, json, false);
+          } catch (JSONException e) {
+            fail(e.getMessage());
+          }
+        }).verifyComplete();
+  }
+
+  @Test
+  public void givenContactWorkflow_withSendEmailAction_shouldUpdateIt() throws IOException {
+    //given
+    var requestPayload = getResourceAsString("classpath:contracts/workflow/api/email/contact-update-workflow-with-send-email-action-request.json");
+    WorkflowTrigger trigger = new WorkflowTrigger(TriggerType.EVENT, TriggerFrequency.UPDATED);
+    Condition condition = new Condition(ConditionType.FOR_ALL.name(), null);
+
+    Object from = new ObjectMapper()
+        .readValue("{\"type\":\"RECORD_OWNER\",\"entity\":\"user\",\"entityId\":null,\"name\":\"user1\",\"email\":\"user1@gmail.com\"}",
+            Object.class);
+    List<Participant> participants = List
+        .of(new Participant(EmailActionType.RECORD_OWNER, EmailEntityType.CONTACT.getEntityName(), 1L, "test user", "test@user.com"),
+            new Participant(EmailActionType.RECORD_OWNER, EmailEntityType.CONTACT.getEntityName(), 2L, "test user", "test@user.com"));
+
+    List<ActionResponse> actions =
+        List.of(new ActionResponse(ActionType.REASSIGN, new ReassignAction(20003L, "Tony Stark")),
+            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("salutation", 1319, PLAIN)),
+            new ActionResponse(CREATE_TASK,
+                new CreateTaskAction("new task", "new task description", 11L, "contacted", 12L, 13L,
+                    new AssignedTo(AssignedToType.USER, 5L, "Tony Stark"),
+                    new DueDate(4, 3))),
+            new ActionResponse(SEND_EMAIL, new EmailAction(1L, from, participants, participants, participants)));
+    User user = new User(12L, "Steve");
+    WorkflowDetail workflowDetail = new WorkflowDetail(301L, "Workflow 1", "Workflow Description", EntityType.CONTACT, trigger, condition, actions,
+        user,
+        user, null, null, null, 0L, null, true);
+    given(workflowService
+        .update(eq(301L), argThat(workflowRequest -> workflowRequest.getActions().stream().anyMatch(action -> action.getType().equals(SEND_EMAIL)))))
+        .willReturn(Mono.just(workflowDetail));
+
+    //when
+    var workflowResponse = buildWebClient()
+        .put()
+        .uri("/v1/workflows/301")
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(requestPayload)
+        .retrieve()
+        .bodyToMono(String.class);
+
+    //then
+    var expectedResponse =
+        getResourceAsString("classpath:contracts/workflow/api/email/contact-update-workflow-with-send-email-action-response-2.json");
+    StepVerifier.create(workflowResponse)
+        .assertNext(json -> {
+          try {
+            JSONAssert.assertEquals(expectedResponse, json, false);
+          } catch (JSONException e) {
+            fail(e.getMessage());
+          }
+        }).verifyComplete();
+  }
+
+  @Test
+  public void givenDealWorkflow_withSendEmailAction_shouldUpdateIt() throws IOException {
+    //given
+    var requestPayload = getResourceAsString("classpath:contracts/workflow/api/email/deal-update-workflow-with-send-email-action-request.json");
+    WorkflowTrigger trigger = new WorkflowTrigger(TriggerType.EVENT, TriggerFrequency.UPDATED);
+    Condition condition = new Condition(ConditionType.FOR_ALL.name(), null);
+
+    Object from = new ObjectMapper()
+        .readValue("{\"type\":\"RECORD_OWNER\",\"entity\":\"user\",\"entityId\":null,\"name\":\"user1\",\"email\":\"user1@gmail.com\"}",
+            Object.class);
+    List<Participant> participants = List
+        .of(new Participant(EmailActionType.RECORD_OWNER, EmailEntityType.DEAL.getEntityName(), 1L, "test user", "test@user.com"),
+            new Participant(EmailActionType.RECORD_OWNER, EmailEntityType.DEAL.getEntityName(), 2L, "test user", "test@user.com"));
+
+    List<ActionResponse> actions =
+        List.of(new ActionResponse(ActionType.REASSIGN, new ReassignAction(20003L, "Tony Stark")),
+            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("salutation", 1319, PLAIN)),
+            new ActionResponse(CREATE_TASK,
+                new CreateTaskAction("new task", "new task description", 11L, "contacted", 12L, 13L,
+                    new AssignedTo(AssignedToType.USER, 5L, "Tony Stark"),
+                    new DueDate(4, 3))),
+            new ActionResponse(SEND_EMAIL, new EmailAction(1L, from, participants, participants, participants)));
+    User user = new User(12L, "Steve");
+    WorkflowDetail workflowDetail = new WorkflowDetail(301L, "Workflow 1", "Workflow Description", EntityType.DEAL, trigger, condition, actions,
+        user,
+        user, null, null, null, 0L, null, true);
+    given(workflowService
+        .update(eq(301L), argThat(workflowRequest -> workflowRequest.getActions().stream().anyMatch(action -> action.getType().equals(SEND_EMAIL)))))
+        .willReturn(Mono.just(workflowDetail));
+
+    //when
+    var workflowResponse = buildWebClient()
+        .put()
+        .uri("/v1/workflows/301")
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(requestPayload)
+        .retrieve()
+        .bodyToMono(String.class);
+
+    //then
+    var expectedResponse =
+        getResourceAsString("classpath:contracts/workflow/api/email/deal-update-workflow-with-send-email-action-response-2.json");
+    StepVerifier.create(workflowResponse)
+        .assertNext(json -> {
+          try {
+            JSONAssert.assertEquals(expectedResponse, json, false);
+          } catch (JSONException e) {
+            fail(e.getMessage());
+          }
+        }).verifyComplete();
+  }
 
   private String getResourceAsString(String resourcePath) throws IOException {
     var resource = resourceLoader.getResource(resourcePath);
     File file = resource.getFile();
     return FileUtils.readFileToString(file, "UTF-8");
   }
+
 
   private boolean verifyCreateTaskAction(CreateTaskAction createTaskAction) {
     return StringUtils.isNotBlank(createTaskAction.getName())
@@ -1848,6 +2132,6 @@ class WorkflowControllerTest {
         && createTaskAction.getOutcome().equals("contacted")
         && createTaskAction.getType().equals(12L)
         && createTaskAction.getStatus().equals(13L)
-        && !Objects.isNull(createTaskAction.getDueDate());
+        && !isNull(createTaskAction.getDueDate());
   }
 }

@@ -1,0 +1,121 @@
+{
+  "id": 301,
+  "name": "Workflow 1",
+  "description": "Workflow Description",
+  "entityType": "LEAD",
+  "trigger": {
+    "name": "EVENT",
+    "triggerFrequency": "UPDATED"
+  },
+  "condition": {
+    "conditionType": "FOR_ALL"
+  },
+  "actions": [
+    {
+      "type": "REASSIGN",
+      "payload": {
+        "id": 20003,
+        "name": "Tony Stark"
+      }
+    },
+    {
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "salutation",
+        "value": 1319,
+        "valueType": "PLAIN"
+      }
+    },
+    {
+      "type": "CREATE_TASK",
+      "payload": {
+        "name": "new task",
+        "description": "new task description",
+        "priority": 11,
+        "outcome": "contacted",
+        "type": 12,
+        "status": 13,
+        "assignedTo": {
+          "type": "USER",
+          "id": 5,
+          "name": "Tony Stark"
+        },
+        "dueDate": {
+          "days": 4,
+          "hours": 3
+        }
+      }
+    },
+    {
+      "type": "SEND_EMAIL",
+      "payload": {
+        "emailTemplateId": 1,
+        "from": {
+          "type": "RECORD_OWNER",
+          "entity": "user",
+          "entityId": null,
+          "name": "user1",
+          "email": "user1@gmail.com"
+        },
+        "to": [
+          {
+            "type": "RECORD_OWNER",
+            "entity": "lead",
+            "entityId": 1,
+            "name": "test user",
+            "email": "test@user.com"
+          },
+          {
+            "type": "RECORD_OWNER",
+            "entity": "lead",
+            "entityId": 2,
+            "name": "test user",
+            "email": "test@user.com"
+          }
+        ],
+        "cc": [
+          {
+            "type": "RECORD_OWNER",
+            "entity": "lead",
+            "entityId": 1,
+            "name": "test user",
+            "email": "test@user.com"
+          },
+          {
+            "type": "RECORD_OWNER",
+            "entity": "lead",
+            "entityId": 2,
+            "name": "test user",
+            "email": "test@user.com"
+          }
+        ],
+        "bcc": [
+          {
+            "type": "RECORD_OWNER",
+            "entity": "lead",
+            "entityId": 1,
+            "name": "test user",
+            "email": "test@user.com"
+          },
+          {
+            "type": "RECORD_OWNER",
+            "entity": "lead",
+            "entityId": 2,
+            "name": "test user",
+            "email": "test@user.com"
+          }
+        ]
+      }
+    }
+  ],
+  "createdBy": {
+    "id": 12,
+    "name": "Steve"
+  },
+  "updatedBy": {
+    "id": 12,
+    "name": "Steve"
+  },
+  "triggerCount": 0,
+  "active": true
+}
