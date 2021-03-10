@@ -29,6 +29,25 @@
       }
     },
     {
+      "id": "ceec03fb-be04-4916-9699-e13b4b35b6c7",
+      "type": "WEBHOOK",
+      "payload": {
+        "name": "Webhook 1",
+        "description": "Webhook Description",
+        "method": "GET",
+        "requestUrl": "https://reqres.in/api/users",
+        "authorizationType": "NONE",
+        "parameters": [
+          {
+            "name": "MrJ",
+            "entity": "LEAD",
+            "attribute": "MyName",
+            "isStandard": false
+          }
+        ]
+      }
+    },
+    {
       "id": "08518b20-23f9-11eb-adc1-0242ac120005",
       "type": "CREATE_TASK",
       "payload": {

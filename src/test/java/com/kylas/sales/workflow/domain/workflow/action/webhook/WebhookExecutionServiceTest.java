@@ -110,8 +110,8 @@ class WebhookExecutionServiceTest {
     lead.setFirstName("Tony");
     lead.setCreatedBy(new IdName(12L, "user"));
     List<Parameter> parameters = List.of(
-        new Parameter("leadFirstName", WebhookEntity.LEAD, LeadAttribute.FIRST_NAME.getName()),
-        new Parameter("leadCreator", WebhookEntity.LEAD, LeadAttribute.CREATED_BY.getName()));
+        new Parameter("leadFirstName", WebhookEntity.LEAD, LeadAttribute.FIRST_NAME.getName(), true),
+        new Parameter("leadCreator", WebhookEntity.LEAD, LeadAttribute.CREATED_BY.getName(), true));
     WebhookAction action = new WebhookAction("LeadCityWebhook", "some description", GET, NONE,
         "http://some-random-host:9000/get-webhook", parameters, null);
 
@@ -148,8 +148,8 @@ class WebhookExecutionServiceTest {
     lead.setFirstName("Tony");
     lead.setCreatedBy(new IdName(12L, "user"));
     List<Parameter> parameters = List.of(
-        new Parameter("leadFirstName", WebhookEntity.LEAD, LeadAttribute.FIRST_NAME.getName()),
-        new Parameter("ownerFirstName", WebhookEntity.LEAD_OWNER, UserAttribute.FIRST_NAME.getName()));
+        new Parameter("leadFirstName", WebhookEntity.LEAD, LeadAttribute.FIRST_NAME.getName(), true),
+        new Parameter("ownerFirstName", WebhookEntity.LEAD_OWNER, UserAttribute.FIRST_NAME.getName(), true));
     WebhookAction action = new WebhookAction("OwnerWebhook", "some description", GET, NONE,
         "http://some-random-host:9000/get-webhook", parameters, null);
 
@@ -181,8 +181,8 @@ class WebhookExecutionServiceTest {
     lead.setFirstName("Tony");
     lead.setCreatedBy(new IdName(12L, "user"));
     List<Parameter> parameters = List.of(
-        new Parameter("leadFirstName", WebhookEntity.LEAD, LeadAttribute.FIRST_NAME.getName()),
-        new Parameter("tenantAccountName", WebhookEntity.TENANT, TenantAttribute.ACCOUNT_NAME.getName()));
+        new Parameter("leadFirstName", WebhookEntity.LEAD, LeadAttribute.FIRST_NAME.getName(), true),
+        new Parameter("tenantAccountName", WebhookEntity.TENANT, TenantAttribute.ACCOUNT_NAME.getName(), true));
     WebhookAction action = new WebhookAction("OwnerWebhook", "some description", GET, NONE,
         "http://some-random-host:9000/get-webhook", parameters, null);
 
@@ -210,8 +210,8 @@ class WebhookExecutionServiceTest {
     lead.setFirstName("Tony");
     lead.setCreatedBy(new IdName(12L, "user"));
     List<Parameter> parameters = List.of(
-        new Parameter("leadFirstName", WebhookEntity.LEAD, LeadAttribute.FIRST_NAME.getName()),
-        new Parameter("doctorStrange", WebhookEntity.CUSTOM, "Stephen"));
+        new Parameter("leadFirstName", WebhookEntity.LEAD, LeadAttribute.FIRST_NAME.getName(), true),
+        new Parameter("doctorStrange", WebhookEntity.CUSTOM, "Stephen", false));
     WebhookAction action = new WebhookAction("OwnerWebhook", "some description", GET, NONE,
         "http://some-random-host:9000/get-webhook", parameters, null);
 
@@ -240,7 +240,7 @@ class WebhookExecutionServiceTest {
     lead.setFirstName("Tony");
     lead.setCreatedBy(new IdName(12L, "user"));
     List<Parameter> parameters = List.of(
-        new Parameter("leadFirstName", WebhookEntity.LEAD, LeadAttribute.FIRST_NAME.getName()));
+        new Parameter("leadFirstName", WebhookEntity.LEAD, LeadAttribute.FIRST_NAME.getName(), true));
     var authorization = getResourceAsString("classpath:contracts/webhook/create-with-bearer-token.json");
 
     var authParam = cryptoService.encrypt(Base64.getEncoder().encodeToString(authorization.getBytes(UTF_8)));
@@ -274,7 +274,7 @@ class WebhookExecutionServiceTest {
     lead.setFirstName("Tony");
     lead.setCreatedBy(new IdName(12L, "user"));
     List<Parameter> parameters = List.of(
-        new Parameter("leadFirstName", WebhookEntity.LEAD, LeadAttribute.FIRST_NAME.getName()));
+        new Parameter("leadFirstName", WebhookEntity.LEAD, LeadAttribute.FIRST_NAME.getName(), true));
     var authorization = getResourceAsString("classpath:contracts/webhook/create-with-basic-auth.json");
 
     var authParam = cryptoService.encrypt(Base64.getEncoder().encodeToString(authorization.getBytes(UTF_8)));
@@ -309,7 +309,7 @@ class WebhookExecutionServiceTest {
     lead.setFirstName("Tony");
     lead.setCreatedBy(new IdName(12L, "user"));
     List<Parameter> parameters = List.of(
-        new Parameter("leadFirstName", WebhookEntity.LEAD, LeadAttribute.FIRST_NAME.getName()));
+        new Parameter("leadFirstName", WebhookEntity.LEAD, LeadAttribute.FIRST_NAME.getName(), true));
     var authorization = getResourceAsString("classpath:contracts/webhook/create-with-api-key-auth.json");
 
     var authParam = cryptoService.encrypt(Base64.getEncoder().encodeToString(authorization.getBytes(UTF_8)));
@@ -350,9 +350,9 @@ class WebhookExecutionServiceTest {
     lead.setEmails(emails);
     lead.setPhoneNumbers(phoneNumbers);
     List<Parameter> parameters = List.of(
-        new Parameter("leadFirstName", WebhookEntity.LEAD, LeadAttribute.FIRST_NAME.getName()),
-        new Parameter("leadEmails", WebhookEntity.LEAD, LeadAttribute.EMAILS.getName()),
-        new Parameter("leadPhones", WebhookEntity.LEAD, LeadAttribute.PHONE_NUMBERS.getName()));
+        new Parameter("leadFirstName", WebhookEntity.LEAD, LeadAttribute.FIRST_NAME.getName(), true),
+        new Parameter("leadEmails", WebhookEntity.LEAD, LeadAttribute.EMAILS.getName(), true),
+        new Parameter("leadPhones", WebhookEntity.LEAD, LeadAttribute.PHONE_NUMBERS.getName(), true));
     WebhookAction action = new WebhookAction("OwnerWebhook", "some description", GET, NONE,
         "http://some-random-host:9000/get-webhook", parameters, null);
 
@@ -383,8 +383,8 @@ class WebhookExecutionServiceTest {
     lead.setFirstName("Tony");
     lead.setCreatedBy(new IdName(12L, "user"));
     List<Parameter> parameters = List.of(
-        new Parameter("leadFirstName", WebhookEntity.LEAD, LeadAttribute.FIRST_NAME.getName()),
-        new Parameter("leadCreator", WebhookEntity.LEAD, LeadAttribute.CREATED_BY.getName()));
+        new Parameter("leadFirstName", WebhookEntity.LEAD, LeadAttribute.FIRST_NAME.getName(), true),
+        new Parameter("leadCreator", WebhookEntity.LEAD, LeadAttribute.CREATED_BY.getName(), true));
     WebhookAction action = new WebhookAction("LeadCityWebhook", "some description", POST, NONE,
         "http://some-random-host:9000/get-webhook", parameters, null);
 
@@ -429,11 +429,11 @@ class WebhookExecutionServiceTest {
     lead.setEmails(null);
     lead.setPhoneNumbers(null);
     List<Parameter> parameters = List.of(
-        new Parameter("leadFirstName", WebhookEntity.LEAD, LeadAttribute.FIRST_NAME.getName()),
-        new Parameter("leadEmails", WebhookEntity.LEAD, LeadAttribute.EMAILS.getName()),
-        new Parameter("leadPhones", WebhookEntity.LEAD, LeadAttribute.PHONE_NUMBERS.getName()),
-        new Parameter("leadProducts", WebhookEntity.LEAD, LeadAttribute.REQUIREMENT_PRODUCTS.getName()),
-        new Parameter("ownerPhones", WebhookEntity.LEAD_OWNER, UserAttribute.PHONE_NUMBERS.getName()));
+        new Parameter("leadFirstName", WebhookEntity.LEAD, LeadAttribute.FIRST_NAME.getName(), true),
+        new Parameter("leadEmails", WebhookEntity.LEAD, LeadAttribute.EMAILS.getName(), true),
+        new Parameter("leadPhones", WebhookEntity.LEAD, LeadAttribute.PHONE_NUMBERS.getName(), true),
+        new Parameter("leadProducts", WebhookEntity.LEAD, LeadAttribute.REQUIREMENT_PRODUCTS.getName(), true),
+        new Parameter("ownerPhones", WebhookEntity.LEAD_OWNER, UserAttribute.PHONE_NUMBERS.getName(), true));
     WebhookAction action = new WebhookAction("OwnerWebhook", "some description", GET, NONE,
         "http://some-random-host:9000/get-webhook", parameters, null);
 

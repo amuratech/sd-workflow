@@ -1,6 +1,7 @@
 package com.kylas.sales.workflow.common.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.kylas.sales.workflow.domain.workflow.action.email.Participant;
 import com.kylas.sales.workflow.domain.workflow.action.task.AssignedTo;
 import com.kylas.sales.workflow.domain.workflow.action.task.DueDate;
@@ -42,6 +43,8 @@ public interface ActionDetail {
     private final String name;
     private final Object value;
     private final ValueType valueType;
+    @JsonProperty(value = "isStandard")
+    private final boolean standard;
 
     public enum ValueType {
       ARRAY, OBJECT, PLAIN,

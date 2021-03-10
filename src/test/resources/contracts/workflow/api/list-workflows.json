@@ -19,7 +19,8 @@
           "payload": {
             "name": "lastName",
             "value": "Stark",
-            "valueType": "PLAIN"
+            "valueType": "PLAIN",
+            "isStandard": true
           }
         }
       ],
@@ -63,7 +64,8 @@
           "payload": {
             "name": "firstName",
             "value": "Tony",
-            "valueType": "PLAIN"
+            "valueType": "PLAIN",
+            "isStandard": true
           }
         }
       ],

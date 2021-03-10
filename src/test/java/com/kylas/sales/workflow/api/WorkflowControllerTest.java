@@ -29,6 +29,8 @@ import com.kylas.sales.workflow.common.dto.ActionDetail.EditPropertyAction;
 import com.kylas.sales.workflow.common.dto.ActionDetail.EditPropertyAction.ValueType;
 import com.kylas.sales.workflow.common.dto.ActionDetail.EmailAction;
 import com.kylas.sales.workflow.common.dto.ActionDetail.ReassignAction;
+import com.kylas.sales.workflow.common.dto.ActionDetail.WebhookAction;
+import com.kylas.sales.workflow.common.dto.ActionDetail.WebhookAction.AuthorizationType;
 import com.kylas.sales.workflow.common.dto.ActionResponse;
 import com.kylas.sales.workflow.common.dto.User;
 import com.kylas.sales.workflow.common.dto.WorkflowTrigger;
@@ -50,6 +52,8 @@ import com.kylas.sales.workflow.domain.workflow.action.email.EmailEntityType;
 import com.kylas.sales.workflow.domain.workflow.action.email.Participant;
 import com.kylas.sales.workflow.domain.workflow.action.task.AssignedTo;
 import com.kylas.sales.workflow.domain.workflow.action.task.DueDate;
+import com.kylas.sales.workflow.domain.workflow.action.webhook.Parameter;
+import com.kylas.sales.workflow.domain.workflow.action.webhook.attribute.AttributeFactory.WebhookEntity;
 import com.kylas.sales.workflow.integration.IntegrationConfig;
 import com.kylas.sales.workflow.matchers.FilterRequestMatcher;
 import com.kylas.sales.workflow.matchers.PageableMatcher;
@@ -215,6 +219,104 @@ class WorkflowControllerTest {
   }
 
   @Test
+  public void givenWorkflowWithMultipleActions_andCustomFields_shouldCreateIt() throws IOException {
+    //given
+    var requestPayload = getResourceAsString("classpath:contracts/workflow/api/create-webhook-and-edit-field-action-for-custom-fields-workflow.json");
+    given(workflowService.create(argThat(
+        workflowRequest -> {
+          List<ValueType> mockList = List.of(ARRAY, PLAIN);
+          List<ValueType> valueTypeList = new ArrayList<>();
+          workflowRequest.getActions().stream().filter(action -> action.getType().equals(ActionType.EDIT_PROPERTY)).forEach(action -> {
+            EditPropertyAction payload = (EditPropertyAction) action.getPayload();
+            valueTypeList.add(payload.getValueType());
+          });
+          return workflowRequest.getActions()
+              .stream()
+              .anyMatch(webhookAction ->
+                  webhookAction.getType().equals(ActionType.WEBHOOK));
+        }
+    ))).willReturn(Mono.just(new WorkflowSummary(1L)));
+    //when
+    var workflowResponse = buildWebClient()
+        .post()
+        .uri("/v1/workflows")
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(requestPayload)
+        .retrieve()
+        .bodyToMono(String.class);
+    //then
+    var expectedResponse =
+        getResourceAsString("classpath:contracts/workflow/api/create-workflow-response.json");
+    StepVerifier.create(workflowResponse)
+        .assertNext(json -> {
+          try {
+            JSONAssert.assertEquals(expectedResponse, json, false);
+          } catch (JSONException e) {
+            fail(e.getMessage());
+          }
+        }).verifyComplete();
+  }
+
+  @Test
+  public void givenWorkflowUpdateRequest_withEditFieldAndWebhookActions_onCustomFields_shouldUpdateIt() throws IOException {
+    //given
+    var requestPayload = getResourceAsString("classpath:contracts/workflow/api/update-webhook-and-edit-field-action-for-custom-fields-workflow.json");
+    ObjectMapper objectMapper = new ObjectMapper();
+    WorkflowTrigger trigger = new WorkflowTrigger(TriggerType.EVENT, TriggerFrequency.CREATED);
+    List<Parameter> parameters = List.of(new Parameter("MrJ", WebhookEntity.LEAD, "MyName", false));
+    List<ActionResponse> actions =
+        List.of(
+            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("myText", "MyName", PLAIN, false)),
+            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("myBoolean", true, PLAIN, false)),
+            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("myWebsite", "https://twitter.com/james", PLAIN, false)),
+            new ActionResponse(ActionType.WEBHOOK,
+                new WebhookAction("Webhook 1", "Webhook Description", HttpMethod.GET, "https://reqres.in/api/users", AuthorizationType.NONE,
+                    parameters, null)));
+    Condition condition = new Condition(ConditionType.FOR_ALL.name(), null);
+    User user = new User(5000L, "Tony Stark");
+    WorkflowDetail workflowDetail = new WorkflowDetail(1L, "Workflow 1", "Workflow Description", EntityType.LEAD, trigger, condition, actions, user,
+        user, null, null, null, 0L, null, true);
+    given(workflowService.update(eq(1L), argThat(workflowRequest ->
+        {
+          List<ValueType> mockList = List.of(PLAIN);
+          List<ValueType> valueTypeList = new ArrayList<>();
+          workflowRequest.getActions().stream().filter(action -> action.getType().equals(ActionType.EDIT_PROPERTY)).forEach(action -> {
+            EditPropertyAction payload = (EditPropertyAction) action.getPayload();
+            valueTypeList.add(payload.getValueType());
+          });
+          return workflowRequest.getName().equalsIgnoreCase("Workflow 1")
+              && workflowRequest.getDescription().equalsIgnoreCase("Workflow Description")
+              && workflowRequest.getEntityType().equals(EntityType.LEAD)
+              && workflowRequest.getTrigger().getName().equals(TriggerType.EVENT)
+              && workflowRequest.getTrigger().getTriggerFrequency().equals(TriggerFrequency.CREATED)
+              && workflowRequest.getCondition().getConditionType().equals(ConditionType.FOR_ALL)
+              && valueTypeList.size() == 3
+              && valueTypeList.containsAll(mockList)
+              && workflowRequest.isActive();
+        }
+    ))).willReturn(Mono.just(workflowDetail));
+    //when
+    var workflowResponse = buildWebClient()
+        .put()
+        .uri("/v1/workflows/1")
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(requestPayload)
+        .retrieve()
+        .bodyToMono(String.class);
+    //then
+    var expectedResponse =
+        getResourceAsString("classpath:contracts/workflow/api/update-workflow-response-for-editfields-and-webhook-on-custom-fields.json");
+    StepVerifier.create(workflowResponse)
+        .assertNext(json -> {
+          try {
+            JSONAssert.assertEquals(expectedResponse, json, false);
+          } catch (JSONException e) {
+            fail(e.getMessage());
+          }
+        }).verifyComplete();
+  }
+
+  @Test
   public void givenWorkflowUpdate_withDifferentValueTypes_shouldUpdateIt() throws IOException {
     //given
     var requestPayload = getResourceAsString("classpath:contracts/workflow/api/update-workflow-request.json");
@@ -223,9 +325,9 @@ class WorkflowControllerTest {
 
     List<ActionResponse> actions =
         List.of(
-            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("salutation", 1319, PLAIN)),
-            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("dnd", true, PLAIN)),
-            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("city", "PUNE", PLAIN)),
+            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("salutation", 1319, PLAIN, true)),
+            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("dnd", true, PLAIN, true)),
+            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("city", "PUNE", PLAIN, true)),
             new ActionResponse(ActionType.REASSIGN, new ReassignAction(20003L, "Tony Stark")));
     Condition condition = new Condition(ConditionType.FOR_ALL.name(), null);
     User user = new User(5000L, "Tony Stark");
@@ -399,6 +501,7 @@ class WorkflowControllerTest {
             PLAIN,
             true,
             true,
+            true,
             createdBy,
             updatedBy,
             new Date());
@@ -455,6 +558,7 @@ class WorkflowControllerTest {
             "pipeline",
             value,
             PLAIN,
+            true,
             true,
             true,
             createdBy,
@@ -514,6 +618,7 @@ class WorkflowControllerTest {
             PLAIN,
             true,
             true,
+            true,
             createdBy,
             updatedBy,
             new Date());
@@ -561,6 +666,7 @@ class WorkflowControllerTest {
             "lastName",
             "Stark",
             PLAIN,
+            true,
             true,
             true,
             createdBy,
@@ -638,6 +744,7 @@ class WorkflowControllerTest {
             PLAIN,
             true,
             true,
+            true,
             createdBy,
             updatedBy,
             new Date());
@@ -656,6 +763,7 @@ class WorkflowControllerTest {
             "firstName",
             "Tony",
             PLAIN,
+            true,
             true,
             true,
             createdBy,
@@ -1119,7 +1227,7 @@ class WorkflowControllerTest {
     Condition condition = new Condition(ConditionType.FOR_ALL.name(), null);
     List<ActionResponse> actions =
         List.of(new ActionResponse(ActionType.REASSIGN, new ReassignAction(20003L, "Tony Stark")),
-            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("salutation", 1319, PLAIN)),
+            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("salutation", 1319, PLAIN, true)),
             new ActionResponse(CREATE_TASK,
                 new CreateTaskAction("new task", "new task description", 11L, "contacted", 12L, 13L,
                     new AssignedTo(AssignedToType.USER, 5L, "Tony Stark"),
@@ -1162,7 +1270,7 @@ class WorkflowControllerTest {
     Condition condition = new Condition(ConditionType.FOR_ALL.name(), null);
     List<ActionResponse> actions =
         List.of(new ActionResponse(ActionType.REASSIGN, new ReassignAction(20003L, "Tony Stark")),
-            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("salutation", 1319, PLAIN)),
+            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("salutation", 1319, PLAIN, true)),
             new ActionResponse(CREATE_TASK,
                 new CreateTaskAction("new task", "new task description", 11L, "contacted", 12L, 13L,
                     new AssignedTo(AssignedToType.USER, 5L, "Tony Stark"),
@@ -1205,7 +1313,7 @@ class WorkflowControllerTest {
     Condition condition = new Condition(ConditionType.FOR_ALL.name(), null);
     List<ActionResponse> actions =
         List.of(new ActionResponse(ActionType.REASSIGN, new ReassignAction(20003L, "Tony Stark")),
-            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("salutation", 1319, PLAIN)),
+            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("salutation", 1319, PLAIN, true)),
             new ActionResponse(CREATE_TASK,
                 new CreateTaskAction("new task", "new task description", 11L, "contacted", 12L, 13L,
                     new AssignedTo(AssignedToType.USER, 5L, "Tony Stark"),
@@ -1442,34 +1550,35 @@ class WorkflowControllerTest {
     Condition condition = new Condition(ConditionType.FOR_ALL.name(), null);
     List<ActionResponse> actions =
         List.of(
-            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("salutation", 1319, PLAIN)),
-            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("dnd", true, PLAIN)),
-            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("timezone", "Asia/Calcutta", PLAIN)),
-            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("address", "pune rural", PLAIN)),
-            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("city", "PUNE", PLAIN)),
-            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("state", "Maharashtra", PLAIN)),
-            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("zipcode", "412410", PLAIN)),
-            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("companyName", "Kylas", PLAIN)),
-            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("country", "IN", PLAIN)),
-            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("facebook", "https://facebook.com/james", PLAIN)),
-            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("firstName", "James", PLAIN)),
-            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("lastName", "Bond", PLAIN)),
-            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("twitter", "https://twitter.com/james", PLAIN)),
-            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("linkedIn", "https://linkedin.com/james", PLAIN)),
-            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("department", "CBI", PLAIN)),
-            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("designation", "Inspector", PLAIN)),
-            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("stakeholder", true, PLAIN)),
+            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("salutation", 1319, PLAIN, true)),
+            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("dnd", true, PLAIN, true)),
+            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("timezone", "Asia/Calcutta", PLAIN, true)),
+            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("address", "pune rural", PLAIN, true)),
+            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("city", "PUNE", PLAIN, true)),
+            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("state", "Maharashtra", PLAIN, true)),
+            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("zipcode", "412410", PLAIN, true)),
+            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("companyName", "Kylas", PLAIN, true)),
+            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("country", "IN", PLAIN, true)),
+            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("facebook", "https://facebook.com/james", PLAIN, true)),
+            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("firstName", "James", PLAIN, true)),
+            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("lastName", "Bond", PLAIN, true)),
+            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("twitter", "https://twitter.com/james", PLAIN, true)),
+            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("linkedIn", "https://linkedin.com/james", PLAIN, true)),
+            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("department", "CBI", PLAIN, true)),
+            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("designation", "Inspector", PLAIN, true)),
+            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("stakeholder", true, PLAIN, true)),
             new ActionResponse(ActionType.EDIT_PROPERTY,
-                new EditPropertyAction("company", objectMapper.readValue("{\"id\":201,\"name\":\"Uflex\"}", Object.class), OBJECT)),
+                new EditPropertyAction("company", objectMapper.readValue("{\"id\":201,\"name\":\"Uflex\"}", Object.class), OBJECT, true)),
             new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("associatedDeals",
-                objectMapper.readValue("[{\"id\":100,\"name\":\"BestDeal\"}]", Object[].class), ARRAY)),
+                objectMapper.readValue("[{\"id\":100,\"name\":\"BestDeal\"}]", Object[].class), ARRAY, true)),
             new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("phoneNumbers",
                 objectMapper
                     .readValue("[{\"type\":\"HOME\",\"code\":\"0253\",\"value\":\"+0253\",\"dialCode\":\"2459817\",\"isPrimary\":true}]",
                         Object[].class),
-                ARRAY)),
+                ARRAY, true)),
             new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("emails",
-                objectMapper.readValue("[{\"type\":\"OFFICE\",\"value\":\"john150@outlook.com\",\"isPrimary\":true}]", Object[].class), ARRAY)));
+                objectMapper.readValue("[{\"type\":\"OFFICE\",\"value\":\"john150@outlook.com\",\"isPrimary\":true}]", Object[].class), ARRAY,
+                true)));
 
     User user = new User(5000L, "Tony Stark");
     WorkflowDetail workflowDetail = new WorkflowDetail(1L, "Workflow 1", "Workflow Description", EntityType.CONTACT, trigger, condition, actions,
@@ -1564,23 +1673,24 @@ class WorkflowControllerTest {
     List<ActionResponse> actions =
         List.of(
             new ActionResponse(ActionType.EDIT_PROPERTY,
-                new EditPropertyAction("ownedBy", objectMapper.readValue("{\"id\":13,\"name\":\"James BondUpdated\"}", Object.class), OBJECT)),
-            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("name", "deal by workflow updated", PLAIN)),
+                new EditPropertyAction("ownedBy", objectMapper.readValue("{\"id\":13,\"name\":\"James BondUpdated\"}", Object.class), OBJECT, true)),
+            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("name", "deal by workflow updated", PLAIN, true)),
             new ActionResponse(ActionType.EDIT_PROPERTY,
-                new EditPropertyAction("estimatedValue", objectMapper.readValue("{\"currencyId\":1,\"value\":10000}", Object.class), OBJECT)),
+                new EditPropertyAction("estimatedValue", objectMapper.readValue("{\"currencyId\":1,\"value\":10000}", Object.class), OBJECT, true)),
             new ActionResponse(ActionType.EDIT_PROPERTY,
-                new EditPropertyAction("actualValue", objectMapper.readValue("{\"currencyId\":2,\"value\":20000}", Object.class), OBJECT)),
-            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("estimatedClosureOn", "2021-01-15T06:30:00.000Z", PLAIN)),
+                new EditPropertyAction("actualValue", objectMapper.readValue("{\"currencyId\":2,\"value\":20000}", Object.class), OBJECT, true)),
+            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("estimatedClosureOn", "2021-01-15T06:30:00.000Z", PLAIN, true)),
             new ActionResponse(ActionType.EDIT_PROPERTY,
-                new EditPropertyAction("product", objectMapper.readValue("{\"id\":2,\"name\":\"Marketing Service Updated\"}", Object.class), OBJECT)),
+                new EditPropertyAction("product", objectMapper.readValue("{\"id\":2,\"name\":\"Marketing Service Updated\"}", Object.class), OBJECT,
+                    true)),
             new ActionResponse(ActionType.EDIT_PROPERTY,
                 new EditPropertyAction("pipeline", objectMapper
                     .readValue("{\"id\":11,\"name\":\"Test Deal Pipeline Updated\",\"stage\":{\"id\":1,\"name\":\"Open\"}}", Object.class),
-                    OBJECT)),
+                    OBJECT, true)),
             new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("associatedContacts",
-                objectMapper.readValue("[{\"id\":14,\"name\":\"Tony StarkUpdated\"}]", Object[].class), ARRAY)),
+                objectMapper.readValue("[{\"id\":14,\"name\":\"Tony StarkUpdated\"}]", Object[].class), ARRAY, true)),
             new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("company",
-                objectMapper.readValue("{\"id\":15,\"name\":\"Dell enterprises Updated\"}", Object.class), OBJECT)));
+                objectMapper.readValue("{\"id\":15,\"name\":\"Dell enterprises Updated\"}", Object.class), OBJECT, true)));
 
     User user = new User(5000L, "Tony Stark");
     WorkflowDetail workflowDetail = new WorkflowDetail(1L, "Workflow 1", "Workflow Description", EntityType.DEAL, trigger, condition, actions,
@@ -1631,18 +1741,19 @@ class WorkflowControllerTest {
     Condition condition = new Condition(ConditionType.FOR_ALL.name(), null);
     List<ActionResponse> actions =
         List.of(
-            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("salutation", "1319", PLAIN)),
+            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("salutation", "1319", PLAIN, true)),
             new ActionResponse(ActionType.EDIT_PROPERTY,
-                new EditPropertyAction("company", objectMapper.readValue("{\"id\":201,\"name\":\"Uflex\"}", Object.class), OBJECT)),
+                new EditPropertyAction("company", objectMapper.readValue("{\"id\":201,\"name\":\"Uflex\"}", Object.class), OBJECT, true)),
             new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("associatedDeals",
-                objectMapper.readValue("[{\"id\":100,\"name\":\"BestDeal\"}]", Object[].class), ARRAY)),
+                objectMapper.readValue("[{\"id\":100,\"name\":\"BestDeal\"}]", Object[].class), ARRAY, true)),
             new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("phoneNumbers",
                 objectMapper
                     .readValue("[{\"type\":\"HOME\",\"code\":\"0253\",\"value\":\"+0253\",\"dialCode\":\"2459817\",\"isPrimary\":true}]",
                         Object[].class),
-                ARRAY)),
+                ARRAY, true)),
             new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("emails",
-                objectMapper.readValue("[{\"type\":\"OFFICE\",\"value\":\"john150@outlook.com\",\"isPrimary\":true}]", Object[].class), ARRAY)));
+                objectMapper.readValue("[{\"type\":\"OFFICE\",\"value\":\"john150@outlook.com\",\"isPrimary\":true}]", Object[].class), ARRAY,
+                true)));
 
     given(workflowService.create(argThat(workflowRequest ->
         {
@@ -1976,7 +2087,7 @@ class WorkflowControllerTest {
 
     List<ActionResponse> actions =
         List.of(new ActionResponse(ActionType.REASSIGN, new ReassignAction(20003L, "Tony Stark")),
-            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("salutation", 1319, PLAIN)),
+            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("salutation", 1319, PLAIN, true)),
             new ActionResponse(CREATE_TASK,
                 new CreateTaskAction("new task", "new task description", 11L, "contacted", 12L, 13L,
                     new AssignedTo(AssignedToType.USER, 5L, "Tony Stark"),
@@ -2028,7 +2139,7 @@ class WorkflowControllerTest {
 
     List<ActionResponse> actions =
         List.of(new ActionResponse(ActionType.REASSIGN, new ReassignAction(20003L, "Tony Stark")),
-            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("salutation", 1319, PLAIN)),
+            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("salutation", 1319, PLAIN, true)),
             new ActionResponse(CREATE_TASK,
                 new CreateTaskAction("new task", "new task description", 11L, "contacted", 12L, 13L,
                     new AssignedTo(AssignedToType.USER, 5L, "Tony Stark"),
@@ -2080,7 +2191,7 @@ class WorkflowControllerTest {
 
     List<ActionResponse> actions =
         List.of(new ActionResponse(ActionType.REASSIGN, new ReassignAction(20003L, "Tony Stark")),
-            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("salutation", 1319, PLAIN)),
+            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("salutation", 1319, PLAIN, true)),
             new ActionResponse(CREATE_TASK,
                 new CreateTaskAction("new task", "new task description", 11L, "contacted", 12L, 13L,
                     new AssignedTo(AssignedToType.USER, 5L, "Tony Stark"),
@@ -2121,7 +2232,6 @@ class WorkflowControllerTest {
     File file = resource.getFile();
     return FileUtils.readFileToString(file, "UTF-8");
   }
-
 
   private boolean verifyCreateTaskAction(CreateTaskAction createTaskAction) {
     return StringUtils.isNotBlank(createTaskAction.getName())

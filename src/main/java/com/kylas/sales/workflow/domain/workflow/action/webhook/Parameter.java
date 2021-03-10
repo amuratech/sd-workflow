@@ -2,16 +2,13 @@ package com.kylas.sales.workflow.domain.workflow.action.webhook;
 
 import static java.util.Objects.isNull;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.kylas.sales.workflow.domain.processor.exception.WorkflowExecutionException;
-import com.kylas.sales.workflow.domain.workflow.EntityType;
-import com.kylas.sales.workflow.domain.workflow.action.webhook.attribute.AttributeFactory.ContactAttribute;
-import com.kylas.sales.workflow.domain.workflow.action.webhook.attribute.AttributeFactory.LeadAttribute;
-import com.kylas.sales.workflow.domain.workflow.action.webhook.attribute.AttributeFactory.UserAttribute;
 import com.kylas.sales.workflow.domain.workflow.action.webhook.attribute.AttributeFactory.WebhookEntity;
 import com.kylas.sales.workflow.domain.workflow.action.webhook.attribute.EntityAttribute;
-import com.kylas.sales.workflow.domain.workflow.action.webhook.attribute.TenantAttribute;
 import com.kylas.sales.workflow.error.ErrorCode;
 import java.util.Arrays;
+import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
@@ -36,13 +33,18 @@ public class Parameter {
   private WebhookEntity entity;
   @NotEmpty(message = "Parameter attribute must not be empty.")
   private String attribute;
+  @JsonProperty(value = "isStandard")
+  @Column(name = "is_standard")
+  private boolean standard;
 
   public Parameter(@NotEmpty(message = "Parameter name must not be empty.") String name,
       WebhookEntity entity,
-      @NotEmpty(message = "Parameter attribute must not be empty.") String attribute) {
+      @NotEmpty(message = "Parameter attribute must not be empty.") String attribute,
+      boolean standard) {
     this.name = name;
     this.entity = entity;
     this.attribute = attribute;
+    this.standard = standard;
   }
 
   public String fetchPathToField() {

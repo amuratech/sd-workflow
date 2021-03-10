@@ -2,10 +2,12 @@ package com.kylas.sales.workflow.domain.workflow.action;
 
 import static com.kylas.sales.workflow.domain.workflow.action.WorkflowAction.ActionType.EDIT_PROPERTY;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.kylas.sales.workflow.common.dto.ActionDetail;
 import com.kylas.sales.workflow.common.dto.ActionDetail.EditPropertyAction.ValueType;
 import com.kylas.sales.workflow.common.dto.ActionResponse;
 import com.kylas.sales.workflow.domain.workflow.Workflow;
+import javax.persistence.Column;
 import javax.persistence.Convert;
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
@@ -27,22 +29,26 @@ public class EditPropertyAction extends AbstractWorkflowAction implements com.ky
   private Object value;
   @Enumerated(value = EnumType.STRING)
   private ValueType valueType;
+  @JsonProperty(value = "isStandard")
+  @Column(name = "is_standard")
+  private boolean standard;
 
-  private EditPropertyAction(String name, Object value, ValueType valueType) {
+  private EditPropertyAction(String name, Object value, ValueType valueType, boolean standard) {
     this.name = name;
     this.value = value;
     this.valueType = valueType;
+    this.standard = standard;
 
   }
 
   public static AbstractWorkflowAction createNew(ActionResponse actionResponse) {
     var payload = (ActionDetail.EditPropertyAction) actionResponse.getPayload();
-    return new EditPropertyAction(payload.getName(), payload.getValue(), payload.getValueType());
+    return new EditPropertyAction(payload.getName(), payload.getValue(), payload.getValueType(), payload.isStandard());
   }
 
   public static ActionResponse toActionResponse(EditPropertyAction action) {
     return new ActionResponse(action.getId(), EDIT_PROPERTY,
-        new ActionDetail.EditPropertyAction(action.name, action.value, action.valueType));
+        new ActionDetail.EditPropertyAction(action.name, action.value, action.valueType, action.standard));
   }
 
   @Override
@@ -56,6 +62,7 @@ public class EditPropertyAction extends AbstractWorkflowAction implements com.ky
     this.setName(payload.getName());
     this.setValue(payload.getValue());
     this.setValueType(payload.getValueType());
+    this.setStandard(payload.isStandard());
     return this;
   }
 

@@ -108,8 +108,8 @@ class WebhookDealServiceTest {
     deal.setName("Deal");
     deal.setCreatedBy(new IdName(12L, "user"));
     List<Parameter> parameters = List.of(
-        new Parameter("dealName", WebhookEntity.DEAL, DealAttribute.NAME.getName()),
-        new Parameter("dealCreator", WebhookEntity.DEAL, DealAttribute.CREATED_BY.getName()));
+        new Parameter("dealName", WebhookEntity.DEAL, DealAttribute.NAME.getName(), true),
+        new Parameter("dealCreator", WebhookEntity.DEAL, DealAttribute.CREATED_BY.getName(), true));
     WebhookAction action = new WebhookAction("DealWebhook", "some description", GET, NONE,
         "http://some-random-host:9000/get-webhook", parameters, null);
 
@@ -146,8 +146,8 @@ class WebhookDealServiceTest {
     deal.setName("Deal");
     deal.setCreatedBy(new IdName(12L, "user"));
     List<Parameter> parameters = List.of(
-        new Parameter("dealName", WebhookEntity.DEAL, DealAttribute.NAME.getName()),
-        new Parameter("ownerFirstName", WebhookEntity.DEAL_OWNER, UserAttribute.FIRST_NAME.getName()));
+        new Parameter("dealName", WebhookEntity.DEAL, DealAttribute.NAME.getName(), true),
+        new Parameter("ownerFirstName", WebhookEntity.DEAL_OWNER, UserAttribute.FIRST_NAME.getName(), true));
     WebhookAction action = new WebhookAction("OwnerWebhook", "some description", GET, NONE,
         "http://some-random-host:9000/get-webhook", parameters, null);
 
@@ -179,8 +179,8 @@ class WebhookDealServiceTest {
     deal.setName("Deal");
     deal.setCreatedBy(new IdName(12L, "user"));
     List<Parameter> parameters = List.of(
-        new Parameter("dealName", WebhookEntity.DEAL, DealAttribute.NAME.getName()),
-        new Parameter("tenantAccountName", WebhookEntity.TENANT, TenantAttribute.ACCOUNT_NAME.getName()));
+        new Parameter("dealName", WebhookEntity.DEAL, DealAttribute.NAME.getName(), true),
+        new Parameter("tenantAccountName", WebhookEntity.TENANT, TenantAttribute.ACCOUNT_NAME.getName(), true));
     WebhookAction action = new WebhookAction("OwnerWebhook", "some description", GET, NONE,
         "http://some-random-host:9000/get-webhook", parameters, null);
 
@@ -208,8 +208,8 @@ class WebhookDealServiceTest {
     deal.setName("Deal");
     deal.setCreatedBy(new IdName(12L, "user"));
     List<Parameter> parameters = List.of(
-        new Parameter("dealName", WebhookEntity.DEAL, DealAttribute.NAME.getName()),
-        new Parameter("doctorStrange", WebhookEntity.CUSTOM, "Stephen"));
+        new Parameter("dealName", WebhookEntity.DEAL, DealAttribute.NAME.getName(), true),
+        new Parameter("doctorStrange", WebhookEntity.CUSTOM, "Stephen", false));
     WebhookAction action = new WebhookAction("OwnerWebhook", "some description", GET, NONE,
         "http://some-random-host:9000/get-webhook", parameters, null);
 
@@ -238,7 +238,7 @@ class WebhookDealServiceTest {
     deal.setName("Deal");
     deal.setCreatedBy(new IdName(12L, "user"));
     List<Parameter> parameters = List.of(
-        new Parameter("dealName", WebhookEntity.DEAL, DealAttribute.NAME.getName()));
+        new Parameter("dealName", WebhookEntity.DEAL, DealAttribute.NAME.getName(), true));
     var authorization = getResourceAsString("classpath:contracts/webhook/create-with-bearer-token.json");
 
     var authParam = cryptoService.encrypt(Base64.getEncoder().encodeToString(authorization.getBytes(UTF_8)));
@@ -272,7 +272,7 @@ class WebhookDealServiceTest {
     deal.setName("Deal");
     deal.setCreatedBy(new IdName(12L, "user"));
     List<Parameter> parameters = List.of(
-        new Parameter("dealName", WebhookEntity.DEAL, DealAttribute.NAME.getName()));
+        new Parameter("dealName", WebhookEntity.DEAL, DealAttribute.NAME.getName(), true));
     var authorization = getResourceAsString("classpath:contracts/webhook/create-with-basic-auth.json");
 
     var authParam = cryptoService.encrypt(Base64.getEncoder().encodeToString(authorization.getBytes(UTF_8)));
@@ -307,7 +307,7 @@ class WebhookDealServiceTest {
     deal.setName("Deal");
     deal.setCreatedBy(new IdName(12L, "user"));
     List<Parameter> parameters = List.of(
-        new Parameter("dealName", WebhookEntity.DEAL, DealAttribute.NAME.getName()));
+        new Parameter("dealName", WebhookEntity.DEAL, DealAttribute.NAME.getName(), true));
     var authorization = getResourceAsString("classpath:contracts/webhook/create-with-api-key-auth.json");
 
     var authParam = cryptoService.encrypt(Base64.getEncoder().encodeToString(authorization.getBytes(UTF_8)));
@@ -341,8 +341,8 @@ class WebhookDealServiceTest {
     deal.setName("Deal");
     deal.setCreatedBy(new IdName(12L, "user"));
     List<Parameter> parameters = List.of(
-        new Parameter("dealName", WebhookEntity.DEAL, DealAttribute.NAME.getName()),
-        new Parameter("dealCreator", WebhookEntity.DEAL, DealAttribute.CREATED_BY.getName()));
+        new Parameter("dealName", WebhookEntity.DEAL, DealAttribute.NAME.getName(), true),
+        new Parameter("dealCreator", WebhookEntity.DEAL, DealAttribute.CREATED_BY.getName(), true));
     WebhookAction action = new WebhookAction("LeadCityWebhook", "some description", POST, NONE,
         "http://some-random-host:9000/get-webhook", parameters, null);
 
@@ -387,9 +387,9 @@ class WebhookDealServiceTest {
     deal.setAssociatedContacts(null);
 
     List<Parameter> parameters = List.of(
-        new Parameter("dealName", WebhookEntity.DEAL, DealAttribute.NAME.getName()),
-        new Parameter("dealAssociatedContacts", WebhookEntity.DEAL, DealAttribute.ASSOCIATED_CONTACTS.getName()),
-        new Parameter("ownerPhones", WebhookEntity.DEAL_OWNER, UserAttribute.PHONE_NUMBERS.getName()));
+        new Parameter("dealName", WebhookEntity.DEAL, DealAttribute.NAME.getName(), true),
+        new Parameter("dealAssociatedContacts", WebhookEntity.DEAL, DealAttribute.ASSOCIATED_CONTACTS.getName(), true),
+        new Parameter("ownerPhones", WebhookEntity.DEAL_OWNER, UserAttribute.PHONE_NUMBERS.getName(), true));
     WebhookAction action = new WebhookAction("OwnerWebhook", "some description", GET, NONE,
         "http://some-random-host:9000/get-webhook", parameters, null);
 

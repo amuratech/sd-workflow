@@ -38,10 +38,11 @@ public class WorkflowStub {
       String propertyName,
       String propertyValue,
       ValueType propertyValueType,
+      boolean isStandard,
       boolean active
   ) {
     var triggerRequest = new WorkflowTrigger(triggerType, triggerFrequency);
-    var actionRequest = new ActionResponse(actionType, new EditPropertyAction(propertyName, propertyValue, propertyValueType));
+    var actionRequest = new ActionResponse(actionType, new EditPropertyAction(propertyName, propertyValue, propertyValueType, isStandard));
     var actionRequests = new HashSet<ActionResponse>();
     actionRequests.add(actionRequest);
     @NotNull Condition conditionRequest = new Condition(conditionType.name(), null);
@@ -98,11 +99,12 @@ public class WorkflowStub {
       String propertyName,
       String propertyValue,
       ValueType propertyValueType,
+      boolean isStandard,
       boolean active
   ) {
     var triggerRequest = new WorkflowTrigger(triggerType, triggerFrequency);
     var condition = new Condition(conditionType.name(), null);
-    var actionRequest = new ActionResponse(actionId, actionType, new EditPropertyAction(propertyName, propertyValue, propertyValueType));
+    var actionRequest = new ActionResponse(actionId, actionType, new EditPropertyAction(propertyName, propertyValue, propertyValueType, isStandard));
     var actionRequests = new HashSet<ActionResponse>();
     actionRequests.add(actionRequest);
     return new WorkflowRequest(name, description, entityType, triggerRequest, condition, actionRequests, active);
@@ -142,11 +144,12 @@ public class WorkflowStub {
       String propertyName,
       Object propertyValue,
       ValueType propertyValueType,
+      boolean isStandard,
       boolean canCreate, boolean canRead, User createdBy, User updatedBy, Date createdAndUpdatedAt
   ) {
     var workflowTrigger = new WorkflowTrigger(triggerType, triggerFrequency);
     var condition = new Condition(conditionType.name(), null);
-    var action = new ActionResponse(actionType, new EditPropertyAction(propertyName, propertyValue, propertyValueType));
+    var action = new ActionResponse(actionType, new EditPropertyAction(propertyName, propertyValue, propertyValueType, isStandard));
     var actions = new ArrayList<ActionResponse>();
     actions.add(action);
     Action allowedActions = new Action();

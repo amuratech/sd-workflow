@@ -1,10 +1,11 @@
 {
+  "id": 1,
   "name": "Workflow 1",
   "description": "Workflow Description",
   "entityType": "LEAD",
   "trigger": {
     "name": "EVENT",
-    "triggerFrequency": "UPDATED",
+    "triggerFrequency": "CREATED",
     "payload": {
     }
   },
@@ -13,20 +14,33 @@
   },
   "actions": [
     {
-      "id": "08518b20-23f9-11eb-adc1-0242ac120003",
+      "id": "c753b0a6-1bff-4d39-a432-45d97d691761",
       "type": "EDIT_PROPERTY",
       "payload": {
-        "name": "salutation",
-        "value": 1319,
-        "valueType": "PLAIN"
+        "name": "myText",
+        "value": "MyName",
+        "valueType": "PLAIN",
+        "isStandard": false
       }
     },
     {
-      "id": "08518b20-23f9-11eb-adc1-0242ac120004",
-      "type": "REASSIGN",
+      "id": "9a546503-6562-498b-9665-24dd60a59af1",
+      "type": "EDIT_PROPERTY",
       "payload": {
-        "id": 20003,
-        "name": "Tony Stark"
+        "name": "myBoolean",
+        "value": true,
+        "valueType": "PLAIN",
+        "isStandard": false
+      }
+    },
+    {
+      "id": "1777e003-ab07-4ca2-b966-0def572f17c2",
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "myWebsite",
+        "value": "https://twitter.com/james",
+        "valueType": "PLAIN",
+        "isStandard": false
       }
     },
     {
@@ -46,28 +60,8 @@
             "isStandard": false
           }
         ]
-      }
-    },
-    {
-      "id": "08518b20-23f9-11eb-adc1-0242ac120005",
-      "type": "CREATE_TASK",
-      "payload": {
-        "name": "new task",
-        "description": "new task description",
-        "priority": 11,
-        "outcome": "contacted",
-        "type": 12,
-        "status": 13,
-        "assignedTo": {
-          "type": "USER",
-          "id": 5,
-          "name": "Tony Stark"
-        },
-        "dueDate": {
-          "days": 4,
-          "hours": 3
-        }
-      }
+      },
+      "authorizationParameter": null
     }
   ]
 }

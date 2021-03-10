@@ -50,7 +50,7 @@ class WorkflowTest {
     var user = new User(1000L, 999L, Set.of(permission));
     var actions = singleton(
         com.kylas.sales.workflow.domain.workflow.action.EditPropertyAction.createNew(
-            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("key", "value", ValueType.PLAIN))));
+            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("key", "value", ValueType.PLAIN, true))));
     WorkflowCondition condition = new WorkflowCondition(ConditionType.FOR_ALL, null);
     var workflow = Workflow
         .createNew("Workflow 1", "First Workflow", LEAD, trigger, user, actions, condition, true);
@@ -87,7 +87,32 @@ class WorkflowTest {
     var user = new User(1000L, 999L, Set.of(permission));
     var actions = singleton(
         com.kylas.sales.workflow.domain.workflow.action.EditPropertyAction.createNew(
-            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("key", "value", ValueType.PLAIN))));
+            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("key", "value", ValueType.PLAIN, true))));
+    WorkflowCondition condition = new WorkflowCondition(ConditionType.FOR_ALL, null);
+    var workflow = Workflow
+        .createNew("Workflow 1", "First Workflow", LEAD, trigger, user, actions, condition, true);
+    //when
+    Workflow updatedWorkflow = workflow.update("Workflow 2", "desc2", LEAD, condition, trigger, actions, user);
+    //then
+    assertThat(updatedWorkflow).isNotNull();
+    assertThat(updatedWorkflow.getName()).isEqualTo("Workflow 2");
+    assertThat(updatedWorkflow.getWorkflowExecutedEvent().getTriggerCount()).isZero();
+  }
+
+  @Test
+  public void givenWorkflowUpdateRequestforCustomFields_shouldUpdateIt() {
+    //given
+    WorkflowTrigger trigger = WorkflowTrigger
+        .createNew(new com.kylas.sales.workflow.common.dto.WorkflowTrigger(TriggerType.EVENT, TriggerFrequency.CREATED));
+
+    var permissionAction = new Action();
+    permissionAction.setWrite(true);
+    permissionAction.setUpdateAll(true);
+    var permission = new Permission(1L, "workflow", "workflow", permissionAction);
+    var user = new User(1000L, 999L, Set.of(permission));
+    var actions = singleton(
+        com.kylas.sales.workflow.domain.workflow.action.EditPropertyAction.createNew(
+            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("MyText", "MyValue", ValueType.PLAIN, false))));
     WorkflowCondition condition = new WorkflowCondition(ConditionType.FOR_ALL, null);
     var workflow = Workflow
         .createNew("Workflow 1", "First Workflow", LEAD, trigger, user, actions, condition, true);
@@ -126,7 +151,7 @@ class WorkflowTest {
         .createNew(new com.kylas.sales.workflow.common.dto.WorkflowTrigger(TriggerType.EVENT, TriggerFrequency.CREATED));
     var actions = singleton(
         com.kylas.sales.workflow.domain.workflow.action.EditPropertyAction.createNew(
-            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("key", "value", ValueType.PLAIN))));
+            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("key", "value", ValueType.PLAIN, true))));
     WorkflowCondition condition = new WorkflowCondition(ConditionType.FOR_ALL, null);
 
     var workflow = Workflow
@@ -162,7 +187,7 @@ class WorkflowTest {
         .createNew(new com.kylas.sales.workflow.common.dto.WorkflowTrigger(TriggerType.EVENT, TriggerFrequency.CREATED));
     var actions = singleton(
         com.kylas.sales.workflow.domain.workflow.action.EditPropertyAction.createNew(
-            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("key", "value", ValueType.PLAIN))));
+            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("key", "value", ValueType.PLAIN, true))));
     WorkflowCondition condition = new WorkflowCondition(ConditionType.FOR_ALL, null);
 
     var workflow = Workflow
@@ -197,7 +222,7 @@ class WorkflowTest {
         .createNew(new com.kylas.sales.workflow.common.dto.WorkflowTrigger(TriggerType.EVENT, TriggerFrequency.CREATED));
     var actions = singleton(
         com.kylas.sales.workflow.domain.workflow.action.EditPropertyAction.createNew(
-            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("key", "value", ValueType.PLAIN))));
+            new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("key", "value", ValueType.PLAIN, true))));
     WorkflowCondition condition = new WorkflowCondition(ConditionType.FOR_ALL, null);
 
     var workflow = Workflow

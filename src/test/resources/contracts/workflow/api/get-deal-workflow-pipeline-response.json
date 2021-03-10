@@ -24,7 +24,8 @@
             "name": "Open"
           }
         },
-        "valueType": "PLAIN"
+        "valueType": "PLAIN",
+        "isStandard": true
       }
     }
   ],

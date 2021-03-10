@@ -43,8 +43,8 @@ class WorkflowRequestTest {
   public void givenWorkflowRequest_withInvalidEntityType_shouldThrow() {
     //given
     var actions = new HashSet<ActionResponse>();
-    actions.add(new ActionResponse(EDIT_PROPERTY, new EditPropertyAction("firstName", "test name", PLAIN)));
-    actions.add(new ActionResponse(EDIT_PROPERTY, new EditPropertyAction("products", "[{\"id\":26,\"name\":\"Marketing Service\"}]", PLAIN)));
+    actions.add(new ActionResponse(EDIT_PROPERTY, new EditPropertyAction("firstName", "test name", PLAIN, true)));
+    actions.add(new ActionResponse(EDIT_PROPERTY, new EditPropertyAction("products", "[{\"id\":26,\"name\":\"Marketing Service\"}]", PLAIN, true)));
     var workflowRequest = WorkflowStub
         .aWorkflowRequestWithActions("Workflow 1", "Workflow Description", USER, EVENT, CREATED, FOR_ALL, true, actions);
     //when
@@ -67,7 +67,7 @@ class WorkflowRequestTest {
   public void givenWorkflowRequest_withInvalidPropertyValue_shouldThrow() {
     //given
     Set<ActionResponse> actions = Set.of(
-        new ActionResponse(EDIT_PROPERTY, new ActionDetail.EditPropertyAction("city", null, PLAIN)));
+        new ActionResponse(EDIT_PROPERTY, new ActionDetail.EditPropertyAction("city", null, PLAIN, true)));
 
     var workflowRequest = WorkflowStub
         .aWorkflowRequestWithActions("Edit Lead Property", "Edit Lead Property", EntityType.LEAD, TriggerType.EVENT, CREATED,
@@ -82,8 +82,8 @@ class WorkflowRequestTest {
   public void givenWorkflowRequest_withEntityLeadAndInvalidValueTypes_shouldThrow() {
     //given
     var actions = new HashSet<ActionResponse>();
-    actions.add(new ActionResponse(EDIT_PROPERTY, new EditPropertyAction("firstName", "test name", PLAIN)));
-    actions.add(new ActionResponse(EDIT_PROPERTY, new EditPropertyAction("products", "[{\"id\":26,\"name\":\"Marketing Service\"}]", PLAIN)));
+    actions.add(new ActionResponse(EDIT_PROPERTY, new EditPropertyAction("firstName", "test name", PLAIN, true)));
+    actions.add(new ActionResponse(EDIT_PROPERTY, new EditPropertyAction("products", "[{\"id\":26,\"name\":\"Marketing Service\"}]", PLAIN, true)));
     var workflowRequest = WorkflowStub
         .aWorkflowRequestWithActions("Workflow 1", "Workflow Description", LEAD, EVENT, CREATED, FOR_ALL, true, actions);
     //when
@@ -95,9 +95,9 @@ class WorkflowRequestTest {
   public void givenWorkflowRequest_withEntityDealAndInvalidValueTypes_shouldThrow() {
     //given
     var actions = new HashSet<ActionResponse>();
-    actions.add(new ActionResponse(EDIT_PROPERTY, new EditPropertyAction("name", "test name", PLAIN)));
-    actions.add(new ActionResponse(EDIT_PROPERTY, new EditPropertyAction("product", "{\"id\":26,\"name\":\"Marketing Service\"}", PLAIN)));
-    actions.add(new ActionResponse(EDIT_PROPERTY, new EditPropertyAction("company", "{\"id\":26,\"name\":\"Marketing Service Org\"}", PLAIN)));
+    actions.add(new ActionResponse(EDIT_PROPERTY, new EditPropertyAction("name", "test name", PLAIN, true)));
+    actions.add(new ActionResponse(EDIT_PROPERTY, new EditPropertyAction("product", "{\"id\":26,\"name\":\"Marketing Service\"}", PLAIN, true)));
+    actions.add(new ActionResponse(EDIT_PROPERTY, new EditPropertyAction("company", "{\"id\":26,\"name\":\"Marketing Service Org\"}", PLAIN, true)));
     var workflowRequest = WorkflowStub
         .aWorkflowRequestWithActions("Workflow 1", "Workflow Description", DEAL, EVENT, CREATED, FOR_ALL, true, actions);
     //when

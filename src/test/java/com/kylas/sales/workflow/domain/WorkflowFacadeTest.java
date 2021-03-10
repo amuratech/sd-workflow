@@ -118,7 +118,7 @@ class WorkflowFacadeTest {
                 aUser));
     var workflowRequest = WorkflowStub
         .anEditPropertyWorkflowRequest("Edit Lead Property", "Edit Lead Property", EntityType.LEAD, TriggerType.EVENT, CREATED,
-            ConditionType.FOR_ALL, EDIT_PROPERTY, "lastName", "Stark", PLAIN, true);
+            ConditionType.FOR_ALL, EDIT_PROPERTY, "lastName", "Stark", PLAIN, true, true);
     //when
     var workflowMono = workflowFacade.create(workflowRequest);
     //then
@@ -592,7 +592,7 @@ class WorkflowFacadeTest {
 
     given(userService.getUserDetails(11L, authService.getAuthenticationToken()))
         .willReturn(Mono.just(aUser));
-    var action = new ActionResponse(EDIT_PROPERTY, new ActionDetail.EditPropertyAction("firstName", "Tony", PLAIN));
+    var action = new ActionResponse(EDIT_PROPERTY, new ActionDetail.EditPropertyAction("firstName", "Tony", PLAIN, true));
 
     List<ExpressionElement> conditions = List.of(new ExpressionElement("EQUAL", "firstName", "Tony", "NEW_VALUE"));
     var workflowRequest = WorkflowStub.anConditionBasedEditPropertyWorkflowRequest(
@@ -628,7 +628,7 @@ class WorkflowFacadeTest {
 
     given(userService.getUserDetails(11L, authService.getAuthenticationToken()))
         .willReturn(Mono.just(aUser));
-    var action = new ActionResponse(EDIT_PROPERTY, new ActionDetail.EditPropertyAction("firstName", "Tony", PLAIN));
+    var action = new ActionResponse(EDIT_PROPERTY, new ActionDetail.EditPropertyAction("firstName", "Tony", PLAIN, true));
 
     List<ExpressionElement> conditions = List
         .of(new ExpressionElement("EQUAL", "firstName", "Tony", "OLD_VALUE"));
@@ -665,7 +665,7 @@ class WorkflowFacadeTest {
 
     given(userService.getUserDetails(11L, authService.getAuthenticationToken()))
         .willReturn(Mono.just(aUser));
-    var action = new ActionResponse(EDIT_PROPERTY, new ActionDetail.EditPropertyAction("firstName", "Tony", PLAIN));
+    var action = new ActionResponse(EDIT_PROPERTY, new ActionDetail.EditPropertyAction("firstName", "Tony", PLAIN, true));
 
     List<ExpressionElement> conditions = List
         .of(new ExpressionElement("EQUAL", "firstName", "Tony", "OLD_VALUE"));
@@ -702,7 +702,7 @@ class WorkflowFacadeTest {
 
     given(userService.getUserDetails(11L, authService.getAuthenticationToken()))
         .willReturn(Mono.just(aUser));
-    var action = new ActionResponse(EDIT_PROPERTY, new ActionDetail.EditPropertyAction("city", "Nashik", PLAIN));
+    var action = new ActionResponse(EDIT_PROPERTY, new ActionDetail.EditPropertyAction("city", "Nashik", PLAIN, true));
 
     List<ExpressionElement> conditions = List.of(new ExpressionElement(null, "city", null, "IS_CHANGED"));
     var workflowRequest = WorkflowStub.anConditionBasedEditPropertyWorkflowRequest(
@@ -736,7 +736,7 @@ class WorkflowFacadeTest {
 
     given(userService.getUserDetails(11L, authService.getAuthenticationToken()))
         .willReturn(Mono.just(aUser));
-    var action = new ActionResponse(EDIT_PROPERTY, new ActionDetail.EditPropertyAction("city", "Nashik", PLAIN));
+    var action = new ActionResponse(EDIT_PROPERTY, new ActionDetail.EditPropertyAction("city", "Nashik", PLAIN, true));
 
     List<ExpressionElement> conditions = List.of(new ExpressionElement(null, "city", null, "IS_CHANGED"));
     var workflowRequest = WorkflowStub.anConditionBasedEditPropertyWorkflowRequest(
@@ -772,7 +772,7 @@ class WorkflowFacadeTest {
     given(userService.getUserDetails(11L, authService.getAuthenticationToken()))
         .willReturn(Mono.just(aUser));
 
-    List<Parameter> parameters = List.of(new Parameter("paramKey", WebhookEntity.LEAD, "firstName"));
+    List<Parameter> parameters = List.of(new Parameter("paramKey", WebhookEntity.LEAD, "firstName", true));
 
     String requestUrl = "https://webhook.site/3e0d9676-ad3c-4cf2-a449-ca334e43b815";
 
@@ -783,7 +783,7 @@ class WorkflowFacadeTest {
 
     Set<ActionResponse> actions = Set.of(
         new ActionResponse(EDIT_PROPERTY,
-            new ActionDetail.EditPropertyAction("city", "Pune", PLAIN)),
+            new ActionDetail.EditPropertyAction("city", "Pune", PLAIN, true)),
         new ActionResponse(WEBHOOK,
             new WebhookAction("name", "desc", HttpMethod.GET, requestUrl, AuthorizationType.NONE, parameters, null)),
         new ActionResponse(SEND_EMAIL, new EmailAction(1L, from, participants, participants, participants))
@@ -848,8 +848,8 @@ class WorkflowFacadeTest {
 
     String requestUrl = "https://webhook.site/3e0d9676-ad3c-4cf2-a449-ca334e43b815";
     List<Parameter> params = List.of(
-        new Parameter("key", WebhookEntity.CUSTOM, "some-value"),
-        new Parameter("key", WebhookEntity.CUSTOM, "some-different-value"));
+        new Parameter("key", WebhookEntity.CUSTOM, "some-value", false),
+        new Parameter("key", WebhookEntity.CUSTOM, "some-different-value", false));
 
     Set<ActionResponse> actions = Set.of(
         new ActionResponse(WEBHOOK,
@@ -878,7 +878,7 @@ class WorkflowFacadeTest {
                 aUser));
     var workflowRequest = WorkflowStub
         .anEditPropertyWorkflowRequest("Edit Lead Property", "Edit Lead Property", EntityType.LEAD, TriggerType.EVENT, CREATED,
-            ConditionType.FOR_ALL, EDIT_PROPERTY, "lastName", "Stark", PLAIN, true);
+            ConditionType.FOR_ALL, EDIT_PROPERTY, "lastName", "Stark", PLAIN, true, true);
     //when
     var workflowMono = workflowFacade.update(301L, workflowRequest);
     //then
@@ -1515,7 +1515,7 @@ class WorkflowFacadeTest {
         .anExistingEditPropertyWorkflowRequest("Edit Lead Property", "Edit Lead Property",
             EntityType.LEAD, TriggerType.EVENT, CREATED,
             ConditionType.FOR_ALL, UUID.fromString("a0eebc55-9c0b-4ef8-bb6d-6bb9bd380a11"), EDIT_PROPERTY, "lastName", "Stark", PLAIN,
-            true);
+            true, true);
     //when
     var workflowMono = workflowFacade.update(301L, workflowRequest);
     //then
@@ -1635,7 +1635,7 @@ class WorkflowFacadeTest {
         .anExistingEditPropertyWorkflowRequest("Edit Lead Property", "Edit Lead Property",
             EntityType.LEAD, TriggerType.EVENT, CREATED,
             ConditionType.FOR_ALL, UUID.fromString("a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11"), EDIT_PROPERTY, "lastName", "Stark", PLAIN,
-            true);
+            true, true);
     //when
     var workflowMono = workflowFacade.update(301L, workflowRequest);
     //then
@@ -1674,7 +1674,7 @@ class WorkflowFacadeTest {
                 aUser));
     var workflowRequest = WorkflowStub
         .anEditPropertyWorkflowRequest("Edit Lead Property", "Edit Lead Property", EntityType.LEAD, TriggerType.EVENT, CREATED,
-            ConditionType.FOR_ALL, EDIT_PROPERTY, "lastName", "Stark", PLAIN, false);
+            ConditionType.FOR_ALL, EDIT_PROPERTY, "lastName", "Stark", PLAIN, true, false);
     //when
     var workflowMono = workflowFacade.create(workflowRequest);
     //then
@@ -1704,7 +1704,7 @@ class WorkflowFacadeTest {
                 aUser));
     var workflowRequest = WorkflowStub
         .anEditPropertyWorkflowRequest("Edit Lead Property", "Edit Lead Property", EntityType.LEAD, TriggerType.EVENT, CREATED,
-            ConditionType.FOR_ALL, EDIT_PROPERTY, "lastName", "Stark", PLAIN, true);
+            ConditionType.FOR_ALL, EDIT_PROPERTY, "lastName", "Stark", PLAIN, true, true);
     //when
     var workflowMono = workflowFacade.create(workflowRequest);
     //then
@@ -2170,7 +2170,7 @@ class WorkflowFacadeTest {
 
     var workflowRequest = WorkflowStub
         .anEditPropertyWorkflowRequest("Edit Lead Property", "Edit Lead Property", EntityType.LEAD, TriggerType.EVENT, CREATED,
-            ConditionType.FOR_ALL, EDIT_PROPERTY, "lastName", "Stark", PLAIN, true);
+            ConditionType.FOR_ALL, EDIT_PROPERTY, "lastName", "Stark", PLAIN, true, true);
 
     //when | then
     assertThatExceptionOfType(InvalidWorkflowRequestException.class)

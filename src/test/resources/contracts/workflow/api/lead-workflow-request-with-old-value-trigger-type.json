@@ -28,7 +28,8 @@
       "payload": {
         "name": "salutation",
         "value": 1319,
-        "valueType": "PLAIN"
+        "valueType": "PLAIN",
+        "iStandard": true
       }
     }
   ]

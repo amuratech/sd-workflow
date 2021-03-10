@@ -107,8 +107,8 @@ class WebhookContactServiceTest {
     contact.setFirstName("Tony");
     contact.setCreatedBy(new IdName(12L, "user"));
     List<Parameter> parameters = List.of(
-        new Parameter("contactFirstName", WebhookEntity.CONTACT, ContactAttribute.FIRST_NAME.getName()),
-        new Parameter("contactCreator", WebhookEntity.CONTACT, ContactAttribute.CREATED_BY.getName()));
+        new Parameter("contactFirstName", WebhookEntity.CONTACT, ContactAttribute.FIRST_NAME.getName(), true),
+        new Parameter("contactCreator", WebhookEntity.CONTACT, ContactAttribute.CREATED_BY.getName(), true));
     WebhookAction action = new WebhookAction("ContactCityWebhook", "some description", GET, NONE,
         "http://some-random-host:9000/get-webhook", parameters, null);
 
@@ -145,8 +145,8 @@ class WebhookContactServiceTest {
     contact.setFirstName("Tony");
     contact.setCreatedBy(new IdName(12L, "user"));
     List<Parameter> parameters = List.of(
-        new Parameter("contactFirstName", WebhookEntity.CONTACT, ContactAttribute.FIRST_NAME.getName()),
-        new Parameter("ownerFirstName", WebhookEntity.CONTACT_OWNER, UserAttribute.FIRST_NAME.getName()));
+        new Parameter("contactFirstName", WebhookEntity.CONTACT, ContactAttribute.FIRST_NAME.getName(), true),
+        new Parameter("ownerFirstName", WebhookEntity.CONTACT_OWNER, UserAttribute.FIRST_NAME.getName(), true));
     WebhookAction action = new WebhookAction("OwnerWebhook", "some description", GET, NONE,
         "http://some-random-host:9000/get-webhook", parameters, null);
 
@@ -178,8 +178,8 @@ class WebhookContactServiceTest {
     contact.setFirstName("Tony");
     contact.setCreatedBy(new IdName(12L, "user"));
     List<Parameter> parameters = List.of(
-        new Parameter("contactFirstName", WebhookEntity.CONTACT, ContactAttribute.FIRST_NAME.getName()),
-        new Parameter("tenantAccountName", WebhookEntity.TENANT, TenantAttribute.ACCOUNT_NAME.getName()));
+        new Parameter("contactFirstName", WebhookEntity.CONTACT, ContactAttribute.FIRST_NAME.getName(), true),
+        new Parameter("tenantAccountName", WebhookEntity.TENANT, TenantAttribute.ACCOUNT_NAME.getName(), true));
     WebhookAction action = new WebhookAction("OwnerWebhook", "some description", GET, NONE,
         "http://some-random-host:9000/get-webhook", parameters, null);
 
@@ -207,8 +207,8 @@ class WebhookContactServiceTest {
     contact.setFirstName("Tony");
     contact.setCreatedBy(new IdName(12L, "user"));
     List<Parameter> parameters = List.of(
-        new Parameter("contactFirstName", WebhookEntity.CONTACT, ContactAttribute.FIRST_NAME.getName()),
-        new Parameter("doctorStrange", WebhookEntity.CUSTOM, "Stephen"));
+        new Parameter("contactFirstName", WebhookEntity.CONTACT, ContactAttribute.FIRST_NAME.getName(), true),
+        new Parameter("doctorStrange", WebhookEntity.CUSTOM, "Stephen", true));
     WebhookAction action = new WebhookAction("OwnerWebhook", "some description", GET, NONE,
         "http://some-random-host:9000/get-webhook", parameters, null);
 
@@ -237,7 +237,7 @@ class WebhookContactServiceTest {
     contact.setFirstName("Tony");
     contact.setCreatedBy(new IdName(12L, "user"));
     List<Parameter> parameters = List.of(
-        new Parameter("contactFirstName", WebhookEntity.CONTACT, ContactAttribute.FIRST_NAME.getName()));
+        new Parameter("contactFirstName", WebhookEntity.CONTACT, ContactAttribute.FIRST_NAME.getName(), true));
     var authorization = getResourceAsString("classpath:contracts/webhook/create-with-bearer-token.json");
 
     var authParam = cryptoService.encrypt(Base64.getEncoder().encodeToString(authorization.getBytes(UTF_8)));
@@ -271,7 +271,7 @@ class WebhookContactServiceTest {
     contact.setFirstName("Tony");
     contact.setCreatedBy(new IdName(12L, "user"));
     List<Parameter> parameters = List.of(
-        new Parameter("contactFirstName", WebhookEntity.CONTACT, ContactAttribute.FIRST_NAME.getName()));
+        new Parameter("contactFirstName", WebhookEntity.CONTACT, ContactAttribute.FIRST_NAME.getName(), true));
     var authorization = getResourceAsString("classpath:contracts/webhook/create-with-basic-auth.json");
 
     var authParam = cryptoService.encrypt(Base64.getEncoder().encodeToString(authorization.getBytes(UTF_8)));
@@ -306,7 +306,7 @@ class WebhookContactServiceTest {
     contact.setFirstName("Tony");
     contact.setCreatedBy(new IdName(12L, "user"));
     List<Parameter> parameters = List.of(
-        new Parameter("contactFirstName", WebhookEntity.CONTACT, ContactAttribute.FIRST_NAME.getName()));
+        new Parameter("contactFirstName", WebhookEntity.CONTACT, ContactAttribute.FIRST_NAME.getName(), true));
     var authorization = getResourceAsString("classpath:contracts/webhook/create-with-api-key-auth.json");
 
     var authParam = cryptoService.encrypt(Base64.getEncoder().encodeToString(authorization.getBytes(UTF_8)));
@@ -340,8 +340,8 @@ class WebhookContactServiceTest {
     contact.setFirstName("Tony");
     contact.setCreatedBy(new IdName(12L, "user"));
     List<Parameter> parameters = List.of(
-        new Parameter("contactFirstName", WebhookEntity.CONTACT, ContactAttribute.FIRST_NAME.getName()),
-        new Parameter("contactCreator", WebhookEntity.CONTACT, ContactAttribute.CREATED_BY.getName()));
+        new Parameter("contactFirstName", WebhookEntity.CONTACT, ContactAttribute.FIRST_NAME.getName(), true),
+        new Parameter("contactCreator", WebhookEntity.CONTACT, ContactAttribute.CREATED_BY.getName(), true));
     WebhookAction action = new WebhookAction("LeadCityWebhook", "some description", POST, NONE,
         "http://some-random-host:9000/get-webhook", parameters, null);
 
@@ -386,10 +386,10 @@ class WebhookContactServiceTest {
     contact.setEmails(null);
     contact.setPhoneNumbers(null);
     List<Parameter> parameters = List.of(
-        new Parameter("contactFirstName", WebhookEntity.CONTACT, ContactAttribute.FIRST_NAME.getName()),
-        new Parameter("contactEmails", WebhookEntity.CONTACT, ContactAttribute.EMAILS.getName()),
-        new Parameter("contactPhones", WebhookEntity.CONTACT, ContactAttribute.PHONE_NUMBERS.getName()),
-        new Parameter("ownerPhones", WebhookEntity.CONTACT_OWNER, UserAttribute.PHONE_NUMBERS.getName()));
+        new Parameter("contactFirstName", WebhookEntity.CONTACT, ContactAttribute.FIRST_NAME.getName(), true),
+        new Parameter("contactEmails", WebhookEntity.CONTACT, ContactAttribute.EMAILS.getName(), true),
+        new Parameter("contactPhones", WebhookEntity.CONTACT, ContactAttribute.PHONE_NUMBERS.getName(), true),
+        new Parameter("ownerPhones", WebhookEntity.CONTACT_OWNER, UserAttribute.PHONE_NUMBERS.getName(), true));
     WebhookAction action = new WebhookAction("OwnerWebhook", "some description", GET, NONE,
         "http://some-random-host:9000/get-webhook", parameters, null);
 

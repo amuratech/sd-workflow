@@ -142,7 +142,7 @@ public class WorkflowService {
                 new ActionResponse(
                     action.getId(),
                     action.getType(),
-                    new EditPropertyAction(actionDetail.getName(), idName, actionDetail.getValueType())));
+                    new EditPropertyAction(actionDetail.getName(), idName, actionDetail.getValueType(), actionDetail.isStandard())));
       }
     }
     if (action.getType().equals(ActionType.CREATE_TASK)) {

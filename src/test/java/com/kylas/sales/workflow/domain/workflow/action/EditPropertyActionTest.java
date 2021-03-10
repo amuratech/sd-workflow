@@ -23,7 +23,7 @@ class EditPropertyActionTest {
   @Test
   public void givenEditPropertyAction_withValueTypeString_shouldCreate() {
     //given
-    var editPropertyAction = new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("firstName", "Tony", PLAIN));
+    var editPropertyAction = new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("firstName", "Tony", PLAIN, true));
     Set<ActionResponse> actionResponses = new HashSet<>();
     actionResponses.add(editPropertyAction);
     //when
@@ -39,9 +39,28 @@ class EditPropertyActionTest {
   }
 
   @Test
+  public void givenEditPropertyAction_withCustomField_andStringValueType_shouldCreateIt() {
+    //given
+    var editPropertyAction = new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("MyText", "Max", PLAIN, false));
+    Set<ActionResponse> actionResponses = new HashSet<>();
+    actionResponses.add(editPropertyAction);
+    //when
+    Set<AbstractWorkflowAction> actions = actionResponses.stream()
+        .map(actionResponse -> editPropertyAction.getType().create(actionResponse))
+        .collect(Collectors.toSet());
+    //then
+    assertThat(actions.size()).isEqualTo(1);
+    com.kylas.sales.workflow.domain.workflow.action.EditPropertyAction action = (com.kylas.sales.workflow.domain.workflow.action.EditPropertyAction) actions
+        .iterator().next();
+    assertThat(action.getName()).isEqualTo("MyText");
+    assertThat(action.getValue()).isEqualTo("Max");
+    assertThat(action.isStandard()).isEqualTo(false);
+  }
+
+  @Test
   public void givenEditPropertyAction_withValueTypeNumber_shouldCreate() {
     //given
-    var editPropertyAction = new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("salutation", 1, PLAIN));
+    var editPropertyAction = new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("salutation", 1, PLAIN, true));
     Set<ActionResponse> actionResponses = new HashSet<>();
     actionResponses.add(editPropertyAction);
     //when
@@ -57,10 +76,48 @@ class EditPropertyActionTest {
   }
 
   @Test
+  public void givenEditPropertyAction_withCustomField_andNumberValueType_shouldCreateIt() {
+    //given
+    var editPropertyAction = new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("MyNumber", 100, PLAIN, false));
+    Set<ActionResponse> actionResponses = new HashSet<>();
+    actionResponses.add(editPropertyAction);
+    //when
+    Set<AbstractWorkflowAction> actions = actionResponses.stream()
+        .map(actionResponse -> editPropertyAction.getType().create(actionResponse))
+        .collect(Collectors.toSet());
+    //then
+    assertThat(actions.size()).isEqualTo(1);
+    com.kylas.sales.workflow.domain.workflow.action.EditPropertyAction action = (com.kylas.sales.workflow.domain.workflow.action.EditPropertyAction) actions
+        .iterator().next();
+    assertThat(action.getName()).isEqualTo("MyNumber");
+    assertThat(action.getValue()).isEqualTo(100);
+    assertThat(action.isStandard()).isEqualTo(false);
+  }
+
+  @Test
+  public void givenEditPropertyAction_withCustomField_andBooleanValueType_shouldCreateIt() {
+    //given
+    var editPropertyAction = new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("MyBoolean", true, PLAIN, false));
+    Set<ActionResponse> actionResponses = new HashSet<>();
+    actionResponses.add(editPropertyAction);
+    //when
+    Set<AbstractWorkflowAction> actions = actionResponses.stream()
+        .map(actionResponse -> editPropertyAction.getType().create(actionResponse))
+        .collect(Collectors.toSet());
+    //then
+    assertThat(actions.size()).isEqualTo(1);
+    com.kylas.sales.workflow.domain.workflow.action.EditPropertyAction action = (com.kylas.sales.workflow.domain.workflow.action.EditPropertyAction) actions
+        .iterator().next();
+    assertThat(action.getName()).isEqualTo("MyBoolean");
+    assertThat(action.getValue()).isEqualTo(true);
+    assertThat(action.isStandard()).isEqualTo(false);
+  }
+
+  @Test
   public void givenEditPropertyAction_withValueTypeObjectArray_shouldCreate() {
     //given
     ArrayList<Product> products = new ArrayList<>(Arrays.asList(new Product(1, "cellphone"), new Product(2, "telephone")));
-    var editPropertyAction = new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("products", products, ARRAY));
+    var editPropertyAction = new ActionResponse(ActionType.EDIT_PROPERTY, new EditPropertyAction("products", products, ARRAY, true));
     Set<ActionResponse> actionResponses = new HashSet<>();
     actionResponses.add(editPropertyAction);
     //when
@@ -88,7 +145,7 @@ class EditPropertyActionTest {
     //given
     ConversionAssociation conversionAssociation = new ConversionAssociation(1L, 2L, 3L, 4L, 5L);
     var editPropertyAction = new ActionResponse(ActionType.EDIT_PROPERTY,
-        new EditPropertyAction("conversionAssociation", conversionAssociation, OBJECT));
+        new EditPropertyAction("conversionAssociation", conversionAssociation, OBJECT, true));
     Set<ActionResponse> actionResponses = new HashSet<>();
     actionResponses.add(editPropertyAction);
     //when

@@ -1,0 +1,71 @@
+{
+  "id": 1,
+  "name": "Workflow 1",
+  "description": "Workflow Description",
+  "entityType": "LEAD",
+  "trigger": {
+    "name": "EVENT",
+    "triggerFrequency": "CREATED"
+  },
+  "condition": {
+    "conditionType": "FOR_ALL"
+  },
+  "actions": [
+    {
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "myText",
+        "value": "MyName",
+        "valueType": "PLAIN",
+        "isStandard": false
+      }
+    },
+    {
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "myBoolean",
+        "value": true,
+        "valueType": "PLAIN",
+        "isStandard": false
+      }
+    },
+    {
+      "type": "EDIT_PROPERTY",
+      "payload": {
+        "name": "myWebsite",
+        "value": "https://twitter.com/james",
+        "valueType": "PLAIN",
+        "isStandard": false
+      }
+    },
+    {
+      "type": "WEBHOOK",
+      "payload": {
+        "name": "Webhook 1",
+        "description": "Webhook Description",
+        "method": "GET",
+        "requestUrl": "https://reqres.in/api/users",
+        "authorizationType": "NONE",
+        "parameters": [
+          {
+            "name": "MrJ",
+            "entity": "LEAD",
+            "attribute": "MyName",
+            "isStandard": false
+          }
+        ],
+        "authorizationParameter": null
+      }
+    }
+  ],
+  "createdBy": {
+    "id": 5000,
+    "name": "Tony Stark"
+  },
+  "updatedBy": {
+    "id": 5000,
+    "name": "Tony Stark"
+  },
+  "triggerCount": 0,
+  "active": true
+}
