@@ -16,6 +16,8 @@ import com.kylas.sales.workflow.domain.workflow.action.AbstractWorkflowAction;
 import com.kylas.sales.workflow.domain.workflow.action.EditPropertyAction;
 import com.kylas.sales.workflow.domain.workflow.action.ValueConverter;
 import com.kylas.sales.workflow.domain.workflow.action.WorkflowAction.ActionType;
+import com.kylas.sales.workflow.domain.workflow.action.email.EmailAction;
+import com.kylas.sales.workflow.domain.workflow.action.email.EmailActionService;
 import com.kylas.sales.workflow.domain.workflow.action.reassign.ReassignAction;
 import com.kylas.sales.workflow.domain.workflow.action.reassign.ReassignDetail;
 import com.kylas.sales.workflow.domain.workflow.action.task.CreateTaskAction;
@@ -48,6 +50,7 @@ public class WorkflowProcessor {
   private final ValueConverter valueConverter;
   private final ConditionFacade conditionFacade;
   private final CreateTaskService createTaskService;
+  private final EmailActionService emailActionService;
 
   @Autowired
   public WorkflowProcessor(
@@ -56,13 +59,14 @@ public class WorkflowProcessor {
       WebhookService webhookService,
       ValueConverter valueConverter,
       ConditionFacade conditionFacade,
-      CreateTaskService createTaskService) {
+      CreateTaskService createTaskService, EmailActionService emailActionService) {
     this.workflowService = workflowService;
     this.entityUpdatedCommandPublisher = entityUpdatedCommandPublisher;
     this.webhookService = webhookService;
     this.valueConverter = valueConverter;
     this.conditionFacade = conditionFacade;
     this.createTaskService = createTaskService;
+    this.emailActionService = emailActionService;
   }
 
   public void process(EntityEvent event) {
@@ -137,6 +141,11 @@ public class WorkflowProcessor {
               metadata.getUserId(), metadata.getTenantId());
           createTaskService.processCreateTaskAction(createTaskAction, metadata.getEntityType(), event.getEntity(), createTaskMetadata);
         });
+
+    workflowActions.stream().filter(workflowAction -> workflowAction.getType().equals(ActionType.SEND_EMAIL))
+        .map(workflowAction -> (EmailAction) workflowAction)
+        .forEach(emailAction -> emailActionService.processEmailAction(emailAction, event, metadata));
+
   }
 
   private void processEditPropertyActions(Set<EditPropertyAction> editPropertyActions, Metadata metadata, Actionable entity) {

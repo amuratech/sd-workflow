@@ -3,8 +3,10 @@ package com.kylas.sales.workflow.mq.event;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.kylas.sales.workflow.domain.processor.EmailActionDetail;
 import com.kylas.sales.workflow.domain.processor.lead.Lead;
 import com.kylas.sales.workflow.domain.processor.lead.LeadDetail;
+import java.util.Collections;
 import lombok.NoArgsConstructor;
 
 
@@ -52,6 +54,14 @@ public class LeadEvent implements EntityEvent {
 
   public Lead getActualEntity() {
     return new Lead();
+  }
+
+  @Override
+  public EmailActionDetail getEmailActionDetail() {
+    return new EmailActionDetail(this.entity.getName(), this.entity.getCreatedBy(), this.entity.getUpdatedBy(), this.entity.getOwnerId(),
+        this.entity.getEmails(),
+        Collections
+            .emptyList());
   }
 
   @Override

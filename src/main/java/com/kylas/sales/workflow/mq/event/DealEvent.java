@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.kylas.sales.workflow.domain.processor.Actionable;
+import com.kylas.sales.workflow.domain.processor.EmailActionDetail;
 import com.kylas.sales.workflow.domain.processor.deal.DealDetail;
 import lombok.NoArgsConstructor;
 
@@ -52,6 +53,12 @@ public class DealEvent implements EntityEvent {
   @Override
   public Actionable getActualEntity() {
     return new DealDetail();
+  }
+
+  @Override
+  public EmailActionDetail getEmailActionDetail() {
+    return new EmailActionDetail(this.entity.getName(), this.entity.getCreatedBy(), this.entity.getUpdatedBy(), this.entity.getOwnedBy(), null,
+        this.entity.getAssociatedContacts());
   }
 
   @Override

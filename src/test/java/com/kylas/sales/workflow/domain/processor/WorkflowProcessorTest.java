@@ -9,6 +9,7 @@ import static com.kylas.sales.workflow.domain.workflow.TriggerFrequency.UPDATED;
 import static com.kylas.sales.workflow.domain.workflow.action.WorkflowAction.ActionType.CREATE_TASK;
 import static com.kylas.sales.workflow.domain.workflow.action.WorkflowAction.ActionType.EDIT_PROPERTY;
 import static com.kylas.sales.workflow.domain.workflow.action.WorkflowAction.ActionType.REASSIGN;
+import static com.kylas.sales.workflow.domain.workflow.action.WorkflowAction.ActionType.SEND_EMAIL;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.mockito.ArgumentMatchers.any;
@@ -23,6 +24,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kylas.sales.workflow.api.WorkflowService;
 import com.kylas.sales.workflow.api.request.Condition;
 import com.kylas.sales.workflow.common.dto.ActionDetail.EditPropertyAction.ValueType;
@@ -36,6 +39,8 @@ import com.kylas.sales.workflow.domain.processor.deal.DealDetail;
 import com.kylas.sales.workflow.domain.processor.deal.Money;
 import com.kylas.sales.workflow.domain.processor.deal.Pipeline;
 import com.kylas.sales.workflow.domain.processor.exception.WorkflowExecutionException;
+import com.kylas.sales.workflow.domain.processor.lead.Email;
+import com.kylas.sales.workflow.domain.processor.lead.EmailType;
 import com.kylas.sales.workflow.domain.processor.lead.IdName;
 import com.kylas.sales.workflow.domain.processor.lead.Lead;
 import com.kylas.sales.workflow.domain.processor.lead.LeadDetail;
@@ -51,6 +56,11 @@ import com.kylas.sales.workflow.domain.workflow.action.AbstractWorkflowAction;
 import com.kylas.sales.workflow.domain.workflow.action.EditPropertyAction;
 import com.kylas.sales.workflow.domain.workflow.action.ValueConverter;
 import com.kylas.sales.workflow.domain.workflow.action.WorkflowAction.ActionType;
+import com.kylas.sales.workflow.domain.workflow.action.email.EmailAction;
+import com.kylas.sales.workflow.domain.workflow.action.email.EmailActionService;
+import com.kylas.sales.workflow.domain.workflow.action.email.EmailActionType;
+import com.kylas.sales.workflow.domain.workflow.action.email.EmailEntityType;
+import com.kylas.sales.workflow.domain.workflow.action.email.Participant;
 import com.kylas.sales.workflow.domain.workflow.action.reassign.ReassignAction;
 import com.kylas.sales.workflow.domain.workflow.action.reassign.ReassignDetail;
 import com.kylas.sales.workflow.domain.workflow.action.task.AssignedTo;
@@ -94,6 +104,8 @@ class WorkflowProcessorTest {
   private ConditionFacade conditionFacade;
   @Mock
   private CreateTaskService createTaskService;
+  @Mock
+  private EmailActionService emailActionService;
 
   @Test
   public void givenLeadEvent_shouldPublishPatchCommand() {
@@ -1355,6 +1367,500 @@ class WorkflowProcessorTest {
             }),
             any(
                 com.kylas.sales.workflow.domain.processor.task.Metadata.class));
+  }
+
+  @Test
+  public void givenLeadCreatedEvent_withSendEmailAction_shouldProcessIt() throws JsonProcessingException {
+    // given
+    ObjectMapper objectMapper = new ObjectMapper();
+    long tenantId = 101L;
+    long userId = 10L;
+    long workflowId = 99L;
+
+    var lead = new LeadDetail();
+    lead.setFirstName("Tony");
+    lead.setLastName("Stark");
+    lead.setName("Tony Stark");
+    lead.setEmails(
+        List.of(new Email(EmailType.PERSONAL, "abc@123.com", true), new Email(EmailType.OFFICE, "abc@123.com", false)).toArray(Email[]::new));
+    lead.setId(55L);
+    Metadata metadata = new Metadata(tenantId, userId, LEAD, null, null, EntityAction.CREATED);
+
+    var leadEvent = new LeadEvent(lead, null, metadata);
+
+    Workflow workflowMock = mock(Workflow.class);
+    given(workflowMock.getId()).willReturn(workflowId);
+
+    Set<AbstractWorkflowAction> actions = new HashSet<>();
+
+    String from = "{\"type\":\"RECORD_OWNER\",\"entity\":\"user\",\"entityId\":4,\"name\":\"user1\",\"email\":\"user1@gmail.com\"}";
+    List<Participant> participants = List
+        .of(new Participant(EmailActionType.RECORD_OWNER, EmailEntityType.LEAD.getEntityName(), 1L, "test user", "test@user.com"),
+            new Participant(EmailActionType.RECORD_OWNER, EmailEntityType.LEAD.getEntityName(), 2L, "test user", "test@user.com"));
+
+    Object emailFrom = objectMapper.readValue(from, Object.class);
+    EmailAction emailAction = mock(EmailAction.class);
+    given(emailAction.getEmailTemplateId()).willReturn(1L);
+    given(emailAction.getFrom()).willReturn(emailFrom);
+    given(emailAction.getTo()).willReturn(participants);
+    given(emailAction.getCc()).willReturn(participants);
+    given(emailAction.getBcc()).willReturn(participants);
+    given(emailAction.getType()).willReturn(SEND_EMAIL);
+    actions.add(emailAction);
+
+    given(workflowMock.getWorkflowActions()).willReturn(actions);
+    WorkflowTrigger workflowTriggerMock = mock(WorkflowTrigger.class);
+    given(workflowTriggerMock.getTriggerType()).willReturn(TriggerType.EVENT);
+    given(workflowTriggerMock.getTriggerFrequency()).willReturn(CREATED);
+    given(workflowMock.getWorkflowTrigger()).willReturn(workflowTriggerMock);
+
+    List<Workflow> workflows = Arrays.asList(workflowMock);
+
+    given(workflowService.findActiveBy(tenantId, LEAD, CREATED)).willReturn(workflows);
+    // when
+    workflowProcessor.process(leadEvent);
+    //then
+    ArgumentCaptor<EmailAction> emailActionArgumentCaptor = ArgumentCaptor.forClass(EmailAction.class);
+    ArgumentCaptor<LeadDetail> leadDetailArgumentCaptor = ArgumentCaptor.forClass(LeadDetail.class);
+    ArgumentCaptor<Metadata> metadataArgumentCaptor = ArgumentCaptor.forClass(Metadata.class);
+    verify(emailActionService, times(1))
+        .processEmailAction(emailActionArgumentCaptor.capture(), leadDetailArgumentCaptor.capture(), metadataArgumentCaptor.capture());
+
+    EmailAction actualEmailAction = emailActionArgumentCaptor.getValue();
+    LeadDetail leadDetail = leadDetailArgumentCaptor.getValue();
+    Metadata actualMetadata = metadataArgumentCaptor.getValue();
+
+    assertThat(actualEmailAction.getEmailTemplateId()).isEqualTo(1L);
+    Participant actualFrom = objectMapper.readValue(objectMapper.writeValueAsString(emailAction.getFrom()), Participant.class);
+    assertThat(actualFrom.getName()).isEqualTo("user1");
+    assertThat(actualFrom.getType()).isEqualTo(EmailActionType.RECORD_OWNER);
+    assertThat(actualFrom.getEmail()).isEqualTo("user1@gmail.com");
+    assertThat(actualFrom.getEntity()).isEqualTo("user");
+    assertThat(actualFrom.getEntityId()).isEqualTo(4L);
+    assertThat(emailAction.getTo()).hasSize(2);
+    assertThat(emailAction.getCc()).hasSize(2);
+    assertThat(emailAction.getBcc()).hasSize(2);
+
+    assertThat(leadDetail.getId()).isEqualTo(55L);
+    assertThat(leadDetail.getFirstName()).isEqualTo("Tony");
+    assertThat(leadDetail.getLastName()).isEqualTo("Stark");
+    assertThat(leadDetail.getEmails()).hasSize(2);
+    assertThat(leadDetail.getName()).isEqualTo("Tony Stark");
+
+    assertThat(actualMetadata.getTenantId()).isEqualTo(101L);
+    assertThat(actualMetadata.getUserId()).isEqualTo(10L);
+    assertThat(actualMetadata.getEntityType()).isEqualTo(LEAD);
+    assertThat(actualMetadata.getEntityAction()).isEqualTo(EntityAction.CREATED);
+  }
+
+  @Test
+  public void givenLeadUpdatedEvent_withSendEmailAction_shouldProcessIt() throws JsonProcessingException {
+    // given
+    ObjectMapper objectMapper = new ObjectMapper();
+    long tenantId = 101L;
+    long userId = 10L;
+    long workflowId = 99L;
+
+    var lead = new LeadDetail();
+    lead.setFirstName("Tony");
+    lead.setLastName("Stark");
+    lead.setName("Tony Stark");
+    lead.setEmails(
+        List.of(new Email(EmailType.PERSONAL, "abc@123.com", true), new Email(EmailType.OFFICE, "abc@123.com", false)).toArray(Email[]::new));
+    lead.setId(55L);
+    Metadata metadata = new Metadata(tenantId, userId, LEAD, null, null, EntityAction.UPDATED);
+
+    var leadEvent = new LeadEvent(lead, null, metadata);
+
+    Workflow workflowMock = mock(Workflow.class);
+    given(workflowMock.getId()).willReturn(workflowId);
+
+    Set<AbstractWorkflowAction> actions = new HashSet<>();
+
+    String from = "{\"type\":\"RECORD_CREATED_BY\",\"entity\":\"user\",\"entityId\":4,\"name\":\"user1\",\"email\":\"user1@gmail.com\"}";
+    List<Participant> participants = List
+        .of(new Participant(EmailActionType.RECORD_CREATED_BY, EmailEntityType.LEAD.getEntityName(), 1L, "test user", "test@user.com"),
+            new Participant(EmailActionType.RECORD_CREATED_BY, EmailEntityType.LEAD.getEntityName(), 2L, "test user", "test@user.com"));
+
+    Object emailFrom = objectMapper.readValue(from, Object.class);
+    EmailAction emailAction = mock(EmailAction.class);
+    given(emailAction.getEmailTemplateId()).willReturn(1L);
+    given(emailAction.getFrom()).willReturn(emailFrom);
+    given(emailAction.getTo()).willReturn(participants);
+    given(emailAction.getCc()).willReturn(participants);
+    given(emailAction.getBcc()).willReturn(participants);
+    given(emailAction.getType()).willReturn(SEND_EMAIL);
+    actions.add(emailAction);
+
+    given(workflowMock.getWorkflowActions()).willReturn(actions);
+    WorkflowTrigger workflowTriggerMock = mock(WorkflowTrigger.class);
+    given(workflowTriggerMock.getTriggerType()).willReturn(TriggerType.EVENT);
+    given(workflowTriggerMock.getTriggerFrequency()).willReturn(UPDATED);
+    given(workflowMock.getWorkflowTrigger()).willReturn(workflowTriggerMock);
+
+    List<Workflow> workflows = Arrays.asList(workflowMock);
+
+    given(workflowService.findActiveBy(tenantId, LEAD, UPDATED)).willReturn(workflows);
+    // when
+    workflowProcessor.process(leadEvent);
+    //then
+    ArgumentCaptor<EmailAction> emailActionArgumentCaptor = ArgumentCaptor.forClass(EmailAction.class);
+    ArgumentCaptor<LeadDetail> leadDetailArgumentCaptor = ArgumentCaptor.forClass(LeadDetail.class);
+    ArgumentCaptor<Metadata> metadataArgumentCaptor = ArgumentCaptor.forClass(Metadata.class);
+    verify(emailActionService, times(1))
+        .processEmailAction(emailActionArgumentCaptor.capture(), leadDetailArgumentCaptor.capture(), metadataArgumentCaptor.capture());
+
+    EmailAction actualEmailAction = emailActionArgumentCaptor.getValue();
+    LeadDetail leadDetail = leadDetailArgumentCaptor.getValue();
+    Metadata actualMetadata = metadataArgumentCaptor.getValue();
+
+    assertThat(actualEmailAction.getEmailTemplateId()).isEqualTo(1L);
+    Participant actualFrom = objectMapper.readValue(objectMapper.writeValueAsString(emailAction.getFrom()), Participant.class);
+    assertThat(actualFrom.getName()).isEqualTo("user1");
+    assertThat(actualFrom.getType()).isEqualTo(EmailActionType.RECORD_CREATED_BY);
+    assertThat(actualFrom.getEmail()).isEqualTo("user1@gmail.com");
+    assertThat(actualFrom.getEntity()).isEqualTo("user");
+    assertThat(actualFrom.getEntityId()).isEqualTo(4L);
+    assertThat(emailAction.getTo()).hasSize(2);
+    assertThat(emailAction.getCc()).hasSize(2);
+    assertThat(emailAction.getBcc()).hasSize(2);
+
+    assertThat(leadDetail.getId()).isEqualTo(55L);
+    assertThat(leadDetail.getFirstName()).isEqualTo("Tony");
+    assertThat(leadDetail.getLastName()).isEqualTo("Stark");
+    assertThat(leadDetail.getEmails()).hasSize(2);
+    assertThat(leadDetail.getName()).isEqualTo("Tony Stark");
+
+    assertThat(actualMetadata.getTenantId()).isEqualTo(101L);
+    assertThat(actualMetadata.getUserId()).isEqualTo(10L);
+    assertThat(actualMetadata.getEntityType()).isEqualTo(LEAD);
+    assertThat(actualMetadata.getEntityAction()).isEqualTo(EntityAction.UPDATED);
+  }
+
+  @Test
+  public void givenContactCreatedEvent_withSendEmailAction_shouldProcessIt() throws JsonProcessingException {
+    // given
+    ObjectMapper objectMapper = new ObjectMapper();
+    long tenantId = 101L;
+    long userId = 10L;
+    long workflowId = 99L;
+
+    var contactDetail = new ContactDetail();
+    contactDetail.setFirstName("Tony");
+    contactDetail.setLastName("Stark");
+    contactDetail.setName("Tony Stark");
+    contactDetail.setEmails(
+        List.of(new Email(EmailType.PERSONAL, "abc@123.com", true), new Email(EmailType.OFFICE, "abc@123.com", false)).toArray(Email[]::new));
+    contactDetail.setId(55L);
+    Metadata metadata = new Metadata(tenantId, userId, CONTACT, null, null, EntityAction.CREATED);
+
+    var contactEvent = new ContactEvent(contactDetail, null, metadata);
+
+    Workflow workflowMock = mock(Workflow.class);
+    given(workflowMock.getId()).willReturn(workflowId);
+
+    Set<AbstractWorkflowAction> actions = new HashSet<>();
+
+    String from = "{\"type\":\"WORKFLOW_CREATOR\",\"entity\":\"user\",\"entityId\":4,\"name\":\"user1\",\"email\":\"user1@gmail.com\"}";
+    List<Participant> participants = List
+        .of(new Participant(EmailActionType.WORKFLOW_UPDATER, EmailEntityType.CONTACT.getEntityName(), 1L, "test user", "test@user.com"),
+            new Participant(EmailActionType.TENANT_EMAIL, EmailEntityType.CONTACT.getEntityName(), 2L, "test user", "test@user.com"));
+
+    Object emailFrom = objectMapper.readValue(from, Object.class);
+    EmailAction emailAction = mock(EmailAction.class);
+    given(emailAction.getEmailTemplateId()).willReturn(1L);
+    given(emailAction.getFrom()).willReturn(emailFrom);
+    given(emailAction.getTo()).willReturn(participants);
+    given(emailAction.getCc()).willReturn(participants);
+    given(emailAction.getBcc()).willReturn(participants);
+    given(emailAction.getType()).willReturn(SEND_EMAIL);
+    actions.add(emailAction);
+
+    given(workflowMock.getWorkflowActions()).willReturn(actions);
+    WorkflowTrigger workflowTriggerMock = mock(WorkflowTrigger.class);
+    given(workflowTriggerMock.getTriggerType()).willReturn(TriggerType.EVENT);
+    given(workflowTriggerMock.getTriggerFrequency()).willReturn(CREATED);
+    given(workflowMock.getWorkflowTrigger()).willReturn(workflowTriggerMock);
+
+    List<Workflow> workflows = Arrays.asList(workflowMock);
+
+    given(workflowService.findActiveBy(tenantId, CONTACT, CREATED)).willReturn(workflows);
+    // when
+    workflowProcessor.process(contactEvent);
+    //then
+    ArgumentCaptor<EmailAction> emailActionArgumentCaptor = ArgumentCaptor.forClass(EmailAction.class);
+    ArgumentCaptor<ContactDetail> contactDetailArgumentCaptor = ArgumentCaptor.forClass(ContactDetail.class);
+    ArgumentCaptor<Metadata> metadataArgumentCaptor = ArgumentCaptor.forClass(Metadata.class);
+    verify(emailActionService, times(1))
+        .processEmailAction(emailActionArgumentCaptor.capture(), contactDetailArgumentCaptor.capture(), metadataArgumentCaptor.capture());
+
+    EmailAction actualEmailAction = emailActionArgumentCaptor.getValue();
+    ContactDetail actualContactDetail = contactDetailArgumentCaptor.getValue();
+    Metadata actualMetadata = metadataArgumentCaptor.getValue();
+
+    assertThat(actualEmailAction.getEmailTemplateId()).isEqualTo(1L);
+    Participant actualFrom = objectMapper.readValue(objectMapper.writeValueAsString(emailAction.getFrom()), Participant.class);
+    assertThat(actualFrom.getName()).isEqualTo("user1");
+    assertThat(actualFrom.getType()).isEqualTo(EmailActionType.WORKFLOW_CREATOR);
+    assertThat(actualFrom.getEmail()).isEqualTo("user1@gmail.com");
+    assertThat(actualFrom.getEntity()).isEqualTo("user");
+    assertThat(actualFrom.getEntityId()).isEqualTo(4L);
+    assertThat(emailAction.getTo()).hasSize(2);
+    assertThat(emailAction.getCc()).hasSize(2);
+    assertThat(emailAction.getBcc()).hasSize(2);
+
+    assertThat(actualContactDetail.getId()).isEqualTo(55L);
+    assertThat(actualContactDetail.getFirstName()).isEqualTo("Tony");
+    assertThat(actualContactDetail.getLastName()).isEqualTo("Stark");
+    assertThat(actualContactDetail.getEmails()).hasSize(2);
+    assertThat(actualContactDetail.getName()).isEqualTo("Tony Stark");
+
+    assertThat(actualMetadata.getTenantId()).isEqualTo(101L);
+    assertThat(actualMetadata.getUserId()).isEqualTo(10L);
+    assertThat(actualMetadata.getEntityType()).isEqualTo(CONTACT);
+    assertThat(actualMetadata.getEntityAction()).isEqualTo(EntityAction.CREATED);
+  }
+
+  @Test
+  public void givenContactUpdatedEvent_withSendEmailAction_shouldProcessIt() throws JsonProcessingException {
+    // given
+    ObjectMapper objectMapper = new ObjectMapper();
+    long tenantId = 101L;
+    long userId = 10L;
+    long workflowId = 99L;
+
+    var contact = new ContactDetail();
+    contact.setFirstName("Tony");
+    contact.setLastName("Stark");
+    contact.setName("Tony Stark");
+    contact.setEmails(
+        List.of(new Email(EmailType.PERSONAL, "abc@123.com", true), new Email(EmailType.OFFICE, "abc@123.com", false)).toArray(Email[]::new));
+    contact.setId(55L);
+    Metadata metadata = new Metadata(tenantId, userId, CONTACT, null, null, EntityAction.UPDATED);
+
+    var contactEvent = new ContactEvent(contact, null, metadata);
+
+    Workflow workflowMock = mock(Workflow.class);
+    given(workflowMock.getId()).willReturn(workflowId);
+
+    Set<AbstractWorkflowAction> actions = new HashSet<>();
+
+    String from = "{\"type\":\"RECORD_UPDATED_BY\",\"entity\":\"user\",\"entityId\":4,\"name\":\"user1\",\"email\":\"user1@gmail.com\"}";
+    List<Participant> participants = List
+        .of(new Participant(EmailActionType.RECORD_UPDATED_BY, EmailEntityType.CONTACT.getEntityName(), 1L, "test user", "test@user.com"),
+            new Participant(EmailActionType.RECORD_OWNER, EmailEntityType.CONTACT.getEntityName(), 2L, "test user", "test@user.com"));
+
+    Object emailFrom = objectMapper.readValue(from, Object.class);
+    EmailAction emailAction = mock(EmailAction.class);
+    given(emailAction.getEmailTemplateId()).willReturn(1L);
+    given(emailAction.getFrom()).willReturn(emailFrom);
+    given(emailAction.getTo()).willReturn(participants);
+    given(emailAction.getCc()).willReturn(participants);
+    given(emailAction.getBcc()).willReturn(participants);
+    given(emailAction.getType()).willReturn(SEND_EMAIL);
+    actions.add(emailAction);
+
+    given(workflowMock.getWorkflowActions()).willReturn(actions);
+    WorkflowTrigger workflowTriggerMock = mock(WorkflowTrigger.class);
+    given(workflowTriggerMock.getTriggerType()).willReturn(TriggerType.EVENT);
+    given(workflowTriggerMock.getTriggerFrequency()).willReturn(UPDATED);
+    given(workflowMock.getWorkflowTrigger()).willReturn(workflowTriggerMock);
+
+    List<Workflow> workflows = Arrays.asList(workflowMock);
+
+    given(workflowService.findActiveBy(tenantId, CONTACT, UPDATED)).willReturn(workflows);
+    // when
+    workflowProcessor.process(contactEvent);
+    //then
+    ArgumentCaptor<EmailAction> emailActionArgumentCaptor = ArgumentCaptor.forClass(EmailAction.class);
+    ArgumentCaptor<ContactDetail> contactDetailArgumentCaptor = ArgumentCaptor.forClass(ContactDetail.class);
+    ArgumentCaptor<Metadata> metadataArgumentCaptor = ArgumentCaptor.forClass(Metadata.class);
+    verify(emailActionService, times(1))
+        .processEmailAction(emailActionArgumentCaptor.capture(), contactDetailArgumentCaptor.capture(), metadataArgumentCaptor.capture());
+
+    EmailAction actualEmailAction = emailActionArgumentCaptor.getValue();
+    ContactDetail contactDetail = contactDetailArgumentCaptor.getValue();
+    Metadata actualMetadata = metadataArgumentCaptor.getValue();
+
+    assertThat(actualEmailAction.getEmailTemplateId()).isEqualTo(1L);
+    Participant actualFrom = objectMapper.readValue(objectMapper.writeValueAsString(emailAction.getFrom()), Participant.class);
+    assertThat(actualFrom.getName()).isEqualTo("user1");
+    assertThat(actualFrom.getType()).isEqualTo(EmailActionType.RECORD_UPDATED_BY);
+    assertThat(actualFrom.getEmail()).isEqualTo("user1@gmail.com");
+    assertThat(actualFrom.getEntity()).isEqualTo("user");
+    assertThat(actualFrom.getEntityId()).isEqualTo(4L);
+    assertThat(emailAction.getTo()).hasSize(2);
+    assertThat(emailAction.getCc()).hasSize(2);
+    assertThat(emailAction.getBcc()).hasSize(2);
+
+    assertThat(contactDetail.getId()).isEqualTo(55L);
+    assertThat(contactDetail.getFirstName()).isEqualTo("Tony");
+    assertThat(contactDetail.getLastName()).isEqualTo("Stark");
+    assertThat(contactDetail.getEmails()).hasSize(2);
+    assertThat(contactDetail.getName()).isEqualTo("Tony Stark");
+
+    assertThat(actualMetadata.getTenantId()).isEqualTo(101L);
+    assertThat(actualMetadata.getUserId()).isEqualTo(10L);
+    assertThat(actualMetadata.getEntityType()).isEqualTo(CONTACT);
+    assertThat(actualMetadata.getEntityAction()).isEqualTo(EntityAction.UPDATED);
+  }
+
+  @Test
+  public void givenDealCreatedEvent_withSendEmailAction_shouldProcessIt() throws JsonProcessingException {
+    // given
+    ObjectMapper objectMapper = new ObjectMapper();
+    long tenantId = 101L;
+    long userId = 10L;
+    long workflowId = 99L;
+
+    var dealDetail = new DealDetail();
+    dealDetail.setName("new deal");
+    dealDetail.setAssociatedContacts(List.of(new IdName(2L, "Tony")));
+    dealDetail.setId(55L);
+    Metadata metadata = new Metadata(tenantId, userId, DEAL, null, null, EntityAction.CREATED);
+
+    var dealEvent = new DealEvent(dealDetail, null, metadata);
+
+    Workflow workflowMock = mock(Workflow.class);
+    given(workflowMock.getId()).willReturn(workflowId);
+
+    Set<AbstractWorkflowAction> actions = new HashSet<>();
+
+    String from = "{\"type\":\"WORKFLOW_CREATOR\",\"entity\":\"user\",\"entityId\":4,\"name\":\"user1\",\"email\":\"user1@gmail.com\"}";
+    List<Participant> participants = List
+        .of(new Participant(EmailActionType.WORKFLOW_UPDATER, EmailEntityType.DEAL.getEntityName(), 1L, "test user", "test@user.com"),
+            new Participant(EmailActionType.TENANT_EMAIL, EmailEntityType.DEAL.getEntityName(), 2L, "test user", "test@user.com"));
+
+    Object emailFrom = objectMapper.readValue(from, Object.class);
+    EmailAction emailAction = mock(EmailAction.class);
+    given(emailAction.getEmailTemplateId()).willReturn(1L);
+    given(emailAction.getFrom()).willReturn(emailFrom);
+    given(emailAction.getTo()).willReturn(participants);
+    given(emailAction.getCc()).willReturn(participants);
+    given(emailAction.getBcc()).willReturn(participants);
+    given(emailAction.getType()).willReturn(SEND_EMAIL);
+    actions.add(emailAction);
+
+    given(workflowMock.getWorkflowActions()).willReturn(actions);
+    WorkflowTrigger workflowTriggerMock = mock(WorkflowTrigger.class);
+    given(workflowTriggerMock.getTriggerType()).willReturn(TriggerType.EVENT);
+    given(workflowTriggerMock.getTriggerFrequency()).willReturn(CREATED);
+    given(workflowMock.getWorkflowTrigger()).willReturn(workflowTriggerMock);
+
+    List<Workflow> workflows = Arrays.asList(workflowMock);
+
+    given(workflowService.findActiveBy(tenantId, DEAL, CREATED)).willReturn(workflows);
+    // when
+    workflowProcessor.process(dealEvent);
+    //then
+    ArgumentCaptor<EmailAction> emailActionArgumentCaptor = ArgumentCaptor.forClass(EmailAction.class);
+    ArgumentCaptor<DealDetail> dealDetailArgumentCaptor = ArgumentCaptor.forClass(DealDetail.class);
+    ArgumentCaptor<Metadata> metadataArgumentCaptor = ArgumentCaptor.forClass(Metadata.class);
+    verify(emailActionService, times(1))
+        .processEmailAction(emailActionArgumentCaptor.capture(), dealDetailArgumentCaptor.capture(), metadataArgumentCaptor.capture());
+
+    EmailAction actualEmailAction = emailActionArgumentCaptor.getValue();
+    DealDetail actualDealDetail = dealDetailArgumentCaptor.getValue();
+    Metadata actualMetadata = metadataArgumentCaptor.getValue();
+
+    assertThat(actualEmailAction.getEmailTemplateId()).isEqualTo(1L);
+    Participant actualFrom = objectMapper.readValue(objectMapper.writeValueAsString(emailAction.getFrom()), Participant.class);
+    assertThat(actualFrom.getName()).isEqualTo("user1");
+    assertThat(actualFrom.getType()).isEqualTo(EmailActionType.WORKFLOW_CREATOR);
+    assertThat(actualFrom.getEmail()).isEqualTo("user1@gmail.com");
+    assertThat(actualFrom.getEntity()).isEqualTo("user");
+    assertThat(actualFrom.getEntityId()).isEqualTo(4L);
+    assertThat(emailAction.getTo()).hasSize(2);
+    assertThat(emailAction.getCc()).hasSize(2);
+    assertThat(emailAction.getBcc()).hasSize(2);
+
+    assertThat(actualDealDetail.getId()).isEqualTo(55L);
+    assertThat(actualDealDetail.getName()).isEqualTo("new deal");
+    assertThat(actualDealDetail.getAssociatedContacts()).hasSize(1);
+
+    assertThat(actualMetadata.getTenantId()).isEqualTo(101L);
+    assertThat(actualMetadata.getUserId()).isEqualTo(10L);
+    assertThat(actualMetadata.getEntityType()).isEqualTo(DEAL);
+    assertThat(actualMetadata.getEntityAction()).isEqualTo(EntityAction.CREATED);
+  }
+
+  @Test
+  public void givenDealUpdatedEvent_withSendEmailAction_shouldProcessIt() throws JsonProcessingException {
+    // given
+    ObjectMapper objectMapper = new ObjectMapper();
+    long tenantId = 101L;
+    long userId = 10L;
+    long workflowId = 99L;
+
+    var dealDetail = new DealDetail();
+    dealDetail.setName("new deal");
+    dealDetail.setAssociatedContacts(List.of(new IdName(2L, "Tony")));
+    dealDetail.setId(55L);
+    Metadata metadata = new Metadata(tenantId, userId, DEAL, null, null, EntityAction.UPDATED);
+
+    var dealEvent = new DealEvent(dealDetail, null, metadata);
+
+    Workflow workflowMock = mock(Workflow.class);
+    given(workflowMock.getId()).willReturn(workflowId);
+
+    Set<AbstractWorkflowAction> actions = new HashSet<>();
+
+    String from = "{\"type\":\"WORKFLOW_CREATOR\",\"entity\":\"user\",\"entityId\":4,\"name\":\"user1\",\"email\":\"user1@gmail.com\"}";
+    List<Participant> participants = List
+        .of(new Participant(EmailActionType.WORKFLOW_UPDATER, EmailEntityType.DEAL.getEntityName(), 1L, "test user", "test@user.com"),
+            new Participant(EmailActionType.TENANT_EMAIL, EmailEntityType.DEAL.getEntityName(), 2L, "test user", "test@user.com"));
+
+    Object emailFrom = objectMapper.readValue(from, Object.class);
+    EmailAction emailAction = mock(EmailAction.class);
+    given(emailAction.getEmailTemplateId()).willReturn(1L);
+    given(emailAction.getFrom()).willReturn(emailFrom);
+    given(emailAction.getTo()).willReturn(participants);
+    given(emailAction.getCc()).willReturn(participants);
+    given(emailAction.getBcc()).willReturn(participants);
+    given(emailAction.getType()).willReturn(SEND_EMAIL);
+    actions.add(emailAction);
+
+    given(workflowMock.getWorkflowActions()).willReturn(actions);
+    WorkflowTrigger workflowTriggerMock = mock(WorkflowTrigger.class);
+    given(workflowTriggerMock.getTriggerType()).willReturn(TriggerType.EVENT);
+    given(workflowTriggerMock.getTriggerFrequency()).willReturn(UPDATED);
+    given(workflowMock.getWorkflowTrigger()).willReturn(workflowTriggerMock);
+
+    List<Workflow> workflows = Arrays.asList(workflowMock);
+
+    given(workflowService.findActiveBy(tenantId, DEAL, UPDATED)).willReturn(workflows);
+    // when
+    workflowProcessor.process(dealEvent);
+    //then
+    ArgumentCaptor<EmailAction> emailActionArgumentCaptor = ArgumentCaptor.forClass(EmailAction.class);
+    ArgumentCaptor<DealDetail> dealDetailArgumentCaptor = ArgumentCaptor.forClass(DealDetail.class);
+    ArgumentCaptor<Metadata> metadataArgumentCaptor = ArgumentCaptor.forClass(Metadata.class);
+    verify(emailActionService, times(1))
+        .processEmailAction(emailActionArgumentCaptor.capture(), dealDetailArgumentCaptor.capture(), metadataArgumentCaptor.capture());
+
+    EmailAction actualEmailAction = emailActionArgumentCaptor.getValue();
+    DealDetail actualDealDetail = dealDetailArgumentCaptor.getValue();
+    Metadata actualMetadata = metadataArgumentCaptor.getValue();
+
+    assertThat(actualEmailAction.getEmailTemplateId()).isEqualTo(1L);
+    Participant actualFrom = objectMapper.readValue(objectMapper.writeValueAsString(emailAction.getFrom()), Participant.class);
+    assertThat(actualFrom.getName()).isEqualTo("user1");
+    assertThat(actualFrom.getType()).isEqualTo(EmailActionType.WORKFLOW_CREATOR);
+    assertThat(actualFrom.getEmail()).isEqualTo("user1@gmail.com");
+    assertThat(actualFrom.getEntity()).isEqualTo("user");
+    assertThat(actualFrom.getEntityId()).isEqualTo(4L);
+    assertThat(emailAction.getTo()).hasSize(2);
+    assertThat(emailAction.getCc()).hasSize(2);
+    assertThat(emailAction.getBcc()).hasSize(2);
+
+    assertThat(actualDealDetail.getId()).isEqualTo(55L);
+    assertThat(actualDealDetail.getName()).isEqualTo("new deal");
+    assertThat(actualDealDetail.getAssociatedContacts()).hasSize(1);
+
+    assertThat(actualMetadata.getTenantId()).isEqualTo(101L);
+    assertThat(actualMetadata.getUserId()).isEqualTo(10L);
+    assertThat(actualMetadata.getEntityType()).isEqualTo(DEAL);
+    assertThat(actualMetadata.getEntityAction()).isEqualTo(EntityAction.UPDATED);
   }
 
 

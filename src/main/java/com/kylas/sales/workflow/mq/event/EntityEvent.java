@@ -1,6 +1,7 @@
 package com.kylas.sales.workflow.mq.event;
 
 import com.kylas.sales.workflow.domain.processor.Actionable;
+import com.kylas.sales.workflow.domain.processor.EmailActionDetail;
 import com.kylas.sales.workflow.domain.processor.EntityDetail;
 
 public interface EntityEvent {
@@ -12,6 +13,8 @@ public interface EntityEvent {
   Metadata getMetadata();
 
   Actionable getActualEntity();
+
+  EmailActionDetail getEmailActionDetail();
 
   long getEntityId();
 }

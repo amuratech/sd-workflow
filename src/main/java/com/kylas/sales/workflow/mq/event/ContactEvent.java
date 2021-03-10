@@ -3,8 +3,10 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.kylas.sales.workflow.domain.processor.Actionable;
+import com.kylas.sales.workflow.domain.processor.EmailActionDetail;
 import com.kylas.sales.workflow.domain.processor.contact.Contact;
 import com.kylas.sales.workflow.domain.processor.contact.ContactDetail;
+import java.util.Collections;
 import lombok.NoArgsConstructor;
 
 @NoArgsConstructor
@@ -52,6 +54,14 @@ public class ContactEvent implements EntityEvent {
   @Override
   public Actionable getActualEntity() {
     return new Contact();
+  }
+
+  @Override
+  public EmailActionDetail getEmailActionDetail() {
+    return new EmailActionDetail(this.entity.getName(), this.entity.getCreatedBy(), this.entity.getUpdatedBy(), this.entity.getOwnerId(),
+        this.entity.getEmails(),
+        Collections
+            .emptyList());
   }
 
   @Override
