@@ -63,3 +63,5 @@ client:
     basePath: http://localhost:8089
   company:
     basePath: http://localhost:8091
+  sales:
+    basePath: http://localhost:8082

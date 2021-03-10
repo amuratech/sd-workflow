@@ -144,7 +144,7 @@ public class WorkflowProcessor {
 
     workflowActions.stream().filter(workflowAction -> workflowAction.getType().equals(ActionType.SEND_EMAIL))
         .map(workflowAction -> (EmailAction) workflowAction)
-        .forEach(emailAction -> emailActionService.processEmailAction(emailAction, event, metadata));
+        .forEach(emailAction -> emailActionService.processEmailAction(emailAction, event));
 
   }
 

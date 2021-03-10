@@ -71,6 +71,7 @@ import com.kylas.sales.workflow.mq.command.EntityUpdatedCommandPublisher;
 import com.kylas.sales.workflow.mq.event.ContactEvent;
 import com.kylas.sales.workflow.mq.event.DealEvent;
 import com.kylas.sales.workflow.mq.event.EntityAction;
+import com.kylas.sales.workflow.mq.event.EntityEvent;
 import com.kylas.sales.workflow.mq.event.LeadEvent;
 import com.kylas.sales.workflow.mq.event.Metadata;
 import java.lang.reflect.Field;
@@ -1421,14 +1422,14 @@ class WorkflowProcessorTest {
     workflowProcessor.process(leadEvent);
     //then
     ArgumentCaptor<EmailAction> emailActionArgumentCaptor = ArgumentCaptor.forClass(EmailAction.class);
-    ArgumentCaptor<LeadDetail> leadDetailArgumentCaptor = ArgumentCaptor.forClass(LeadDetail.class);
-    ArgumentCaptor<Metadata> metadataArgumentCaptor = ArgumentCaptor.forClass(Metadata.class);
+    ArgumentCaptor<EntityEvent> entityEventArgumentCaptor = ArgumentCaptor.forClass(EntityEvent.class);
+
     verify(emailActionService, times(1))
-        .processEmailAction(emailActionArgumentCaptor.capture(), leadDetailArgumentCaptor.capture(), metadataArgumentCaptor.capture());
+        .processEmailAction(emailActionArgumentCaptor.capture(), entityEventArgumentCaptor.capture());
 
     EmailAction actualEmailAction = emailActionArgumentCaptor.getValue();
-    LeadDetail leadDetail = leadDetailArgumentCaptor.getValue();
-    Metadata actualMetadata = metadataArgumentCaptor.getValue();
+    LeadDetail leadDetail = (LeadDetail) entityEventArgumentCaptor.getValue().getEntity();
+    Metadata actualMetadata = entityEventArgumentCaptor.getValue().getMetadata();
 
     assertThat(actualEmailAction.getEmailTemplateId()).isEqualTo(1L);
     Participant actualFrom = objectMapper.readValue(objectMapper.writeValueAsString(emailAction.getFrom()), Participant.class);
@@ -1505,14 +1506,14 @@ class WorkflowProcessorTest {
     workflowProcessor.process(leadEvent);
     //then
     ArgumentCaptor<EmailAction> emailActionArgumentCaptor = ArgumentCaptor.forClass(EmailAction.class);
-    ArgumentCaptor<LeadDetail> leadDetailArgumentCaptor = ArgumentCaptor.forClass(LeadDetail.class);
-    ArgumentCaptor<Metadata> metadataArgumentCaptor = ArgumentCaptor.forClass(Metadata.class);
+    ArgumentCaptor<EntityEvent> entityEventArgumentCaptor = ArgumentCaptor.forClass(EntityEvent.class);
+
     verify(emailActionService, times(1))
-        .processEmailAction(emailActionArgumentCaptor.capture(), leadDetailArgumentCaptor.capture(), metadataArgumentCaptor.capture());
+        .processEmailAction(emailActionArgumentCaptor.capture(), entityEventArgumentCaptor.capture());
 
     EmailAction actualEmailAction = emailActionArgumentCaptor.getValue();
-    LeadDetail leadDetail = leadDetailArgumentCaptor.getValue();
-    Metadata actualMetadata = metadataArgumentCaptor.getValue();
+    LeadDetail leadDetail = (LeadDetail) entityEventArgumentCaptor.getValue().getEntity();
+    Metadata actualMetadata = entityEventArgumentCaptor.getValue().getMetadata();
 
     assertThat(actualEmailAction.getEmailTemplateId()).isEqualTo(1L);
     Participant actualFrom = objectMapper.readValue(objectMapper.writeValueAsString(emailAction.getFrom()), Participant.class);
@@ -1589,14 +1590,14 @@ class WorkflowProcessorTest {
     workflowProcessor.process(contactEvent);
     //then
     ArgumentCaptor<EmailAction> emailActionArgumentCaptor = ArgumentCaptor.forClass(EmailAction.class);
-    ArgumentCaptor<ContactDetail> contactDetailArgumentCaptor = ArgumentCaptor.forClass(ContactDetail.class);
-    ArgumentCaptor<Metadata> metadataArgumentCaptor = ArgumentCaptor.forClass(Metadata.class);
+    ArgumentCaptor<EntityEvent> entityEventArgumentCaptor = ArgumentCaptor.forClass(EntityEvent.class);
+
     verify(emailActionService, times(1))
-        .processEmailAction(emailActionArgumentCaptor.capture(), contactDetailArgumentCaptor.capture(), metadataArgumentCaptor.capture());
+        .processEmailAction(emailActionArgumentCaptor.capture(), entityEventArgumentCaptor.capture());
 
     EmailAction actualEmailAction = emailActionArgumentCaptor.getValue();
-    ContactDetail actualContactDetail = contactDetailArgumentCaptor.getValue();
-    Metadata actualMetadata = metadataArgumentCaptor.getValue();
+    ContactDetail actualContactDetail = (ContactDetail) entityEventArgumentCaptor.getValue().getEntity();
+    Metadata actualMetadata = entityEventArgumentCaptor.getValue().getMetadata();
 
     assertThat(actualEmailAction.getEmailTemplateId()).isEqualTo(1L);
     Participant actualFrom = objectMapper.readValue(objectMapper.writeValueAsString(emailAction.getFrom()), Participant.class);
@@ -1673,14 +1674,14 @@ class WorkflowProcessorTest {
     workflowProcessor.process(contactEvent);
     //then
     ArgumentCaptor<EmailAction> emailActionArgumentCaptor = ArgumentCaptor.forClass(EmailAction.class);
-    ArgumentCaptor<ContactDetail> contactDetailArgumentCaptor = ArgumentCaptor.forClass(ContactDetail.class);
-    ArgumentCaptor<Metadata> metadataArgumentCaptor = ArgumentCaptor.forClass(Metadata.class);
+    ArgumentCaptor<EntityEvent> entityEventArgumentCaptor = ArgumentCaptor.forClass(EntityEvent.class);
+
     verify(emailActionService, times(1))
-        .processEmailAction(emailActionArgumentCaptor.capture(), contactDetailArgumentCaptor.capture(), metadataArgumentCaptor.capture());
+        .processEmailAction(emailActionArgumentCaptor.capture(), entityEventArgumentCaptor.capture());
 
     EmailAction actualEmailAction = emailActionArgumentCaptor.getValue();
-    ContactDetail contactDetail = contactDetailArgumentCaptor.getValue();
-    Metadata actualMetadata = metadataArgumentCaptor.getValue();
+    ContactDetail contactDetail = (ContactDetail) entityEventArgumentCaptor.getValue().getEntity();
+    Metadata actualMetadata = entityEventArgumentCaptor.getValue().getMetadata();
 
     assertThat(actualEmailAction.getEmailTemplateId()).isEqualTo(1L);
     Participant actualFrom = objectMapper.readValue(objectMapper.writeValueAsString(emailAction.getFrom()), Participant.class);
@@ -1754,14 +1755,14 @@ class WorkflowProcessorTest {
     workflowProcessor.process(dealEvent);
     //then
     ArgumentCaptor<EmailAction> emailActionArgumentCaptor = ArgumentCaptor.forClass(EmailAction.class);
-    ArgumentCaptor<DealDetail> dealDetailArgumentCaptor = ArgumentCaptor.forClass(DealDetail.class);
-    ArgumentCaptor<Metadata> metadataArgumentCaptor = ArgumentCaptor.forClass(Metadata.class);
+    ArgumentCaptor<EntityEvent> entityEventArgumentCaptor = ArgumentCaptor.forClass(EntityEvent.class);
+
     verify(emailActionService, times(1))
-        .processEmailAction(emailActionArgumentCaptor.capture(), dealDetailArgumentCaptor.capture(), metadataArgumentCaptor.capture());
+        .processEmailAction(emailActionArgumentCaptor.capture(), entityEventArgumentCaptor.capture());
 
     EmailAction actualEmailAction = emailActionArgumentCaptor.getValue();
-    DealDetail actualDealDetail = dealDetailArgumentCaptor.getValue();
-    Metadata actualMetadata = metadataArgumentCaptor.getValue();
+    DealDetail actualDealDetail = (DealDetail) entityEventArgumentCaptor.getValue().getEntity();
+    Metadata actualMetadata = entityEventArgumentCaptor.getValue().getMetadata();
 
     assertThat(actualEmailAction.getEmailTemplateId()).isEqualTo(1L);
     Participant actualFrom = objectMapper.readValue(objectMapper.writeValueAsString(emailAction.getFrom()), Participant.class);
@@ -1833,14 +1834,14 @@ class WorkflowProcessorTest {
     workflowProcessor.process(dealEvent);
     //then
     ArgumentCaptor<EmailAction> emailActionArgumentCaptor = ArgumentCaptor.forClass(EmailAction.class);
-    ArgumentCaptor<DealDetail> dealDetailArgumentCaptor = ArgumentCaptor.forClass(DealDetail.class);
-    ArgumentCaptor<Metadata> metadataArgumentCaptor = ArgumentCaptor.forClass(Metadata.class);
+    ArgumentCaptor<EntityEvent> entityEventArgumentCaptor = ArgumentCaptor.forClass(EntityEvent.class);
+
     verify(emailActionService, times(1))
-        .processEmailAction(emailActionArgumentCaptor.capture(), dealDetailArgumentCaptor.capture(), metadataArgumentCaptor.capture());
+        .processEmailAction(emailActionArgumentCaptor.capture(), entityEventArgumentCaptor.capture());
 
     EmailAction actualEmailAction = emailActionArgumentCaptor.getValue();
-    DealDetail actualDealDetail = dealDetailArgumentCaptor.getValue();
-    Metadata actualMetadata = metadataArgumentCaptor.getValue();
+    DealDetail actualDealDetail = (DealDetail) entityEventArgumentCaptor.getValue().getEntity();
+    Metadata actualMetadata = entityEventArgumentCaptor.getValue().getMetadata();
 
     assertThat(actualEmailAction.getEmailTemplateId()).isEqualTo(1L);
     Participant actualFrom = objectMapper.readValue(objectMapper.writeValueAsString(emailAction.getFrom()), Participant.class);
