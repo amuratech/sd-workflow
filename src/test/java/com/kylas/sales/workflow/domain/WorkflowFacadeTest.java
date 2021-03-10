@@ -1970,6 +1970,38 @@ class WorkflowFacadeTest {
 
   @Transactional
   @Test
+  @Sql("/test-scripts/insert-users.sql")
+  public void registerSystemDefaultWorkflow_onDealIntegration_shouldCreateIt() {
+    //given
+    long tenantId = 99L;
+    long userId = 12L;
+    User aUser = UserStub.aUser(userId, tenantId, true, true, true, true, true)
+        .withName("user 1");
+    given(authService.getLoggedInUser())
+        .willReturn(aUser);
+    given(userService.getUserDetails(12L, authService.getAuthenticationToken()))
+        .willReturn(Mono.just(aUser));
+    given(userService.getTenantCreator(tenantId, authService.getAuthenticationToken()))
+        .willReturn(Mono.just(aUser));
+    String hookUrl = "https://webhook.site/af3b2540-96fe-416a-a373-41596e4d7197";
+    IntegrationConfig config =
+        IntegrationConfig.from("create-deal", new IntegrationRequest(hookUrl));
+    //when
+    var workflow = workflowFacade.registerIntegration(config, aUser).block();
+    //then
+    assertThat(workflow).isNotNull();
+    assertThat(workflow.isSystemDefault()).isTrue();
+    assertThat(workflow.isActive()).isTrue();
+    assertThat(workflow.getEntityType()).isEqualTo(DEAL);
+    assertThat(workflow.getWorkflowActions().stream().findFirst()).isPresent();
+    var workflowAction = workflow.getWorkflowActions().stream().findFirst().get();
+    var webhookAction = (WebhookAction) workflowAction.getType().toActionResponse(workflowAction).getPayload();
+    assertThat(webhookAction.getRequestUrl()).isEqualTo("https://webhook.site/af3b2540-96fe-416a-a373-41596e4d7197");
+    assertThat(webhookAction.getMethod()).isEqualTo(HttpMethod.POST);
+  }
+
+  @Transactional
+  @Test
   @Sql("/test-scripts/insert-system-default-workflow.sql")
   public void registerSystemDefaultWorkflow_forLastFragmentMatchingRequestUrl_shouldUpdateIt() {
     //given

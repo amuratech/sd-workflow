@@ -21,7 +21,7 @@ public enum EntityType {
       return List.of(ContactAttribute.COMPANY.getName());
     }
   },
-  DEAL(true, false) {
+  DEAL(true, true) {
     public List<String> getIdNameFields() {
       return emptyList();
     }

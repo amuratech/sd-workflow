@@ -1,0 +1,97 @@
+{
+  "name": "Integration- Webhook on Deal Creation",
+  "description": "This workflow posts deal information on the specified REST endpoint when a deal gets created.",
+  "entityType": "DEAL",
+  "active": true,
+  "trigger": {
+    "name": "EVENT",
+    "triggerFrequency": "CREATED"
+  },
+  "condition": {
+    "conditionType": "FOR_ALL"
+  },
+  "actions": [
+    {
+      "type": "WEBHOOK",
+      "payload": {
+        "name": "Integration- Post Deal Details",
+        "description": "This webhook posts deal details when it is created.",
+        "method": "POST",
+        "authorizationType": "NONE",
+        "authorizationParameter": null,
+        "parameters": [
+          {
+            "name": "id",
+            "entity": "DEAL",
+            "attribute": "id"
+          },
+          {
+            "entity": "DEAL",
+            "name": "name",
+            "attribute": "name"
+          },
+          {
+            "entity": "DEAL",
+            "name": "estimatedValue",
+            "attribute": "estimatedValue"
+          },
+          {
+            "entity": "DEAL",
+            "name": "actualValue",
+            "attribute": "actualValue"
+          },
+          {
+            "entity": "DEAL",
+            "name": "estimatedClosureDate",
+            "attribute": "estimatedClosureOn"
+          },
+          {
+            "entity": "DEAL",
+            "name": "actualClosureDate",
+            "attribute": "actualClosureDate"
+          },
+          {
+            "entity": "DEAL",
+            "name": "associatedContacts",
+            "attribute": "associatedContacts"
+          },
+          {
+            "entity": "DEAL",
+            "name": "pipeline",
+            "attribute": "pipeline"
+          },
+          {
+            "entity": "DEAL",
+            "name": "pipelineStage",
+            "attribute": "pipelineStage"
+          },
+          {
+            "entity": "DEAL",
+            "name": "product",
+            "attribute": "product"
+          },
+          {
+            "entity": "DEAL",
+            "name": "company",
+            "attribute": "company"
+          },
+          {
+            "entity": "DEAL",
+            "name": "ownedBy",
+            "attribute": "ownedBy"
+          },
+          {
+            "entity": "DEAL",
+            "name": "createdBy",
+            "attribute": "createdBy"
+          },
+          {
+            "entity": "DEAL",
+            "name": "createdAt",
+            "attribute": "createdAt"
+          }
+        ]
+      }
+    }
+  ]
+}

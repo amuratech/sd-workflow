@@ -2010,6 +2010,31 @@ class WorkflowControllerTest {
   }
 
   @Test
+  public void workflowIntegrationRegisterRequest_forDeal_shouldBeCaptured() {
+    //given
+    var integrationConfigCaptor = ArgumentCaptor.forClass(IntegrationConfig.class);
+    given(workflowService.registerIntegration(any()))
+        .willReturn(Mono.just(new Workflow()));
+    //when
+    buildWebClient()
+        .post()
+        .uri("/v1/workflows/integrations/create-deal")
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue("{\"hookUrl\": \"https://zapier.com/hooks/standard/some-path/\"}")
+        .retrieve()
+        .bodyToMono(String.class)
+        .block();
+    //then
+    verify(workflowService, times(1))
+        .registerIntegration(integrationConfigCaptor.capture());
+    var value = integrationConfigCaptor.getValue();
+    assertThat(value.getHookUrl()).isEqualTo("https://zapier.com/hooks/standard/some-path/");
+    assertThat(value.getEntityType()).isEqualTo(EntityType.DEAL);
+    assertThat(value.getTrigger().getName()).isEqualTo(TriggerType.EVENT);
+    assertThat(value.getTrigger().getTriggerFrequency()).isEqualTo(TriggerFrequency.CREATED);
+  }
+
+  @Test
   public void workflowIntegrationUnregisterRequest_shouldBeCaptured() {
     //given
     var integrationConfigCaptor = ArgumentCaptor.forClass(IntegrationConfig.class);
@@ -2029,6 +2054,31 @@ class WorkflowControllerTest {
         .unregisterIntegration(integrationConfigCaptor.capture());
     var value = integrationConfigCaptor.getValue();
     assertThat(value.getEntityType()).isEqualTo(EntityType.LEAD);
+    assertThat(value.getTrigger().getName()).isEqualTo(TriggerType.EVENT);
+    assertThat(value.getHookUrl()).isEqualTo("https://zapier.com/hooks/standard/some-path/");
+    assertThat(value.getTrigger().getTriggerFrequency()).isEqualTo(TriggerFrequency.CREATED);
+  }
+
+  @Test
+  public void workflowIntegrationUnregisterRequest_forDeal_shouldBeCaptured() {
+    //given
+    var integrationConfigCaptor = ArgumentCaptor.forClass(IntegrationConfig.class);
+    given(workflowService.unregisterIntegration(any()))
+        .willReturn(Mono.just(true));
+    //when
+    buildWebClient()
+        .method(HttpMethod.DELETE)
+        .uri("/v1/workflows/integrations/create-deal")
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue("{\"hookUrl\": \"https://zapier.com/hooks/standard/some-path/\"}")
+        .retrieve()
+        .bodyToMono(String.class)
+        .block();
+    //then
+    verify(workflowService, times(1))
+        .unregisterIntegration(integrationConfigCaptor.capture());
+    var value = integrationConfigCaptor.getValue();
+    assertThat(value.getEntityType()).isEqualTo(EntityType.DEAL);
     assertThat(value.getTrigger().getName()).isEqualTo(TriggerType.EVENT);
     assertThat(value.getHookUrl()).isEqualTo("https://zapier.com/hooks/standard/some-path/");
     assertThat(value.getTrigger().getTriggerFrequency()).isEqualTo(TriggerFrequency.CREATED);
