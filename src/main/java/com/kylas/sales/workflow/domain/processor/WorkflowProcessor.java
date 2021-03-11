@@ -26,7 +26,9 @@ import com.kylas.sales.workflow.error.ErrorCode;
 import com.kylas.sales.workflow.mq.command.EntityUpdatedCommandPublisher;
 import com.kylas.sales.workflow.mq.event.EntityEvent;
 import com.kylas.sales.workflow.mq.event.Metadata;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
@@ -140,12 +142,18 @@ public class WorkflowProcessor {
   }
 
   private void processEditPropertyActions(Set<EditPropertyAction> editPropertyActions, Metadata metadata, Actionable entity) {
-    editPropertyActions.forEach(editPropertyAction -> {
+
+    EvaluationContext context = SimpleEvaluationContext.forReadWriteDataBinding().build();
+    ExpressionParser parser = new SpelExpressionParser();
+
+    Set<EditPropertyAction> editPropertyActionsWithStandardFields = editPropertyActions.stream()
+        .filter(editPropertyAction -> editPropertyAction.isStandard()).collect(Collectors.toSet());
+
+    editPropertyActionsWithStandardFields.forEach(editPropertyAction -> {
       try {
         log.info("Executing EditPropertyAction with Id {}, name {} and value {} ", editPropertyAction.getId(), editPropertyAction.getName(),
             editPropertyAction.getValue());
-        EvaluationContext context = SimpleEvaluationContext.forReadWriteDataBinding().build();
-        ExpressionParser parser = new SpelExpressionParser();
+
         parser.parseExpression(editPropertyAction.getName())
             .setValue(context, entity,
                 valueConverter.getValue(editPropertyAction, entity.getClass().getDeclaredField(editPropertyAction.getName()),
@@ -161,8 +169,22 @@ public class WorkflowProcessor {
             editPropertyAction.getValue(), e.getMessage());
       }
     });
+    if (!metadata.getEntityType().equals(EntityType.DEAL) && !getCustomFieldValues(editPropertyActions).isEmpty()) {
+      parser.parseExpression("customFieldValues").setValue(context, entity, getCustomFieldValues(editPropertyActions));
+    }
     log.info("Publishing command to execute edit property actions on entity {} with Id {}, with new metadata {} ", metadata.getEntityType(),
         metadata.getEntityId(), metadata);
     entityUpdatedCommandPublisher.execute(metadata, entity);
   }
+
+  private Map<String, Object> getCustomFieldValues(Set<EditPropertyAction> editPropertyActions) {
+    Map<String, Object> customFieldValues = new HashMap<>();
+    Set<EditPropertyAction> editPropertyActionsWithCustomFields = editPropertyActions.stream()
+        .filter(editPropertyAction -> !editPropertyAction.isStandard()).collect(Collectors.toSet());
+    editPropertyActionsWithCustomFields.forEach(editPropertyAction -> {
+      customFieldValues.put(editPropertyAction.getName(), editPropertyAction.getValue());
+    });
+    return customFieldValues;
+  }
+
 }

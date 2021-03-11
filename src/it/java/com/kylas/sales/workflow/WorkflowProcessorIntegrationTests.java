@@ -119,8 +119,31 @@ public class WorkflowProcessorIntegrationTests {
     rabbitTemplate.convertAndSend(SALES_EXCHANGE, LeadEvent.getLeadCreatedEventName(), leadEvent);
     // then
     mockMqListener.latch.await(3, TimeUnit.SECONDS);
+
+    Workflow workflow = workflowFacade.get(301);
+    Assertions.assertThat(workflow.getWorkflowExecutedEvent().getLastTriggeredAt()).isNotNull();
+    Assertions.assertThat(workflow.getWorkflowExecutedEvent().getTriggerCount()).isEqualTo(152);
+  }
+
+  @Test
+  @Sql("/test-scripts/insert-create-lead-with-custom-fields-workflow.sql")
+  public void givenLeadCreateEvent_withCustomFields_shouldUpdatePropertyAndPublishCommand()
+      throws IOException, InterruptedException, JSONException {
+    // given
+    String authenticationToken = "some-token";
+    User aUser = UserStub.aUser(12L, 99L, true, true, true, true, true).withName("user 1");
+    given(authService.getLoggedInUser()).willReturn(aUser);
+    given(authService.getAuthenticationToken()).willReturn(authenticationToken);
+
+    String resourceAsString = getResourceAsString("/contracts/mq/events/lead-created-event-2.json");
+    LeadEvent leadEvent = objectMapper.readValue(resourceAsString, LeadEvent.class);
+    initializeRabbitMqListener(LEAD_UPDATE_COMMAND_QUEUE, SALES_LEAD_UPDATE_QUEUE);
+    // when
+    rabbitTemplate.convertAndSend(SALES_EXCHANGE, LeadEvent.getLeadCreatedEventName(), leadEvent);
+    // then
+    mockMqListener.latch.await(3, TimeUnit.SECONDS);
     JSONAssert.assertEquals(
-        getResourceAsString("/contracts/mq/command/lead-update-patch-command.json"),
+        getResourceAsString("/contracts/mq/command/lead-update-patch-command-4.json"),
         mockMqListener.actualMessage,
         JSONCompareMode.STRICT);
 

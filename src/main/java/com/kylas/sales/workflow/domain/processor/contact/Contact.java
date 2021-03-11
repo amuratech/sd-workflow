@@ -10,6 +10,7 @@ import com.kylas.sales.workflow.domain.processor.lead.PhoneNumber;
 import java.io.Serializable;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -56,6 +57,7 @@ public class Contact implements Serializable, Actionable {
   private Long createdBy;
   private Long updatedBy;
 
+  private Map<String, Object> customFieldValues;
   private List<Long> associatedDeals;
 
 

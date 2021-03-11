@@ -129,6 +129,55 @@ class WorkflowProcessorTest {
   }
 
   @Test
+  public void givenLeadEvent_withCustomField_shouldPublishPatchCommand() {
+    // given
+    long tenantId = 101;
+    long userId = 10L;
+    long workflowId = 99L;
+
+    var lead = new LeadDetail();
+    lead.setId(55L);
+    lead.setFirstName("Tony");
+    lead.setLastName("Stark");
+    Metadata metadata = new Metadata(tenantId, userId, LEAD, null, null, EntityAction.CREATED);
+
+    var leadCreatedEvent = new LeadEvent(lead, null, metadata);
+
+    Workflow workflowMock = mock(Workflow.class);
+    given(workflowMock.getId()).willReturn(workflowId);
+
+    Set<AbstractWorkflowAction> actions = new HashSet<>();
+
+    String propertyValue = "MyName";
+
+    EditPropertyAction updateFirstNameAction = mock(EditPropertyAction.class);
+    given(updateFirstNameAction.getName()).willReturn("myName");
+    given(updateFirstNameAction.getValue()).willReturn(propertyValue);
+    given(updateFirstNameAction.getType()).willReturn(EDIT_PROPERTY);
+    given(updateFirstNameAction.isStandard()).willReturn(false);
+    actions.add(updateFirstNameAction);
+
+    given(workflowMock.getWorkflowActions()).willReturn(actions);
+    WorkflowTrigger workflowTriggerMock = mock(WorkflowTrigger.class);
+    given(workflowTriggerMock.getTriggerType()).willReturn(TriggerType.EVENT);
+    given(workflowTriggerMock.getTriggerFrequency()).willReturn(CREATED);
+    given(workflowMock.getWorkflowTrigger()).willReturn(workflowTriggerMock);
+
+    List<Workflow> workflows = Arrays.asList(workflowMock);
+
+    given(workflowService.findActiveBy(tenantId, LEAD, CREATED)).willReturn(workflows);
+    doNothing().when(entityUpdatedCommandPublisher).execute(any(Metadata.class), any(Lead.class));
+    when(valueConverter.getValue(any(EditPropertyAction.class), any(Field.class), any(EntityType.class))).thenReturn(propertyValue);
+    // when
+    workflowProcessor.process(leadCreatedEvent);
+    // then
+    verify(entityUpdatedCommandPublisher, times(1))
+        .execute(any(Metadata.class), any(Actionable.class));
+    verify(workflowService, times(1)).updateExecutedEventDetails(any(Workflow.class));
+  }
+
+
+  @Test
   public void givenMultipleWorkflow_whereOneIsFailing_otherShouldBeExecute() {
     // given
     long tenantId = 101;
@@ -866,6 +915,7 @@ class WorkflowProcessorTest {
     given(editPropertyAction.getName()).willReturn("pipeline");
     given(editPropertyAction.getValue()).willReturn("textValue");
     given(editPropertyAction.getType()).willReturn(EDIT_PROPERTY);
+    given(editPropertyAction.isStandard()).willReturn(true);
     actions.add(editPropertyAction);
 
     given(workflowMock.getWorkflowActions()).willReturn(actions);
@@ -911,6 +961,7 @@ class WorkflowProcessorTest {
     given(editPropertyAction.getValue()).willReturn(value);
     given(editPropertyAction.getValueType()).willReturn(ValueType.OBJECT);
     given(editPropertyAction.getType()).willReturn(EDIT_PROPERTY);
+    given(editPropertyAction.isStandard()).willReturn(true);
     actions.add(editPropertyAction);
 
     given(workflowMock.getWorkflowActions()).willReturn(actions);
@@ -957,6 +1008,7 @@ class WorkflowProcessorTest {
     given(editPropertyAction.getName()).willReturn("company");
     given(editPropertyAction.getValue()).willReturn("textValue");
     given(editPropertyAction.getType()).willReturn(EDIT_PROPERTY);
+    given(editPropertyAction.isStandard()).willReturn(true);
     actions.add(editPropertyAction);
 
     given(workflowMock.getWorkflowActions()).willReturn(actions);
